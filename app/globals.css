@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-white text-slate-900 antialiased;
+}
+
+.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+.glass-card {
+  @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-glass;
+}
+
+.dark .glass-card {
+  @apply bg-white/5 border-white/10;
+}
+
+.card-clean {
+  @apply border-transparent bg-white/60 shadow-soft;
+}
+
+.dark .card-clean {
+  @apply border-transparent bg-white/5;
+}
+
+@keyframes profile-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee-track {
+  animation: profile-marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.marquee-fade {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+}
+
+.section-heading {
+  @apply font-serif text-3xl sm:text-4xl text-slate-900 dark:text-white;
+}
+
+.section-subtitle {
+  @apply text-slate-600 dark:text-slate-300;
+}
+
+.fancy-border {
+  background: linear-gradient(135deg, rgba(194, 24, 91, 0.65), rgba(255, 214, 232, 0.7));
+  padding: 1px;
+  border-radius: 999px;
+}
+
+.fancy-border > div {
+  @apply rounded-full bg-white dark:bg-slate-950;
+}

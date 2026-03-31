@@ -15,6 +15,7 @@ type RegisterPayload = {
   religionCommunity?: string;
   locationPreference?: string;
   bio?: string;
+  photos?: Array<{ url: string; publicId?: string }>;
 };
 
 export async function POST(request: Request) {
@@ -64,6 +65,14 @@ export async function POST(request: Request) {
       education: body.education?.trim() || null,
       city: body.city?.trim() || null,
       bio: body.bio?.trim() || null,
+      photos: body.photos?.length
+        ? {
+            create: body.photos.map((photo) => ({
+              url: photo.url,
+              publicId: photo.publicId,
+            })),
+          }
+        : undefined,
       preferences: {
         create: {
           preferredAgeRange: body.preferredAgeRange?.trim() || null,

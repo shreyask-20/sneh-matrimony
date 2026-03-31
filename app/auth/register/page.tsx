@@ -60,6 +60,56 @@ export default function RegisterPage() {
     setActiveStep((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
   };
 
+  const uploadPhotos = async () => {
+    if (photos.length === 0) return [];
+    const signatureRes = await fetch("/api/upload/signature");
+    if (!signatureRes.ok) {
+      throw new Error("Failed to get upload signature");
+    }
+    const signatureData = (await signatureRes.json()) as {
+      cloudName: string;
+      apiKey: string;
+      timestamp: number;
+      folder: string;
+      signature: string;
+    };
+
+    const uploads = await Promise.all(
+      photos.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("api_key", signatureData.apiKey);
+        formData.append("timestamp", signatureData.timestamp.toString());
+        formData.append("folder", signatureData.folder);
+        formData.append("signature", signatureData.signature);
+
+        const uploadRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!uploadRes.ok) {
+          throw new Error("Image upload failed");
+        }
+
+        const uploadData = (await uploadRes.json()) as {
+          secure_url: string;
+          public_id: string;
+        };
+
+        return {
+          url: uploadData.secure_url,
+          publicId: uploadData.public_id,
+        };
+      })
+    );
+
+    return uploads;
+  };
+
   const handleFinish = async () => {
     const step0Error = validateStep(0);
     if (step0Error) {
@@ -75,6 +125,19 @@ export default function RegisterPage() {
     }
     setError(null);
     setLoading(true);
+
+    let uploadedPhotos: Array<{ url: string; publicId?: string }> = [];
+    try {
+      uploadedPhotos = await uploadPhotos();
+    } catch (uploadError) {
+      setLoading(false);
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Failed to upload photos."
+      );
+      return;
+    }
 
     const response = await fetch("/api/auth/register", {
       method: "POST",
@@ -92,6 +155,7 @@ export default function RegisterPage() {
         religionCommunity,
         locationPreference,
         bio,
+        photos: uploadedPhotos,
       }),
     });
 

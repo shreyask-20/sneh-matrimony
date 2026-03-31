@@ -1,4 +1,4 @@
-import Badge from "./Badge";
+﻿import Badge from "./Badge";
 import type { Profile } from "../../data/profiles";
 import Button from "./Button";
 
@@ -14,6 +14,11 @@ export default function ProfileCard({
   size = "normal",
 }: Props) {
   const isCompact = size === "compact";
+  const ageLabel = profile.age > 0 ? profile.age : "-";
+  const locationLabel = profile.location || "Location not set";
+  const educationLabel = profile.education || "Education not set";
+  const faithLabel = profile.faith || "Not specified";
+
   return (
     <div
       className={`glass-card card-clean group flex flex-col gap-5 overflow-hidden rounded-3xl transition hover:-translate-y-1 hover:shadow-soft ${
@@ -31,7 +36,6 @@ export default function ProfileCard({
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)]" />
-
       </div>
       <div className="flex items-start justify-between">
         <div>
@@ -40,10 +44,10 @@ export default function ProfileCard({
               isCompact ? "text-base" : "text-lg"
             }`}
           >
-            {profile.name}, {profile.age}
+            {profile.name}, {ageLabel}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-300">
-            {profile.location} · {profile.education}
+            {locationLabel} - {educationLabel}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -60,7 +64,7 @@ export default function ProfileCard({
       </p>
       <div className="mt-auto flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-          {profile.faith}
+          {faithLabel}
         </p>
         <Button size="sm" variant="secondary">
           {actionLabel}

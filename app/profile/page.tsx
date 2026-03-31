@@ -2,8 +2,21 @@ import Navbar from "../../components/shared/Navbar";
 import Badge from "../../components/shared/Badge";
 import Button from "../../components/shared/Button";
 import ProfileTabs from "../../components/profile/ProfileTabs";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const session = await getServerSession(authOptions);
+  const photos = session?.user?.id
+    ? await prisma.photo.findMany({
+        where: { userId: session.user.id, status: "APPROVED" },
+        select: { url: true },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
+  const primaryPhoto = photos[0]?.url ?? "/profiles/p1.jpg";
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <Navbar />
@@ -12,10 +25,22 @@ export default function ProfilePage() {
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="space-y-4">
               <img
-                src="/profiles/p1.jpg"
+                src={primaryPhoto}
                 alt="Aanya Sharma"
                 className="h-72 w-full rounded-3xl object-cover"
               />
+              {photos.length > 1 ? (
+                <div className="grid grid-cols-4 gap-2">
+                  {photos.slice(1, 5).map((photo) => (
+                    <img
+                      key={photo.url}
+                      src={photo.url}
+                      alt="Profile"
+                      className="h-16 w-full rounded-2xl object-cover"
+                    />
+                  ))}
+                </div>
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 <Badge label="Verified" tone="verified" />
                 <Badge label="Premium" tone="premium" />

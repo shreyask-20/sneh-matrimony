@@ -10,6 +10,39 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
         brand: {
           50: "#FFF0F6",
           100: "#FFD6E8",
@@ -37,9 +70,14 @@ const config: Config = {
       },
       backgroundImage: {
         "hero-glow":
-          "radial-gradient(1200px 600px at 0% 0%, rgba(194, 24, 91, 0.25), transparent 60%)",
+          "radial-gradient(ellipse 80% 60% at 50% 0%, #3F071E 100%, rgba(63,7,30,0.6) 50%, rgba(63,7,30,0.15) 85%, transparent 80%)",
         "rose-dawn":
           "linear-gradient(120deg, rgba(255, 240, 246, 0.95), rgba(255, 255, 255, 0.8) 45%, rgba(255, 214, 232, 0.8))",
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
     },
   },

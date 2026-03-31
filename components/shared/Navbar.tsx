@@ -1,32 +1,44 @@
 import Button from "./Button";
+import AnimatedGradientButton from "./AnimatedGradientButton";
 
-export default function Navbar() {
+type NavbarProps = {
+  className?: string;
+};
+
+export default function Navbar({ className = "" }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-40 bg-gradient-to-b from-white/50 via-white/30 to-transparent backdrop-blur-2xl shadow-[0_12px_40px_rgba(194,24,91,0.12)] dark:from-slate-950/70 dark:via-slate-950/40 dark:to-transparent">
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-2 sm:px-6">
+    <header
+      className={`sticky z-50 bg-gradient-to-b from-[#7F103E]/0 to-transparent backdrop-blur-sm ${className}`}
+    >
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-1 sm:px-6">
         <a className="flex items-center" href="/">
           <img
-            src="/profiles/nav-logo.png"
+            src="/profiles/nav-logo1.png"
             alt="Sneh Matrimony"
-            className="h-20 w-auto object-contain"
+            className="h-24 -my-2 w-auto object-contain"
           />
         </a>
-        <div className="hidden items-center gap-6 text-sm text-slate-600 dark:text-slate-300 md:flex">
-          <a className="transition hover:text-brand-600" href="/browse">
+        <div className="hidden items-center gap-6 text-sm text-brand-100/90 md:flex">
+          <a className="transition hover:text-brand-200" href="/browse">
             Browse
           </a>
-          <a className="transition hover:text-brand-600" href="/dashboard">
+          <a className="transition hover:text-brand-200" href="/dashboard">
             Dashboard
           </a>
-          <a className="transition hover:text-brand-600" href="/chat">
+          <a className="transition hover:text-brand-200" href="/chat">
             Messages
           </a>
-          <a className="transition hover:text-brand-600" href="/admin">
+          <a className="transition hover:text-brand-200" href="/admin">
             Admin
           </a>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost">Log in</Button>
+          <AnimatedGradientButton
+            variant="ghost"
+            className="h-9 px-4"
+          >
+            Log in
+          </AnimatedGradientButton>
           <Button>Create Profile</Button>
         </div>
       </nav>

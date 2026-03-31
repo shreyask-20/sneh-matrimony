@@ -25,9 +25,9 @@ export default function Footer() {
           <p className="font-semibold text-slate-700 dark:text-slate-200">
             Contact
           </p>
-          <p>support@snehmatrimony.com</p>
-          <p>+91 90000 12345</p>
-          <p>Konkan · Marathwada · Vidarbha · Khandesh</p>
+          <p>Location - Nashik, Maharashtra</p>
+          <p>Email ID - snehmatrimonyindia@gmail.com</p>
+          <p>Mobile - 9922641116</p>
         </div>
       </div>
     </footer>

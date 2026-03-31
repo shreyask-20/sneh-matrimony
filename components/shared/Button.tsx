@@ -20,10 +20,15 @@ export default function Button({
   size = "md",
   ...props
 }: Props) {
+  const sizeMap: Record<Size, "sm" | "default" | "lg"> = {
+    sm: "sm",
+    md: "default",
+    lg: "lg",
+  };
   return (
     <UiButton
       variant={variantMap[variant]}
-      size={size}
+      size={sizeMap[size]}
       {...props}
     />
   );

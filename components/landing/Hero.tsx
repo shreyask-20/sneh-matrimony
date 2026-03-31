@@ -2,14 +2,13 @@ import Button from "../shared/Button";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden pb-20 pt-14">
-      <div className="pointer-events-none absolute inset-0 bg-hero-glow" />
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+    <section className="relative pb-20 pt-12 sm:pt-14">
+      <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-500">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-50">
             Trusted by modern families
           </p>
-          <h1 className="font-serif text-4xl text-slate-900 dark:text-white sm:text-5xl">
+          <h1 className="font-serif text-4xl text-slate-200 dark:text-white sm:text-5xl">
             Find Your Perfect Life Partner
           </h1>
           <p className="text-base text-slate-600 dark:text-slate-300 sm:text-lg">

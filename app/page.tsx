@@ -12,7 +12,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
       <div className="relative overflow-hidden bg-gradient-to-b from-[#A0144D]/80 to-transparent">
-        <Navbar className="bg-transparent" />
+        <Navbar variant="blend" className="bg-transparent" />
         <Hero />
       </div>
       <main>

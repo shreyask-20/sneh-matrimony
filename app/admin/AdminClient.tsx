@@ -165,6 +165,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   const pendingUsers = users;
   const approvedUsers = allUsers.filter((user) => user.isApproved);
   const visibleUsers = allUsers.filter((user) => user.profileVisible);
+  const listUsers = activeTab === "users" ? allUsers : users;
 
   return (
     <div className="min-h-screen bg-[#fbf6f8] pb-4 dark:bg-slate-950">
@@ -296,10 +297,10 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
             {!loading && activeTab !== "logs" ? (
               <div className="mt-6 space-y-4">
-                {users.length === 0 ? (
+                {listUsers.length === 0 ? (
                   <p className="text-sm text-slate-500">No users found.</p>
                 ) : (
-                  users.map((user) => (
+                  listUsers.map((user) => (
                     <div
                       key={user.id}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"

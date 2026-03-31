@@ -25,8 +25,8 @@ export async function GET(request: Request) {
 
   const where =
     status === "pending"
-      ? { isApproved: false }
-      : undefined;
+      ? { roleName: "USER", isApproved: false }
+      : { roleName: "USER" };
 
   const users = await prisma.user.findMany({
     where,

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
 
@@ -8,6 +10,117 @@ const steps = ["Basic info", "Personal", "Preferences", "Upload photos"];
 
 export default function RegisterPage() {
   const [activeStep, setActiveStep] = useState(0);
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [gender, setGender] = useState("");
+  const [profession, setProfession] = useState("");
+  const [education, setEducation] = useState("");
+  const [city, setCity] = useState("");
+  const [preferredAgeRange, setPreferredAgeRange] = useState("");
+  const [religionCommunity, setReligionCommunity] = useState("");
+  const [locationPreference, setLocationPreference] = useState("");
+  const [bio, setBio] = useState("");
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    const valid = Array.from(files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+    setPhotos((prev) => [...prev, ...valid]);
+  };
+
+  const validateStep = (step: number) => {
+    if (step === 0) {
+      if (!fullName.trim()) return "Full name is required.";
+      if (!email.trim()) return "Email is required.";
+      if (!phone.trim()) return "Phone number is required.";
+      if (!password.trim()) return "Password is required.";
+    }
+    if (step === 1) {
+      if (!gender.trim()) return "Please select gender.";
+    }
+    return null;
+  };
+
+  const handleNext = () => {
+    const message = validateStep(activeStep);
+    if (message) {
+      setError(message);
+      return;
+    }
+    setError(null);
+    setActiveStep((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
+  };
+
+  const handleFinish = async () => {
+    const step0Error = validateStep(0);
+    if (step0Error) {
+      setError(step0Error);
+      setActiveStep(0);
+      return;
+    }
+    const step1Error = validateStep(1);
+    if (step1Error) {
+      setError(step1Error);
+      setActiveStep(1);
+      return;
+    }
+    setError(null);
+    setLoading(true);
+
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName,
+        email,
+        phone,
+        password,
+        gender,
+        profession,
+        education,
+        city,
+        preferredAgeRange,
+        religionCommunity,
+        locationPreference,
+        bio,
+      }),
+    });
+
+    setLoading(false);
+
+    if (!response.ok) {
+      let message = "Something went wrong. Please try again.";
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const data = (await response.json()) as { error?: string };
+        if (data.error) message = data.error;
+      }
+      setError(message);
+      return;
+    }
+
+    const signInResult = await signIn("credentials", {
+      identifier: email || phone,
+      password,
+      redirect: false,
+    });
+
+    if (signInResult?.error) {
+      router.push("/auth/login");
+      return;
+    }
+
+    router.push("/");
+  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
@@ -51,14 +164,27 @@ export default function RegisterPage() {
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Full name"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Email address"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Phone number"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                  />
+                  <input
+                    className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                    placeholder="Create a password"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                   />
                 </>
               )}
@@ -67,15 +193,30 @@ export default function RegisterPage() {
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Profession"
+                    value={profession}
+                    onChange={(event) => setProfession(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Education"
+                    value={education}
+                    onChange={(event) => setEducation(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="City"
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
                   />
+                  <select
+                    className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                    value={gender}
+                    onChange={(event) => setGender(event.target.value)}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
                 </>
               )}
               {activeStep === 2 && (
@@ -83,29 +224,69 @@ export default function RegisterPage() {
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Preferred age range"
+                    value={preferredAgeRange}
+                    onChange={(event) => setPreferredAgeRange(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Religion / Community"
+                    value={religionCommunity}
+                    onChange={(event) => setReligionCommunity(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Location preference"
+                    value={locationPreference}
+                    onChange={(event) => setLocationPreference(event.target.value)}
                   />
                 </>
               )}
               {activeStep === 3 && (
                 <>
-                  <div className="rounded-2xl border border-dashed border-brand-200 bg-brand-50/60 px-4 py-8 text-center text-sm text-brand-600 dark:border-brand-500/40 dark:bg-white/5 dark:text-brand-200">
+                  <div
+                    className={`relative rounded-2xl border border-dashed px-4 py-8 text-center text-sm transition ${
+                      isDragging
+                        ? "border-brand-300 bg-brand-100/70 text-brand-700 dark:border-brand-400 dark:bg-white/10 dark:text-white"
+                        : "border-brand-200 bg-brand-50/60 text-brand-600 dark:border-brand-500/40 dark:bg-white/5 dark:text-brand-200"
+                    }`}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      setIsDragging(false);
+                      handleFiles(event.dataTransfer.files);
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      onChange={(event) => handleFiles(event.target.files)}
+                    />
                     Drop or browse to upload your favorite photos
+                    {photos.length > 0 ? (
+                      <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+                        {photos.length} photo{photos.length === 1 ? "" : "s"}{" "}
+                        selected
+                      </p>
+                    ) : null}
                   </div>
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Short bio"
+                    value={bio}
+                    onChange={(event) => setBio(event.target.value)}
                   />
                 </>
               )}
             </div>
+            {error ? (
+              <p className="mt-4 text-sm text-red-500">{error}</p>
+            ) : null}
             <div className="mt-6 flex items-center justify-between">
               <Button
                 variant="ghost"
@@ -117,12 +298,15 @@ export default function RegisterPage() {
               </Button>
               <Button
                 onClick={() =>
-                  setActiveStep((prev) =>
-                    prev < steps.length - 1 ? prev + 1 : prev
-                  )
+                  activeStep < steps.length - 1 ? handleNext() : handleFinish()
                 }
+                disabled={loading}
               >
-                {activeStep === steps.length - 1 ? "Finish" : "Next"}
+                {loading
+                  ? "Creating..."
+                  : activeStep === steps.length - 1
+                  ? "Finish"
+                  : "Next"}
               </Button>
             </div>
           </div>

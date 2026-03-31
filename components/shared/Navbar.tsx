@@ -36,10 +36,13 @@ export default function Navbar({ className = "" }: NavbarProps) {
           <AnimatedGradientButton
             variant="ghost"
             className="h-9 px-4"
+            asChild
           >
-            Log in
+            <a href="/auth/login">Log in</a>
           </AnimatedGradientButton>
-          <Button>Create Profile</Button>
+          <Button asChild>
+            <a href="/auth/register">Create Profile</a>
+          </Button>
         </div>
       </nav>
     </header>

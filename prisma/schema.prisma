@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoleName {
+  ADMIN
+  USER
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+  BLOCKED
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+
+  roleName       RoleName  @default(USER)
+  firstName      String?
+  lastName       String?
+  phone          String?   @unique
+  password       String?
+  profession     String?
+  education      String?
+  city           String?
+  bio            String?
+  birthDate      DateTime? @db.Date
+  gender         String?
+  maritalStatus  String?
+  isApproved     Boolean   @default(false)
+  profileVisible Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  familyDetails  FamilyDetails?
+  horoscope      Horoscope?
+  preferences    Preferences?
+
+  approvalsGiven ApprovalLog[] @relation("AdminApprovals")
+  approvalsFor   ApprovalLog[] @relation("UserApprovals")
+
+  accounts       Account[]
+  sessions       Session[]
+}
+
+model FamilyDetails {
+  id              Int    @id @default(autoincrement())
+  userId          String @unique
+  fatherName      String
+  motherName      String
+  totalBrothers   Int
+  totalSisters    Int
+  marriedBrothers Int
+  marriedSisters  Int
+
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Horoscope {
+  id                 Int     @id @default(autoincrement())
+  userId             String  @unique
+  horoscopeAvailable Boolean
+  manglik            Boolean
+  nakshatra          String
+  rashi              String
+  gotra              String
+
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Preferences {
+  id                 Int    @id @default(autoincrement())
+  userId             String @unique
+  castePreference    String?
+  subCastePreference String?
+  expectations       String?
+  preferredAgeRange  String?
+  religionCommunity  String?
+  locationPreference String?
+
+  user               User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalLog {
+  id         Int              @id @default(autoincrement())
+  adminId    String
+  userId     String
+  decision   ApprovalDecision
+  remarks    String?
+  actionDate DateTime         @default(now())
+
+  admin      User             @relation("AdminApprovals", fields: [adminId], references: [id], onDelete: Cascade)
+  user       User             @relation("UserApprovals", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

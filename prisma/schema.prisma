@@ -23,12 +23,19 @@ enum PhotoStatus {
   REJECTED
 }
 
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String?   @unique
-  emailVerified  DateTime?
-  image          String?
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
 
   roleName       RoleName  @default(USER)
   firstName      String?
@@ -38,6 +45,9 @@ model User {
   profession     String?
   education      String?
   city           String?
+  religion       String?
+  community      String?
+  motherTongue   String?
   bio            String?
   birthDate      DateTime? @db.Date
   gender         String?
@@ -47,16 +57,25 @@ model User {
   profileVisible Boolean   @default(false)
   createdAt      DateTime  @default(now())
 
-  familyDetails  FamilyDetails?
-  horoscope      Horoscope?
-  preferences    Preferences?
+  familyDetails FamilyDetails?
+  horoscope     Horoscope?
+  preferences   Preferences?
 
   approvalsGiven ApprovalLog[] @relation("AdminApprovals")
   approvalsFor   ApprovalLog[] @relation("UserApprovals")
 
-  accounts       Account[]
-  sessions       Session[]
-  photos         Photo[]
+  accounts               Account[]
+  sessions               Session[]
+  photos                 Photo[]
+  interestsSent          Interest[]     @relation("InterestSender")
+  interestsReceived      Interest[]     @relation("InterestRecipient")
+  conversationsAsUserOne Conversation[] @relation("ConversationUserOne")
+  conversationsAsUserTwo Conversation[] @relation("ConversationUserTwo")
+  messagesSent           Message[]
+  shortlists             Shortlist[]    @relation("ShortlistOwner")
+  shortlistedBy          Shortlist[]    @relation("ShortlistProfile")
+  blocksInitiated        Block[]        @relation("BlockInitiator")
+  blocksReceived         Block[]        @relation("BlockRecipient")
 }
 
 model FamilyDetails {
@@ -69,7 +88,7 @@ model FamilyDetails {
   marriedBrothers Int
   marriedSisters  Int
 
-  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Horoscope {
@@ -81,12 +100,12 @@ model Horoscope {
   rashi              String
   gotra              String
 
-  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Preferences {
-  id                 Int    @id @default(autoincrement())
-  userId             String @unique
+  id                 Int     @id @default(autoincrement())
+  userId             String  @unique
   castePreference    String?
   subCastePreference String?
   expectations       String?
@@ -94,7 +113,7 @@ model Preferences {
   religionCommunity  String?
   locationPreference String?
 
-  user               User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ApprovalLog {
@@ -105,35 +124,111 @@ model ApprovalLog {
   remarks    String?
   actionDate DateTime         @default(now())
 
-  admin      User             @relation("AdminApprovals", fields: [adminId], references: [id], onDelete: Cascade)
-  user       User             @relation("UserApprovals", fields: [userId], references: [id], onDelete: Cascade)
+  admin User @relation("AdminApprovals", fields: [adminId], references: [id], onDelete: Cascade)
+  user  User @relation("UserApprovals", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Photo {
-  id         Int      @id @default(autoincrement())
-  userId     String
-  url        String
-  publicId   String?
-  status     PhotoStatus @default(PENDING)
+  id               Int         @id @default(autoincrement())
+  userId           String
+  url              String
+  publicId         String?
+  status           PhotoStatus @default(PENDING)
   rejectionRemarks String?
-  createdAt  DateTime @default(now())
+  createdAt        DateTime    @default(now())
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Interest {
+  id          Int            @id @default(autoincrement())
+  fromUserId  String
+  toUserId    String
+  status      InterestStatus @default(PENDING)
+  message     String?
+  respondedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  fromUser User @relation("InterestSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("InterestRecipient", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+}
+
+model Conversation {
+  id            Int       @id @default(autoincrement())
+  userOneId     String
+  userTwoId     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastMessageAt DateTime?
+
+  userOne  User      @relation("ConversationUserOne", fields: [userOneId], references: [id], onDelete: Cascade)
+  userTwo  User      @relation("ConversationUserTwo", fields: [userTwoId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([userOneId, userTwoId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id             Int       @id @default(autoincrement())
+  conversationId Int
+  senderId       String
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model Shortlist {
+  id            Int      @id @default(autoincrement())
+  userId        String
+  profileUserId String
+  createdAt     DateTime @default(now())
+
+  user        User @relation("ShortlistOwner", fields: [userId], references: [id], onDelete: Cascade)
+  profileUser User @relation("ShortlistProfile", fields: [profileUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, profileUserId])
+  @@index([profileUserId])
+}
+
+model Block {
+  id            Int      @id @default(autoincrement())
+  blockerId     String
+  blockedUserId String
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  blocker     User @relation("BlockInitiator", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedUser User @relation("BlockRecipient", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedUserId])
+  @@index([blockedUserId])
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String? @db.Text
-  access_token       String? @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

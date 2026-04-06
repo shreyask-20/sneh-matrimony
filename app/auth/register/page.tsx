@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Button from "../../../components/shared/Button";
@@ -27,7 +27,17 @@ export default function RegisterPage() {
   const [locationPreference, setLocationPreference] = useState("");
   const [bio, setBio] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const previews = photos.map((file) => URL.createObjectURL(file));
+    setPhotoPreviews(previews);
+
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [photos]);
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
@@ -35,6 +45,10 @@ export default function RegisterPage() {
       file.type.startsWith("image/")
     );
     setPhotos((prev) => [...prev, ...valid]);
+  };
+
+  const removePhoto = (indexToRemove: number) => {
+    setPhotos((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const validateStep = (step: number) => {
@@ -339,6 +353,39 @@ export default function RegisterPage() {
                       </p>
                     ) : null}
                   </div>
+                  {photoPreviews.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {photoPreviews.map((preview, index) => (
+                        <div
+                          key={preview}
+                          className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/5"
+                        >
+                          <div className="relative aspect-[3/4]">
+                            <img
+                              src={preview}
+                              alt={`Selected upload ${index + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                            {index === 0 ? (
+                              <span className="absolute left-2 top-2 rounded-full bg-brand-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-white">
+                                Primary
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="flex items-center justify-between px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
+                            <span className="truncate">{photos[index]?.name}</span>
+                            <button
+                              type="button"
+                              className="font-semibold text-brand-600 transition hover:text-brand-700 dark:text-brand-200"
+                              onClick={() => removePhoto(index)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Short bio"
@@ -353,6 +400,7 @@ export default function RegisterPage() {
             ) : null}
             <div className="mt-6 flex items-center justify-between">
               <Button
+                type="button"
                 variant="ghost"
                 onClick={() =>
                   setActiveStep((prev) => (prev > 0 ? prev - 1 : prev))
@@ -361,6 +409,7 @@ export default function RegisterPage() {
                 Back
               </Button>
               <Button
+                type="button"
                 onClick={() =>
                   activeStep < steps.length - 1 ? handleNext() : handleFinish()
                 }

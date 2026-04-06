@@ -1,4 +1,5 @@
-﻿import Badge from "./Badge";
+﻿import type React from "react";
+import Badge from "./Badge";
 import type { Profile } from "../../data/profiles";
 import Button from "./Button";
 
@@ -6,12 +7,14 @@ type Props = {
   profile: Profile;
   actionLabel?: string;
   size?: "normal" | "compact";
+  actionSlot?: React.ReactNode;
 };
 
 export default function ProfileCard({
   profile,
   actionLabel = "View",
   size = "normal",
+  actionSlot,
 }: Props) {
   const isCompact = size === "compact";
   const ageLabel = profile.age > 0 ? profile.age : "-";
@@ -66,9 +69,11 @@ export default function ProfileCard({
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
           {faithLabel}
         </p>
-        <Button size="sm" variant="secondary">
-          {actionLabel}
-        </Button>
+        {actionSlot ?? (
+          <Button size="sm" variant="secondary">
+            {actionLabel}
+          </Button>
+        )}
       </div>
     </div>
   );

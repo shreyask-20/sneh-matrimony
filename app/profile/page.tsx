@@ -1,6 +1,7 @@
 import Navbar from "../../components/shared/Navbar";
 import Badge from "../../components/shared/Badge";
 import Button from "../../components/shared/Button";
+import BackButton from "../../components/shared/BackButton";
 import ProfileTabs from "../../components/profile/ProfileTabs";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
@@ -21,6 +22,9 @@ export default async function ProfilePage() {
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <Navbar />
       <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6">
+        <div className="mb-4">
+          <BackButton fallbackHref="/browse" />
+        </div>
         <div className="glass-card rounded-3xl p-8">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="space-y-4">

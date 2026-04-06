@@ -1,22 +1,30 @@
 import Navbar from "../../components/shared/Navbar";
-import ProfileCard from "../../components/shared/ProfileCard";
 import Button from "../../components/shared/Button";
 import { prisma } from "@/lib/prisma";
 import { userToProfile } from "@/lib/profileAdapter";
+import BrowseResults from "./BrowseResults";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/auth";
 
 export default async function BrowsePage() {
+  const session = await getServerSession(authOptions);
+  const currentUserId = session?.user?.id ?? null;
+  const currentUser = currentUserId
+    ? await prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: {
+          isApproved: true,
+          profileVisible: true,
+        },
+      })
+    : null;
+
   const users = await prisma.user.findMany({
     where: {
       roleName: "USER",
       isApproved: true,
       profileVisible: true,
-      gender: { not: null },
-      birthDate: { not: null },
-      maritalStatus: { not: null },
-      height: { not: null },
-      profession: { not: null },
-      education: { not: null },
-      city: { not: null },
+      ...(currentUserId ? { id: { not: currentUserId } } : {}),
     },
     select: {
       id: true,
@@ -38,7 +46,55 @@ export default async function BrowsePage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const profiles = users.map(userToProfile);
+  const interests = currentUserId
+    ? await prisma.interest.findMany({
+        where: {
+          OR: [{ fromUserId: currentUserId }, { toUserId: currentUserId }],
+        },
+        select: {
+          fromUserId: true,
+          toUserId: true,
+          status: true,
+        },
+      })
+    : [];
+
+  const interestStateByUserId = new Map<
+    string,
+    "none" | "pending" | "incoming" | "accepted" | "declined" | "withdrawn"
+  >();
+
+  for (const interest of interests) {
+    if (interest.fromUserId === currentUserId) {
+      interestStateByUserId.set(
+        interest.toUserId,
+        interest.status === "PENDING"
+          ? "pending"
+          : interest.status === "ACCEPTED"
+            ? "accepted"
+            : interest.status === "DECLINED"
+              ? "declined"
+              : "withdrawn"
+      );
+    } else if (interest.toUserId === currentUserId) {
+      interestStateByUserId.set(
+        interest.fromUserId,
+        interest.status === "PENDING"
+          ? "incoming"
+          : interest.status === "ACCEPTED"
+            ? "accepted"
+            : interest.status === "DECLINED"
+              ? "declined"
+              : "withdrawn"
+      );
+    }
+  }
+
+  const profiles = users.map((user) => ({
+    profile: userToProfile(user),
+    userId: user.id,
+    interestState: interestStateByUserId.get(user.id) ?? "none",
+  }));
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
@@ -82,21 +138,15 @@ export default async function BrowsePage() {
               <span className="h-2 w-2 rounded-full bg-brand-500" />
             </div>
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {profiles.length === 0 ? (
-              <div className="rounded-2xl border border-white/40 bg-white/70 p-6 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                No profiles are visible yet. Please check back soon.
-              </div>
-            ) : (
-              profiles.map((profile) => (
-                <ProfileCard
-                  key={profile.id}
-                  profile={profile}
-                  actionLabel="Express Interest"
-                />
-              ))
-            )}
-          </div>
+          <BrowseResults
+            profiles={profiles}
+            signedIn={Boolean(currentUserId)}
+            emptyMessage={
+              currentUser?.isApproved && currentUser?.profileVisible
+                ? "Your profile is approved and live, but Browse does not show your own profile. Sign in with another user to verify it appears there."
+                : undefined
+            }
+          />
         </section>
       </main>
     </div>

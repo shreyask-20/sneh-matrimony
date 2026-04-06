@@ -35,11 +35,50 @@ export async function PATCH(
     );
   }
 
+  const photoId = Number(id);
+  const existingPhoto = await prisma.photo.findUnique({
+    where: { id: photoId },
+    select: {
+      id: true,
+      userId: true,
+    },
+  });
+
+  if (!existingPhoto) {
+    return NextResponse.json({ error: "Photo not found" }, { status: 404 });
+  }
+
+  if (body.status === "REJECTED") {
+    await prisma.$transaction(async (tx) => {
+      await tx.photo.delete({
+        where: { id: photoId },
+      });
+
+      const approvedPhotoCount = await tx.photo.count({
+        where: {
+          userId: existingPhoto.userId,
+          status: "APPROVED",
+        },
+      });
+
+      if (approvedPhotoCount === 0) {
+        await tx.user.update({
+          where: { id: existingPhoto.userId },
+          data: {
+            profileVisible: false,
+          },
+        });
+      }
+    });
+
+    return NextResponse.json({ ok: true, removed: true });
+  }
+
   const photo = await prisma.photo.update({
-    where: { id: Number(id) },
+    where: { id: photoId },
     data: {
-      status: body.status,
-      rejectionRemarks: body.status === "REJECTED" ? body.remarks ?? "" : null,
+      status: "APPROVED",
+      rejectionRemarks: null,
     },
   });
 

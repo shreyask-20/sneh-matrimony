@@ -169,7 +169,7 @@ export default function ProfileEditForm({
             {success ? (
               <p className="text-sm text-green-600">{success}</p>
             ) : null}
-            <Button disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Saving..." : "Save changes"}
             </Button>
           </form>

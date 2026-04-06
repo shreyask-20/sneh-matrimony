@@ -4,7 +4,7 @@ import { Button as UiButton } from "../ui/button";
 type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
 
-type Props = React.ComponentProps<typeof UiButton> & {
+type Props = Omit<React.ComponentProps<typeof UiButton>, "variant" | "size"> & {
   variant?: Variant;
   size?: Size;
 };
@@ -18,6 +18,7 @@ const variantMap: Record<Variant, "default" | "secondary" | "ghost"> = {
 export default function Button({
   variant = "primary",
   size = "md",
+  type,
   ...props
 }: Props) {
   const sizeMap: Record<Size, "sm" | "default" | "lg"> = {
@@ -29,6 +30,7 @@ export default function Button({
     <UiButton
       variant={variantMap[variant]}
       size={sizeMap[size]}
+      type={type ?? "button"}
       {...props}
     />
   );

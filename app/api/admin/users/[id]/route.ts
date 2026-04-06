@@ -38,7 +38,7 @@ export async function PATCH(
   }
   if (body.decision === "APPROVED") {
     const rejectedPhoto = await prisma.photo.findFirst({
-      where: { userId: params.id, status: "REJECTED" },
+      where: { userId: id, status: "REJECTED" },
       select: { id: true },
     });
     if (rejectedPhoto) {

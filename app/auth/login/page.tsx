@@ -31,7 +31,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    router.replace("/dashboard");
+    router.refresh();
   };
 
   return (
@@ -62,7 +63,7 @@ export default function LoginPage() {
             {error ? (
               <p className="text-sm text-red-500">{error}</p>
             ) : null}
-            <Button className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Logging in..." : "Log in"}
             </Button>
           </form>

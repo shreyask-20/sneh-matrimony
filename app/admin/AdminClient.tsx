@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import Button from "@/components/shared/Button";
+import Badge from "@/components/shared/Badge";
 
 type AdminUser = {
   id: string;
@@ -13,7 +14,13 @@ type AdminUser = {
   email: string | null;
   phone: string | null;
   gender: string | null;
+  profession: string | null;
+  education: string | null;
   city: string | null;
+  bio: string | null;
+  birthDate: string | null;
+  maritalStatus: string | null;
+  height: string | null;
   createdAt: string;
   isApproved: boolean;
   profileVisible: boolean;
@@ -55,6 +62,10 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   const [logs, setLogs] = useState<ApprovalLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userFilter, setUserFilter] = useState<
+    "all" | "pending" | "approved" | "visible" | "with-pending-photos"
+  >("all");
 
   const fetchUsers = async (status: "pending" | "all") => {
     setLoading(true);
@@ -92,15 +103,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
   useEffect(() => {
     fetchUsers("all");
-    if (activeTab === "queue") {
-      fetchUsers("pending");
-    }
-    if (activeTab === "users") {
-      fetchUsers("all");
-    }
     if (activeTab === "logs") {
       fetchLogs();
     }
+  }, [activeTab]);
+
+  useEffect(() => {
+    setUserFilter(activeTab === "queue" ? "pending" : "all");
   }, [activeTab]);
 
   const setTab = (next: string) => {
@@ -123,17 +132,37 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
       });
       if (!response.ok) throw new Error("Failed to update user");
       await fetchUsers("all");
-      if (activeTab === "queue") {
-        await fetchUsers("pending");
-      }
-      if (activeTab === "users") {
-        await fetchUsers("all");
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update user");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDecision = async (
+    user: AdminUser,
+    decision: "APPROVED" | "REJECTED" | "BLOCKED"
+  ) => {
+    if (decision === "APPROVED") {
+      await updateUser(user.id, { decision });
+      return;
+    }
+
+    const remarks = window.prompt(
+      decision === "REJECTED"
+        ? "Add a rejection reason for the member record:"
+        : "Add a reason for blocking this profile:"
+    );
+
+    if (remarks === null) return;
+
+    const trimmedRemarks = remarks.trim();
+    if (!trimmedRemarks) {
+      window.alert("A remark is required for this action.");
+      return;
+    }
+
+    await updateUser(user.id, { decision, remarks: trimmedRemarks });
   };
 
   const updatePhoto = async (
@@ -150,11 +179,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
         body: JSON.stringify({ status, remarks }),
       });
       if (!response.ok) throw new Error("Failed to update photo");
-      if (activeTab === "queue") {
-        await fetchUsers("pending");
-      } else if (activeTab === "users") {
-        await fetchUsers("all");
-      }
+      await fetchUsers("all");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update photo");
     } finally {
@@ -162,15 +187,77 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     }
   };
 
-  const pendingUsers = users;
+  const pendingUsers = allUsers.filter((user) => !user.isApproved);
   const approvedUsers = allUsers.filter((user) => user.isApproved);
   const visibleUsers = allUsers.filter((user) => user.profileVisible);
-  const listUsers = activeTab === "users" ? allUsers : users;
+  const baseUsers = allUsers;
+  const isLogsTab = activeTab === "logs";
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  const filteredUsers = useMemo(() => {
+    return baseUsers.filter((user) => {
+      const pendingPhotoCount = user.photos.filter(
+        (photo) => photo.status === "PENDING"
+      ).length;
+
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        [
+          user.name,
+          user.firstName,
+          user.lastName,
+          user.email,
+          user.phone,
+          user.city,
+          user.gender,
+        ]
+          .filter(Boolean)
+          .some((value) => value?.toLowerCase().includes(normalizedSearch));
+
+      const matchesFilter =
+        userFilter === "all" ||
+        (userFilter === "pending" && !user.isApproved) ||
+        (userFilter === "approved" && user.isApproved) ||
+        (userFilter === "visible" && user.profileVisible) ||
+        (userFilter === "with-pending-photos" && pendingPhotoCount > 0);
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [baseUsers, normalizedSearch, userFilter]);
+
+  const filteredLogs = useMemo(() => {
+    if (!normalizedSearch) return logs;
+
+    return logs.filter((log) =>
+      [
+        log.decision,
+        log.remarks,
+        log.user.name,
+        log.user.email,
+        log.admin.name,
+        log.admin.email,
+      ]
+        .filter(Boolean)
+        .some((value) => value?.toLowerCase().includes(normalizedSearch))
+    );
+  }, [logs, normalizedSearch]);
+
+  const pendingPhotoUsers = allUsers.filter((user) =>
+    user.photos.some((photo) => photo.status === "PENDING")
+  ).length;
+  const rejectedPhotoUsers = allUsers.filter((user) =>
+    user.photos.some((photo) => photo.status === "REJECTED")
+  ).length;
+
+  const isEmptyState =
+    !loading &&
+    ((!isLogsTab && filteredUsers.length === 0) ||
+      (isLogsTab && filteredLogs.length === 0));
 
   return (
-    <div className="min-h-screen bg-[#fbf6f8] pb-4 dark:bg-slate-950">
-      <div className="mx-auto flex w-full max-w-[1400px] gap-6 px-3 py-4 sm:px-4">
-        <aside className="w-full max-w-[280px] rounded-3xl border border-brand-100/60 bg-white p-5 text-sm text-slate-700 shadow-[0_14px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200">
+    <div className="min-h-screen bg-[#fbf6f8] pb-6 dark:bg-slate-950">
+      <div className="mx-auto grid w-full max-w-[1400px] gap-6 px-3 py-4 sm:px-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="h-fit rounded-3xl border border-brand-100/60 bg-white p-5 text-sm text-slate-700 shadow-[0_14px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 lg:sticky lg:top-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-sm font-semibold text-white">
               SM
@@ -205,7 +292,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
           </div>
         </aside>
 
-        <section className="flex-1 space-y-4">
+        <section className="flex min-h-[calc(100vh-3rem)] flex-col gap-4">
           <div className="rounded-3xl border border-brand-100/60 bg-white px-5 py-4 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -216,7 +303,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   Welcome back, Admin
                 </h1>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -227,8 +314,10 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 <div className="flex items-center gap-2 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300">
                   <span>Search</span>
                   <input
-                    className="w-40 bg-transparent text-sm outline-none"
+                    className="w-32 bg-transparent text-sm outline-none sm:w-40"
                     placeholder="Name, email"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
                   />
                 </div>
                 <Button
@@ -237,8 +326,6 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   onClick={() => {
                     fetchUsers("all");
                     if (activeTab === "logs") fetchLogs();
-                    if (activeTab === "queue") fetchUsers("pending");
-                    if (activeTab === "users") fetchUsers("all");
                   }}
                 >
                   Refresh
@@ -253,7 +340,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { label: "Total Users", value: allUsers.length },
               { label: "Pending Approvals", value: pendingUsers.length },
@@ -280,46 +367,182 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
             ))}
           </div>
 
-          <div className="rounded-3xl border border-brand-100/60 bg-white p-5 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70">
-            <div className="flex items-center justify-between">
+          <div className="flex min-h-[420px] flex-1 flex-col rounded-3xl border border-brand-100/60 bg-white p-5 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70">
+            <div className="flex items-center justify-between gap-3">
               <h2 className="font-serif text-xl text-slate-900 dark:text-white">
                 {activeTab === "logs" ? "Approval Logs" : "User Approvals"}
               </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {isLogsTab
+                  ? `${filteredLogs.length} recent actions`
+                  : `${filteredUsers.length} profile${filteredUsers.length === 1 ? "" : "s"} in this view`}
+              </p>
             </div>
+
+            {!isLogsTab ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {[
+                  { id: "all", label: "All", count: baseUsers.length },
+                  { id: "pending", label: "Pending", count: pendingUsers.length },
+                  { id: "approved", label: "Approved", count: approvedUsers.length },
+                  { id: "visible", label: "Visible", count: visibleUsers.length },
+                  {
+                    id: "with-pending-photos",
+                    label: "Pending Photos",
+                    count: pendingPhotoUsers,
+                  },
+                ].map((filter) => (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={() =>
+                      setUserFilter(
+                        filter.id as
+                          | "all"
+                          | "pending"
+                          | "approved"
+                          | "visible"
+                          | "with-pending-photos"
+                      )
+                    }
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                      userFilter === filter.id
+                        ? "bg-brand-600 text-white"
+                        : "border border-brand-100 bg-brand-50/60 text-slate-600 hover:bg-brand-100/70 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+                    }`}
+                  >
+                    {filter.label} · {filter.count}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <span>{logs.length} total log entries</span>
+                <span>{rejectedPhotoUsers} users with rejected photos</span>
+              </div>
+            )}
 
             {error ? (
               <p className="mt-4 text-sm text-red-500">{error}</p>
             ) : null}
 
             {loading ? (
-              <p className="mt-6 text-sm text-slate-500">Loading...</p>
+              <div className="flex flex-1 items-center justify-center">
+                <p className="text-sm text-slate-500">Loading...</p>
+              </div>
             ) : null}
 
             {!loading && activeTab !== "logs" ? (
-              <div className="mt-6 space-y-4">
-                {listUsers.length === 0 ? (
-                  <p className="text-sm text-slate-500">No users found.</p>
+              <div className={`mt-6 ${isEmptyState ? "flex flex-1" : "space-y-4"}`}>
+                {filteredUsers.length === 0 ? (
+                  <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
+                    <div className="max-w-md">
+                      <p className="text-xs uppercase tracking-[0.2em] text-brand-400">
+                        Approval Queue
+                      </p>
+                      <h3 className="mt-3 font-serif text-2xl text-slate-900 dark:text-white">
+                        No users match this view
+                      </h3>
+                      <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                        Try clearing the search or changing the filter. New registrations
+                        will appear here for review, approval, and photo moderation.
+                      </p>
+                    </div>
+                  </div>
                 ) : (
-                  listUsers.map((user) => (
+                  filteredUsers.map((user) => (
                     <div
                       key={user.id}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
-                          <p className="font-semibold text-slate-900 dark:text-white">
-                            {user.name ??
-                              (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
-                                "Unnamed")}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {user.email ?? "No email"} •{" "}
-                            {user.phone ?? "No phone"}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-900 dark:text-white">
+                              {user.name ??
+                                (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+                                  "Unnamed")}
+                            </p>
+                            <Badge
+                              label={user.isApproved ? "Approved" : "Pending"}
+                              tone={user.isApproved ? "verified" : "neutral"}
+                            />
+                            {user.profileVisible ? (
+                              <Badge label="Visible" tone="premium" />
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {user.email ?? "No email"} • {user.phone ?? "No phone"}
                           </p>
                           <p className="text-xs text-slate-500">
                             {user.gender ?? "Gender not set"} •{" "}
                             {user.city ?? "City not set"}
                           </p>
+                          <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2 xl:grid-cols-4">
+                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                Profession
+                              </p>
+                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                {user.profession ?? "Not shared"}
+                              </p>
+                            </div>
+                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                Education
+                              </p>
+                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                {user.education ?? "Not shared"}
+                              </p>
+                            </div>
+                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                Marital Status
+                              </p>
+                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                {user.maritalStatus ?? "Not shared"}
+                              </p>
+                            </div>
+                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                Height
+                              </p>
+                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                {user.height ?? "Not shared"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+                            {user.birthDate ? (
+                              <span>
+                                Born {new Date(user.birthDate).toLocaleDateString()}
+                              </span>
+                            ) : null}
+                            <span>ID: {user.id.slice(0, 8)}</span>
+                          </div>
+                          <p className="mt-3 max-w-3xl rounded-2xl border border-brand-100/70 bg-brand-50/40 px-3 py-3 text-xs leading-6 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                            {user.bio?.trim()
+                              ? user.bio
+                              : "No bio submitted yet. The member should complete this before public visibility for a stronger profile."}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400">
+                            <span>
+                              Photos: {user.photos.length}
+                            </span>
+                            <span>
+                              Pending: {
+                                user.photos.filter((photo) => photo.status === "PENDING").length
+                              }
+                            </span>
+                            <span>
+                              Rejected: {
+                                user.photos.filter((photo) => photo.status === "REJECTED").length
+                              }
+                            </span>
+                            <span>
+                              Created {new Date(user.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <label className="flex items-center gap-2 text-xs text-slate-500">
@@ -327,6 +550,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                             <input
                               type="checkbox"
                               checked={user.profileVisible}
+                              disabled={!user.isApproved}
                               onChange={(event) =>
                                 updateUser(user.id, {
                                   profileVisible: event.target.checked,
@@ -336,27 +560,22 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                           </label>
                           <Button
                             size="sm"
-                            onClick={() =>
-                              updateUser(user.id, { decision: "APPROVED" })
-                            }
+                            disabled={user.isApproved}
+                            onClick={() => handleDecision(user, "APPROVED")}
                           >
                             Approve
                           </Button>
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() =>
-                              updateUser(user.id, { decision: "REJECTED" })
-                            }
+                            onClick={() => handleDecision(user, "REJECTED")}
                           >
                             Reject
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
-                              updateUser(user.id, { decision: "BLOCKED" })
-                            }
+                            onClick={() => handleDecision(user, "BLOCKED")}
                           >
                             Block
                           </Button>
@@ -419,9 +638,6 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                           No photos uploaded yet.
                         </p>
                       )}
-                      <p className="mt-3 text-xs text-slate-400">
-                        Created {new Date(user.createdAt).toLocaleString()}
-                      </p>
                     </div>
                   ))
                 )}
@@ -429,13 +645,24 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
             ) : null}
 
             {!loading && activeTab === "logs" ? (
-              <div className="mt-6 space-y-4">
-                {logs.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    No approval activity yet.
-                  </p>
+              <div className={`mt-6 ${isEmptyState ? "flex flex-1" : "space-y-4"}`}>
+                {filteredLogs.length === 0 ? (
+                  <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
+                    <div className="max-w-md">
+                      <p className="text-xs uppercase tracking-[0.2em] text-brand-400">
+                        Approval Logs
+                      </p>
+                      <h3 className="mt-3 font-serif text-2xl text-slate-900 dark:text-white">
+                        No approval activity yet
+                      </h3>
+                      <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                        Admin decisions will show up here once profiles are approved,
+                        rejected, blocked, or reviewed.
+                      </p>
+                    </div>
+                  </div>
                 ) : (
-                  logs.map((log) => (
+                  filteredLogs.map((log) => (
                     <div
                       key={log.id}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"

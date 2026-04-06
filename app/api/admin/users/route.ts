@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
+import type { Prisma } from "@prisma/client";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
 
-  const where =
+  const where: Prisma.UserWhereInput =
     status === "pending"
       ? { roleName: "USER", isApproved: false }
       : { roleName: "USER" };
@@ -38,7 +39,13 @@ export async function GET(request: Request) {
       email: true,
       phone: true,
       gender: true,
+      profession: true,
+      education: true,
       city: true,
+      bio: true,
+      birthDate: true,
+      maritalStatus: true,
+      height: true,
       createdAt: true,
       isApproved: true,
       profileVisible: true,

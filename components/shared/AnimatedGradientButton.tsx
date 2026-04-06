@@ -22,12 +22,12 @@ export default function AnimatedGradientButton({
   },
   ...props
 }: AnimatedGradientButtonProps) {
-  const buttonRef = useRef<HTMLElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
 
-  const handleMouseMove = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMouseMove = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (!buttonRef.current || isFocused) return;
 
     const rect = buttonRef.current.getBoundingClientRect();

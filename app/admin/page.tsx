@@ -7,8 +7,9 @@ import AdminClient from "./AdminClient";
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams?: { tab?: string };
+  searchParams?: Promise<{ tab?: string }>;
 }) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -24,5 +25,5 @@ export default async function AdminPage({
     redirect("/");
   }
 
-  return <AdminClient initialTab={searchParams?.tab} />;
+  return <AdminClient initialTab={resolvedSearchParams?.tab} />;
 }

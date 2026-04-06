@@ -6,9 +6,6 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     create: vi.fn(),
   },
-  role: {
-    upsert: vi.fn(),
-  },
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -23,7 +20,6 @@ describe("POST /api/auth/register", () => {
   beforeEach(() => {
     prismaMock.user.findFirst.mockReset();
     prismaMock.user.create.mockReset();
-    prismaMock.role.upsert.mockReset();
   });
 
   it("returns 400 when required fields are missing", async () => {
@@ -51,6 +47,7 @@ describe("POST /api/auth/register", () => {
         email: "test@example.com",
         phone: "9999999999",
         password: "secret",
+        gender: "Female",
       }),
     });
 
@@ -63,7 +60,6 @@ describe("POST /api/auth/register", () => {
 
   it("creates a user and returns 201", async () => {
     prismaMock.user.findFirst.mockResolvedValue(null);
-    prismaMock.role.upsert.mockResolvedValue({ id: 1 });
     prismaMock.user.create.mockResolvedValue({
       id: "user-1",
       email: "test@example.com",
@@ -77,6 +73,7 @@ describe("POST /api/auth/register", () => {
         email: "test@example.com",
         phone: "9999999999",
         password: "secret",
+        gender: "Female",
         preferredAgeRange: "24-29",
       }),
     });

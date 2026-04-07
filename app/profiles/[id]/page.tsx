@@ -10,6 +10,8 @@ import InterestActionButton from "../../../components/shared/InterestActionButto
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeConversationPair } from "@/lib/matchmaking";
+import PageBackdrop from "../../../components/shared/PageBackdrop";
+import { getOppositeGender } from "@/lib/gender";
 
 export default async function PublicProfilePage({
   params,
@@ -18,6 +20,9 @@ export default async function PublicProfilePage({
 }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
+  if (session?.user?.roleName === "ADMIN") {
+    redirect("/admin");
+  }
   const currentUserId = session?.user?.id ?? null;
 
   if (currentUserId && currentUserId === id) {
@@ -40,6 +45,7 @@ export default async function PublicProfilePage({
       city: true,
       education: true,
       profession: true,
+      gender: true,
       religion: true,
       motherTongue: true,
       bio: true,
@@ -48,7 +54,7 @@ export default async function PublicProfilePage({
       photos: {
         where: { status: "APPROVED" },
         select: { url: true },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: "asc" },
       },
       familyDetails: {
         select: {
@@ -73,6 +79,18 @@ export default async function PublicProfilePage({
 
   if (!user) {
     notFound();
+  }
+
+  if (currentUserId) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { gender: true },
+    });
+    const targetGender = getOppositeGender(currentUser?.gender);
+
+    if (!targetGender || user.gender?.trim() !== targetGender) {
+      notFound();
+    }
   }
 
   const interestState =
@@ -133,9 +151,9 @@ export default async function PublicProfilePage({
     : "Family details have not been shared yet.";
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <PageBackdrop>
       <Navbar />
-      <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6">
+      <main className="w-full px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-4">
           <BackButton fallbackHref="/browse" />
         </div>
@@ -145,7 +163,7 @@ export default async function PublicProfilePage({
               <img
                 src={photos[0].url}
                 alt={fullName}
-                className="h-72 w-full rounded-3xl object-cover"
+                className="face-focus-top h-72 w-full rounded-3xl"
               />
               {photos.length > 1 ? (
                 <div className="grid grid-cols-4 gap-2">
@@ -154,7 +172,7 @@ export default async function PublicProfilePage({
                       key={photo.url}
                       src={photo.url}
                       alt={fullName}
-                      className="h-16 w-full rounded-2xl object-cover"
+                      className="face-focus h-16 w-full rounded-2xl"
                     />
                   ))}
                 </div>
@@ -177,7 +195,6 @@ export default async function PublicProfilePage({
                     Chat
                   </Button>
                 )}
-                <Button variant="ghost">Shortlist</Button>
               </div>
             </div>
             <div className="space-y-5">
@@ -244,6 +261,6 @@ export default async function PublicProfilePage({
           </div>
         </div>
       </main>
-    </div>
+    </PageBackdrop>
   );
 }

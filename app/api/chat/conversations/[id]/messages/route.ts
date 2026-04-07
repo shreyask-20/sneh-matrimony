@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getConversationForUser } from "@/lib/chat";
+import {
+  getConversationForUser,
+} from "@/lib/chat";
+import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
 
 type SendMessagePayload = {
   body?: string;
@@ -39,6 +42,19 @@ export async function POST(
   }
 
   const message = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM "Conversation" WHERE id = ${conversationId} FOR UPDATE`;
+
+    const sentMessageCount = await tx.message.count({
+      where: {
+        conversationId,
+        senderId: session.user.id,
+      },
+    });
+
+    if (sentMessageCount >= MAX_MESSAGES_PER_USER_PER_CONVERSATION) {
+      return null;
+    }
+
     const created = await tx.message.create({
       data: {
         conversationId,
@@ -62,6 +78,15 @@ export async function POST(
 
     return created;
   });
+
+  if (!message) {
+    return NextResponse.json(
+      {
+        error: `You can send at most ${MAX_MESSAGES_PER_USER_PER_CONVERSATION} messages in this match.`,
+      },
+      { status: 403 }
+    );
+  }
 
   return NextResponse.json({ message }, { status: 201 });
 }

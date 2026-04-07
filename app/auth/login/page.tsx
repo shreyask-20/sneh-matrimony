@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
+import PageBackdrop from "../../../components/shared/PageBackdrop";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,14 +32,14 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/dashboard");
+    router.replace("/dashboard?login=1");
     router.refresh();
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <PageBackdrop>
       <Navbar />
-      <main className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-16 sm:px-6">
+      <main className="flex w-full flex-col items-center px-4 py-16 sm:px-6 lg:px-8">
         <div className="glass-card w-full max-w-md rounded-3xl p-8">
           <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
             Welcome back
@@ -75,6 +76,6 @@ export default function LoginPage() {
           </p>
         </div>
       </main>
-    </div>
+    </PageBackdrop>
   );
 }

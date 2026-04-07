@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   const where: Prisma.UserWhereInput =
     status === "pending"
       ? { roleName: "USER", isApproved: false }
-      : { roleName: "USER" };
+      : {};
 
   const users = await prisma.user.findMany({
     where,
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
           status: true,
           rejectionRemarks: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: "asc" },
       },
     },
     orderBy: { createdAt: "desc" },

@@ -23,7 +23,7 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
+    <section className="w-full px-4 pb-16 sm:px-6 lg:px-8 xl:px-12">
       <div className="mb-8 flex items-end justify-between">
         <div>
           <h2 className="section-heading">Stories of Sneh</h2>

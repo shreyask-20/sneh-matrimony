@@ -18,6 +18,7 @@ type UpdatePayload = {
   decision?: "APPROVED" | "REJECTED" | "BLOCKED";
   remarks?: string;
   profileVisible?: boolean;
+  roleName?: "ADMIN" | "USER";
 };
 
 export async function PATCH(
@@ -31,19 +32,57 @@ export async function PATCH(
 
   const { id } = await params;
   const body = (await request.json()) as UpdatePayload;
+  const targetUser = await prisma.user.findUnique({
+    where: { id },
+    select: { roleName: true },
+  });
+
+  if (!targetUser) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  if (body.decision && targetUser.roleName === "ADMIN") {
+    return NextResponse.json(
+      { error: "Admin accounts are not part of the approval workflow." },
+      { status: 400 }
+    );
+  }
+
+  const primaryPhoto = await prisma.photo.findFirst({
+    where: { userId: id },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
 
   const updates: Record<string, unknown> = {};
   if (typeof body.profileVisible === "boolean") {
+    if (
+      body.profileVisible &&
+      (!primaryPhoto || primaryPhoto.status !== "APPROVED")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot make the profile visible until the primary photo is approved.",
+        },
+        { status: 400 }
+      );
+    }
     updates.profileVisible = body.profileVisible;
   }
+  if (body.roleName === "ADMIN" || body.roleName === "USER") {
+    updates.roleName = body.roleName;
+  }
   if (body.decision === "APPROVED") {
-    const rejectedPhoto = await prisma.photo.findFirst({
-      where: { userId: id, status: "REJECTED" },
-      select: { id: true },
-    });
-    if (rejectedPhoto) {
+    if (!primaryPhoto || primaryPhoto.status !== "APPROVED") {
       return NextResponse.json(
-        { error: "Cannot approve profile with rejected photos." },
+        {
+          error:
+            "Cannot approve profile until the primary photo is approved.",
+        },
         { status: 400 }
       );
     }

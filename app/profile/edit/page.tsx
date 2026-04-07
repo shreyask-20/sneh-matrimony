@@ -9,6 +9,9 @@ export default async function ProfileEditPage() {
   if (!session?.user?.id) {
     redirect("/auth/login");
   }
+  if (session.user.roleName === "ADMIN") {
+    redirect("/admin");
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },

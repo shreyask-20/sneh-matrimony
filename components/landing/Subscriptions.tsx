@@ -17,7 +17,7 @@ const plans = [
 
 export default function Subscriptions() {
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6">
+    <section className="w-full px-4 pb-20 sm:px-6 lg:px-8 xl:px-12">
       <div className="mb-8">
         <h2 className="section-heading">Premium memberships</h2>
         <p className="section-subtitle mt-2">

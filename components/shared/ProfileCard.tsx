@@ -29,14 +29,14 @@ export default function ProfileCard({
       }`}
     >
       <div
-        className={`relative overflow-hidden rounded-2xl bg-white/60 ${
+        className={`relative overflow-hidden rounded-2xl bg-slate-100/80 dark:bg-slate-900/60 ${
           isCompact ? "h-40" : "h-52"
         }`}
       >
         <img
           src={profile.image}
           alt={profile.name}
-          className="h-full w-full object-cover"
+          className="face-focus h-full w-full"
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)]" />
       </div>

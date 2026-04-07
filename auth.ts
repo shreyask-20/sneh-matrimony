@@ -1,12 +1,9 @@
 import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { compare } from "bcryptjs";
 import type { RoleName } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/auth/login",
@@ -31,26 +28,31 @@ export const authOptions: NextAuthOptions = {
 
         if (!identifier || !password) return null;
 
-        const user = await prisma.user.findFirst({
-          where: {
-            OR: [{ email: identifier }, { phone: identifier }],
-          },
-        });
+        try {
+          const { prisma } = await import("@/lib/prisma");
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [{ email: identifier }, { phone: identifier }],
+            },
+          });
 
-        if (!user || !user.password) return null;
+          if (!user || !user.password) return null;
 
-        const isValid = await compare(password, user.password);
-        if (!isValid) return null;
+          const isValid = await compare(password, user.password);
+          if (!isValid) return null;
 
-        return {
-          id: user.id,
-          email: user.email,
-          name:
-            user.name ??
-            `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
-          image: user.image ?? undefined,
-          roleName: user.roleName,
-        };
+          return {
+            id: user.id,
+            email: user.email,
+            name:
+              user.name ??
+              `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
+            image: user.image ?? undefined,
+            roleName: user.roleName,
+          };
+        } catch {
+          return null;
+        }
       },
     }),
   ],

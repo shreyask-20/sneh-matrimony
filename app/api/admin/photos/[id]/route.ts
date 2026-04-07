@@ -54,21 +54,26 @@ export async function PATCH(
         where: { id: photoId },
       });
 
-      const approvedPhotoCount = await tx.photo.count({
-        where: {
-          userId: existingPhoto.userId,
-          status: "APPROVED",
+      const [updatedUser, primaryPhoto] = await Promise.all([
+        tx.user.findUnique({
+          where: { id: existingPhoto.userId },
+          select: { isApproved: true },
+        }),
+        tx.photo.findFirst({
+          where: { userId: existingPhoto.userId },
+          orderBy: { createdAt: "asc" },
+          select: { status: true },
+        }),
+      ]);
+
+      await tx.user.update({
+        where: { id: existingPhoto.userId },
+        data: {
+          profileVisible:
+            Boolean(updatedUser?.isApproved) &&
+            primaryPhoto?.status === "APPROVED",
         },
       });
-
-      if (approvedPhotoCount === 0) {
-        await tx.user.update({
-          where: { id: existingPhoto.userId },
-          data: {
-            profileVisible: false,
-          },
-        });
-      }
     });
 
     return NextResponse.json({ ok: true, removed: true });
@@ -79,6 +84,27 @@ export async function PATCH(
     data: {
       status: "APPROVED",
       rejectionRemarks: null,
+    },
+  });
+
+  const [updatedUser, primaryPhoto] = await prisma.$transaction([
+    prisma.user.findUnique({
+      where: { id: existingPhoto.userId },
+      select: { isApproved: true },
+    }),
+    prisma.photo.findFirst({
+      where: { userId: existingPhoto.userId },
+      orderBy: { createdAt: "asc" },
+      select: { status: true },
+    }),
+  ]);
+
+  await prisma.user.update({
+    where: { id: existingPhoto.userId },
+    data: {
+      profileVisible:
+        Boolean(updatedUser?.isApproved) &&
+        primaryPhoto?.status === "APPROVED",
     },
   });
 

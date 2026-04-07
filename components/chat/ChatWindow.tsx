@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Button from "../shared/Button";
+import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
+import { formatTimestamp } from "@/lib/formatTimestamp";
 
 type ChatMessage = {
   id: number;
@@ -26,15 +28,18 @@ type SelectedConversation = {
 export default function ChatWindow({
   currentUserId,
   selectedConversation,
+  remainingMessages,
 }: {
   currentUserId: string;
   selectedConversation: SelectedConversation | null;
+  remainingMessages: number;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState(selectedConversation?.messages ?? []);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const canSend = remainingMessages > 0;
 
   useEffect(() => {
     setMessages(selectedConversation?.messages ?? []);
@@ -115,9 +120,14 @@ export default function ChatWindow({
             </p>
           </div>
         </div>
-        <Button size="sm" variant="secondary">
-          Matched
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-600 dark:bg-white/10 dark:text-white">
+            {remainingMessages}/{MAX_MESSAGES_PER_USER_PER_CONVERSATION} messages left
+          </span>
+          <Button size="sm" variant="secondary">
+            Matched
+          </Button>
+        </div>
       </div>
       <div className="flex-1 space-y-4 overflow-y-auto px-5 py-6 text-sm">
         {messages.length === 0 ? (
@@ -142,7 +152,7 @@ export default function ChatWindow({
                     isMine ? "text-white/80" : "text-slate-400"
                   }`}
                 >
-                  {new Date(message.createdAt).toLocaleString()}
+                  {formatTimestamp(message.createdAt)}
                 </p>
               </div>
             );
@@ -151,23 +161,29 @@ export default function ChatWindow({
         <div ref={bottomRef} />
       </div>
       <div className="border-t border-white/20 px-5 py-4 dark:border-white/10">
-        <div className="flex gap-3">
-          <input
-            className="flex-1 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-            placeholder="Write a message..."
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void handleSend();
-              }
-            }}
-          />
-          <Button onClick={() => void handleSend()} disabled={sending || !draft.trim()}>
-            {sending ? "Sending..." : "Send"}
-          </Button>
-        </div>
+        {canSend ? (
+          <div className="flex gap-3">
+            <input
+              className="flex-1 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
+              placeholder="Write a message..."
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void handleSend();
+                }
+              }}
+            />
+            <Button onClick={() => void handleSend()} disabled={sending || !draft.trim()}>
+              {sending ? "Sending..." : "Send"}
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
+            You have reached the message limit for this match.
+          </div>
+        )}
       </div>
     </div>
   );

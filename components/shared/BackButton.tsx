@@ -14,8 +14,10 @@ export default function BackButton({
     <Button
       variant="ghost"
       onClick={() => {
-        if (window.history.length > 1) {
-          router.back();
+        const backPath = sessionStorage.getItem("sneh:back-path");
+
+        if (backPath && backPath !== window.location.pathname + window.location.search) {
+          router.push(backPath);
           return;
         }
 

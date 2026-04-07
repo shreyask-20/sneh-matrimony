@@ -6,6 +6,8 @@ import ChatWindow from "../../components/chat/ChatWindow";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getOtherUserId } from "@/lib/chat";
+import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
+import PageBackdrop from "../../components/shared/PageBackdrop";
 
 export default async function ChatPage({
   searchParams,
@@ -17,6 +19,9 @@ export default async function ChatPage({
 
   if (!session?.user?.id) {
     redirect("/auth/login");
+  }
+  if (session.user.roleName === "ADMIN") {
+    redirect("/admin");
   }
 
   const conversations = await prisma.conversation.findMany({
@@ -59,7 +64,7 @@ export default async function ChatPage({
             where: { status: "APPROVED" },
             select: { url: true },
             take: 1,
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: "asc" },
           },
         },
       })
@@ -127,6 +132,14 @@ export default async function ChatPage({
 
   const selectedConversation =
     conversationItems.find((item) => item.id === selectedConversationId) ?? null;
+  const selectedConversationMessageCount =
+    selectedConversation?.messages.filter(
+      (message) => message.senderId === session.user.id
+    ).length ?? 0;
+  const remainingMessages = Math.max(
+    0,
+    MAX_MESSAGES_PER_USER_PER_CONVERSATION - selectedConversationMessageCount
+  );
 
   if (selectedConversation) {
     await prisma.message.updateMany({
@@ -142,9 +155,9 @@ export default async function ChatPage({
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <PageBackdrop>
       <Navbar />
-      <main className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[320px_1fr]">
+      <main className="grid w-full gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[320px_1fr] lg:px-8">
         <aside className="glass-card h-fit rounded-3xl p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -198,8 +211,9 @@ export default async function ChatPage({
         <ChatWindow
           currentUserId={session.user.id}
           selectedConversation={selectedConversation}
+          remainingMessages={remainingMessages}
         />
       </main>
-    </div>
+    </PageBackdrop>
   );
 }

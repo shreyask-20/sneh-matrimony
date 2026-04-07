@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
+import PageBackdrop from "../../../components/shared/PageBackdrop";
 
 const steps = ["Basic info", "Personal", "Preferences", "Upload photos"];
+const MIN_PRIMARY_PHOTO_SIDE = 900;
 
 export default function RegisterPage() {
   const [activeStep, setActiveStep] = useState(0);
@@ -28,6 +30,7 @@ export default function RegisterPage() {
   const [bio, setBio] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -39,16 +42,89 @@ export default function RegisterPage() {
     };
   }, [photos]);
 
+  useEffect(() => {
+    if (photos.length === 0) {
+      setPrimaryPhotoIndex(0);
+      return;
+    }
+
+    if (primaryPhotoIndex >= photos.length) {
+      setPrimaryPhotoIndex(0);
+    }
+  }, [photos.length, primaryPhotoIndex]);
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
     const valid = Array.from(files).filter((file) =>
       file.type.startsWith("image/")
     );
-    setPhotos((prev) => [...prev, ...valid]);
+    setPhotos((prev) => {
+      const next = [...prev, ...valid];
+      if (prev.length === 0 && next.length > 0) {
+        setPrimaryPhotoIndex(0);
+      }
+      return next;
+    });
   };
 
   const removePhoto = (indexToRemove: number) => {
     setPhotos((prev) => prev.filter((_, index) => index !== indexToRemove));
+    setPrimaryPhotoIndex((current) => {
+      if (current === indexToRemove) return 0;
+      if (indexToRemove < current) return Math.max(0, current - 1);
+      return current;
+    });
+  };
+
+  const getOrderedPhotos = (list: File[] = photos, primaryIndex = primaryPhotoIndex) => {
+    if (list.length === 0) return [];
+    const safePrimaryIndex = Math.min(Math.max(primaryIndex, 0), list.length - 1);
+    return [
+      list[safePrimaryIndex],
+      ...list.filter((_, index) => index !== safePrimaryIndex),
+    ];
+  };
+
+  const loadImageDimensions = (file: File) =>
+    new Promise<{ width: number; height: number }>((resolve, reject) => {
+      const previewUrl = URL.createObjectURL(file);
+      const image = new window.Image();
+      image.onload = () => {
+        URL.revokeObjectURL(previewUrl);
+        resolve({
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        });
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(previewUrl);
+        reject(new Error("Unable to read the primary photo."));
+      };
+      image.src = previewUrl;
+    });
+
+  const validatePrimaryPhoto = async (file: File | undefined) => {
+    if (!file) {
+      return "Please upload at least one primary profile photo.";
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return "The primary photo must be an image.";
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      return "The primary photo must be smaller than 8MB.";
+    }
+
+    const dimensions = await loadImageDimensions(file);
+    if (
+      dimensions.width < MIN_PRIMARY_PHOTO_SIDE ||
+      dimensions.height < MIN_PRIMARY_PHOTO_SIDE
+    ) {
+      return "Use a clearer primary photo with at least 900px on both sides.";
+    }
+
+    return null;
   };
 
   const validateStep = (step: number) => {
@@ -76,6 +152,7 @@ export default function RegisterPage() {
 
   const uploadPhotos = async () => {
     if (photos.length === 0) return [];
+    const orderedPhotos = getOrderedPhotos();
     const signatureRes = await fetch("/api/upload/signature");
     if (!signatureRes.ok) {
       throw new Error("Failed to get upload signature");
@@ -89,7 +166,7 @@ export default function RegisterPage() {
     };
 
     const uploads = await Promise.all(
-      photos.map(async (file) => {
+      orderedPhotos.map(async (file) => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("api_key", signatureData.apiKey);
@@ -139,6 +216,20 @@ export default function RegisterPage() {
     }
     setError(null);
     setLoading(true);
+
+    const orderedPhotos = getOrderedPhotos();
+    let primaryPhotoError: string | null = null;
+    try {
+      primaryPhotoError = await validatePrimaryPhoto(orderedPhotos[0]);
+    } catch {
+      primaryPhotoError = "Unable to read the primary photo. Please choose a different image.";
+    }
+    if (primaryPhotoError) {
+      setLoading(false);
+      setError(primaryPhotoError);
+      setActiveStep(3);
+      return;
+    }
 
     let uploadedPhotos: Array<{ url: string; publicId?: string }> = [];
     try {
@@ -201,9 +292,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <PageBackdrop>
       <Navbar />
-      <main className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6">
+      <main className="w-full px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10 text-center">
           <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
             Create your profile
@@ -321,6 +412,9 @@ export default function RegisterPage() {
               )}
               {activeStep === 3 && (
                 <>
+                  <p className="rounded-2xl border border-brand-100/70 bg-brand-50/60 px-4 py-3 text-xs text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                    The first photo becomes your primary profile image. Choose a clear solo portrait with your face visible. You can keep adding extra photos after that.
+                  </p>
                   <div
                     className={`relative rounded-2xl border border-dashed px-4 py-8 text-center text-sm transition ${
                       isDragging
@@ -358,15 +452,19 @@ export default function RegisterPage() {
                       {photoPreviews.map((preview, index) => (
                         <div
                           key={preview}
-                          className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/5"
+                          className={`overflow-hidden rounded-2xl border bg-white/80 dark:bg-white/5 ${
+                            index === primaryPhotoIndex
+                              ? "border-brand-300 ring-2 ring-brand-200 dark:border-brand-400 dark:ring-brand-400/30"
+                              : "border-slate-200 dark:border-white/10"
+                          }`}
                         >
                           <div className="relative aspect-[3/4]">
                             <img
                               src={preview}
                               alt={`Selected upload ${index + 1}`}
-                              className="h-full w-full object-cover"
+                              className="face-focus-top h-full w-full"
                             />
-                            {index === 0 ? (
+                            {index === primaryPhotoIndex ? (
                               <span className="absolute left-2 top-2 rounded-full bg-brand-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-white">
                                 Primary
                               </span>
@@ -374,13 +472,28 @@ export default function RegisterPage() {
                           </div>
                           <div className="flex items-center justify-between px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
                             <span className="truncate">{photos[index]?.name}</span>
-                            <button
-                              type="button"
-                              className="font-semibold text-brand-600 transition hover:text-brand-700 dark:text-brand-200"
-                              onClick={() => removePhoto(index)}
-                            >
-                              Remove
-                            </button>
+                            <div className="flex items-center gap-3">
+                              {index !== primaryPhotoIndex ? (
+                                <button
+                                  type="button"
+                                  className="font-semibold text-brand-600 transition hover:text-brand-700 dark:text-brand-200"
+                                  onClick={() => setPrimaryPhotoIndex(index)}
+                                >
+                                  Make primary
+                                </button>
+                              ) : (
+                                <span className="font-semibold text-brand-600 dark:text-brand-200">
+                                  Primary
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                className="font-semibold text-brand-600 transition hover:text-brand-700 dark:text-brand-200"
+                                onClick={() => removePhoto(index)}
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -425,6 +538,6 @@ export default function RegisterPage() {
           </div>
         </div>
       </main>
-    </div>
+    </PageBackdrop>
   );
 }

@@ -178,6 +178,41 @@
   @apply text-slate-600 dark:text-slate-300;
 }
 
+.face-focus {
+  object-fit: cover;
+  object-position: center 18%;
+}
+
+.face-focus-top {
+  object-fit: cover;
+  object-position: center 12%;
+}
+
+.page-transition {
+  animation: page-fade-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top center;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes page-fade-up {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.992);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+  }
+}
+
 .fancy-border {
   background: linear-gradient(135deg, rgba(194, 24, 91, 0.65), rgba(255, 214, 232, 0.7));
   padding: 1px;

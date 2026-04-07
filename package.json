@@ -3,14 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "rm -rf .next",
+    "postinstall": "prisma generate",
+    "predev": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && prisma generate",
     "dev": "next dev",
-    "prebuild": "rm -rf .next",
+    "prebuild": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "seed": "node prisma/seed.cjs",
     "test": "vitest",
     "test:run": "vitest run"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.cjs"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

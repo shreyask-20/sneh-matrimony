@@ -1,23 +1,33 @@
 import Navbar from "../../components/shared/Navbar";
 import Progress from "../../components/shared/Progress";
-import ProfileCard from "../../components/shared/ProfileCard";
 import Badge from "../../components/shared/Badge";
 import { prisma } from "@/lib/prisma";
-import { userToProfile } from "@/lib/profileAdapter";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import InterestBoard from "./InterestBoard";
 import { normalizeConversationPair } from "@/lib/matchmaking";
 import Button from "../../components/shared/Button";
+import UnreadMessageToast from "../../components/shared/UnreadMessageToast";
+import ActionCenter from "../../components/dashboard/ActionCenter";
+import PageBackdrop from "../../components/shared/PageBackdrop";
+import BrowseResults from "../browse/BrowseResults";
+import { getCandidateProfiles } from "@/lib/candidateProfiles";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ login?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const shouldShowLoginNotice = resolvedSearchParams?.login === "1";
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-950">
+      <PageBackdrop>
         <Navbar />
-        <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+        <main className="w-full px-4 py-10 sm:px-6 lg:px-8">
           <div className="glass-card rounded-3xl p-8 text-center">
             <h1 className="font-serif text-2xl text-slate-900 dark:text-white">
               Please sign in to view your dashboard
@@ -33,8 +43,11 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </main>
-      </div>
+      </PageBackdrop>
     );
+  }
+  if (session.user.roleName === "ADMIN") {
+    redirect("/admin");
   }
 
   const currentUser = await prisma.user.findUnique({
@@ -55,6 +68,7 @@ export default async function DashboardPage() {
       profileVisible: true,
       photos: {
         select: { id: true, status: true },
+        orderBy: { createdAt: "asc" },
       },
     },
   });
@@ -76,7 +90,9 @@ export default async function DashboardPage() {
     currentUser?.photos.filter((photo) => photo.status === "PENDING").length ?? 0;
   const rejectedPhotoCount =
     currentUser?.photos.filter((photo) => photo.status === "REJECTED").length ?? 0;
-  const photosComplete = approvedPhotoCount ? 1 : 0;
+  const primaryPhoto = currentUser?.photos[0];
+  const primaryPhotoApproved = primaryPhoto?.status === "APPROVED";
+  const photosComplete = primaryPhotoApproved ? 1 : 0;
   const totalRequired = requiredFields.length + 1;
   const completed = completedRequired + photosComplete;
   const completionPercent = Math.round((completed / totalRequired) * 100);
@@ -89,46 +105,22 @@ export default async function DashboardPage() {
   const approvalLabel = currentUser?.isApproved ? "Approved" : "Pending review";
   const visibilityLabel = currentUser?.profileVisible ? "Visible in browse" : "Hidden from browse";
   const profileHealthLabel = isComplete ? "Profile complete" : "Needs attention";
-  const nextStepMessage = currentUser?.isApproved
-    ? currentUser?.profileVisible
+  let nextStepMessage = "Complete the missing profile details so your account can move to review.";
+  if (currentUser?.isApproved) {
+    nextStepMessage = currentUser?.profileVisible
       ? "Your profile is live and ready for new interests."
-      : "Your profile is approved, but it is not currently visible in browse."
-    : isComplete
-      ? "Your profile is complete. The admin team can review it next."
-      : "Complete the missing profile details so your account can move to review.";
-
-  const users = await prisma.user.findMany({
-    where: {
-      roleName: "USER",
-      isApproved: true,
-      profileVisible: true,
-      id: { not: session.user.id },
-    },
-    select: {
-      id: true,
-      name: true,
-      firstName: true,
-      lastName: true,
-      birthDate: true,
-      city: true,
-      education: true,
-      bio: true,
-      isApproved: true,
-      profileVisible: true,
-      photos: {
-        where: { status: "APPROVED" },
-        select: { url: true },
-        orderBy: { createdAt: "desc" },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 4,
+      : primaryPhoto
+        ? "Your profile is approved, but your primary photo still needs approval before it can go live."
+        : "Your profile is approved, but you still need a primary photo before it can go live.";
+  } else if (isComplete) {
+    nextStepMessage = "Your profile is complete. The admin team can review it next.";
+  }
+  const profiles = await getCandidateProfiles({
+    prisma,
+    currentUserId: session.user.id,
+    currentUserGender: currentUser?.gender,
+    limit: 4,
   });
-
-  const profiles = users.map((user) => ({
-    userId: user.id,
-    profile: userToProfile(user),
-  }));
 
   const [receivedInterests, sentInterests, acceptedInterests] = await Promise.all([
     prisma.interest.findMany({
@@ -153,7 +145,7 @@ export default async function DashboardPage() {
               where: { status: "APPROVED" },
               select: { url: true },
               take: 1,
-              orderBy: { createdAt: "desc" },
+              orderBy: { createdAt: "asc" },
             },
           },
         },
@@ -182,7 +174,7 @@ export default async function DashboardPage() {
               where: { status: "APPROVED" },
               select: { url: true },
               take: 1,
-              orderBy: { createdAt: "desc" },
+              orderBy: { createdAt: "asc" },
             },
           },
         },
@@ -212,7 +204,7 @@ export default async function DashboardPage() {
               where: { status: "APPROVED" },
               select: { url: true },
               take: 1,
-              orderBy: { createdAt: "desc" },
+              orderBy: { createdAt: "asc" },
             },
           },
         },
@@ -228,7 +220,7 @@ export default async function DashboardPage() {
               where: { status: "APPROVED" },
               select: { url: true },
               take: 1,
-              orderBy: { createdAt: "desc" },
+              orderBy: { createdAt: "asc" },
             },
           },
         },
@@ -236,6 +228,25 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" },
     }),
   ]);
+
+  const unreadMessageRows = shouldShowLoginNotice
+    ? await prisma.message.findMany({
+        where: {
+          readAt: null,
+          senderId: { not: session.user.id },
+          conversation: {
+            OR: [{ userOneId: session.user.id }, { userTwoId: session.user.id }],
+          },
+        },
+        select: {
+          conversationId: true,
+        },
+      })
+    : [];
+  const unreadMessageCount = unreadMessageRows.length;
+  const unreadConversationCount = new Set(
+    unreadMessageRows.map((row) => row.conversationId)
+  ).size;
 
   const acceptedConversationPairs = acceptedInterests.map((item) =>
     normalizeConversationPair(item.fromUserId, item.toUser.id)
@@ -348,8 +359,8 @@ export default async function DashboardPage() {
       title: "Profile visibility",
       detail: currentUser?.profileVisible
         ? "Your profile is currently visible in browse."
-        : "Your profile is hidden from browse until approval and at least one approved photo.",
-      href: "/profile/edit",
+        : "Your profile is hidden from browse until approval and an approved primary photo.",
+      href: currentUser?.profileVisible ? "/profile" : "/profile/edit",
       cta: currentUser?.profileVisible ? "View profile" : "Fix profile",
     },
     {
@@ -396,19 +407,34 @@ export default async function DashboardPage() {
     },
   ];
 
-  const moderationGuidance =
-    rejectedPhotoCount > 0
-      ? "Some of your photos were rejected by admin. Replace them with clearer, guideline-friendly images to become visible again."
-      : pendingPhotoCount > 0
-        ? "Your latest uploaded photos are still under review. Visibility updates automatically after approval."
-        : approvedPhotoCount > 0
-          ? "Your approved photos are helping your profile stay visible in browse and match suggestions."
-          : "Upload at least one strong profile photo so your account can appear confidently in browse.";
+  let moderationGuidance = "Upload at least one strong profile photo so your account can appear confidently in browse.";
+  if (rejectedPhotoCount > 0) {
+    moderationGuidance =
+      "Some of your photos were rejected by admin. Replace them with clearer, guideline-friendly images to become visible again.";
+  } else if (!primaryPhoto) {
+    moderationGuidance =
+      "Upload at least one strong primary profile photo so your account can appear confidently in browse.";
+  } else if (!primaryPhotoApproved) {
+    moderationGuidance =
+      "Your primary photo is still waiting for approval. It must be approved before your profile can appear in browse.";
+  } else if (pendingPhotoCount > 0) {
+    moderationGuidance =
+      "Your latest uploaded photos are still under review. Visibility updates automatically after the primary photo is approved.";
+  } else if (approvedPhotoCount > 0) {
+    moderationGuidance =
+      "Your approved photos are helping your profile stay visible in browse and match suggestions.";
+  }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <PageBackdrop>
       <Navbar />
-      <main className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[240px_1fr]">
+      <UnreadMessageToast
+        userId={session.user.id}
+        shouldShow={shouldShowLoginNotice}
+        unreadMessageCount={unreadMessageCount}
+        unreadConversationCount={unreadConversationCount}
+      />
+      <main className="grid w-full gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
         <aside className="glass-card h-fit rounded-3xl p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
             Dashboard
@@ -501,18 +527,18 @@ export default async function DashboardPage() {
                   {profileHealthLabel}
                 </p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  {completed}/{totalRequired} core requirements completed, including at least one approved photo.
+                  {completed}/{totalRequired} core requirements completed, including an approved primary photo.
                 </p>
               </div>
               <div className="rounded-3xl border border-brand-100/60 bg-brand-50/40 p-4 dark:border-white/10 dark:bg-white/[0.04]">
                 <p className="text-xs uppercase tracking-[0.18em] text-brand-400">
-                  Photo Review
+                  Primary Photo
                 </p>
                 <p className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
-                  {approvedPhotoCount} approved
+                  {primaryPhotoApproved ? "Approved" : "Waiting for approval"}
                 </p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  {pendingPhotoCount} pending, {rejectedPhotoCount} rejected.
+                  {approvedPhotoCount} approved, {pendingPhotoCount} pending, {rejectedPhotoCount} rejected.
                 </p>
                 {rejectedPhotoCount > 0 ? (
                   <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
@@ -607,72 +633,28 @@ export default async function DashboardPage() {
                 {profiles.length === 1 ? "" : "s"}
               </span>
             </div>
-            <div>
-              <div className="grid gap-6 md:grid-cols-2">
-                {profiles.length === 0 ? (
-                  <div className="rounded-2xl border border-white/40 bg-white/70 p-6 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                    {currentUser?.isApproved
-                      ? "No approved profiles are visible yet. New matches will show up here as more members go live."
-                      : "Recommendations are paused until your own profile clears approval."}
-                  </div>
-                ) : (
-                  profiles.map(({ userId, profile }) => (
-                    <ProfileCard
-                      key={userId}
-                      profile={profile}
-                      actionSlot={
-                        <Button asChild size="sm" variant="secondary">
-                          <Link href={`/profiles/${userId}`}>View Profile</Link>
-                        </Button>
-                      }
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-            <div className="glass-card rounded-3xl p-6">
-              <h3 className="font-serif text-xl text-slate-900 dark:text-white">
-                Action Center
-              </h3>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                The most important next actions for your account right now.
-              </p>
-              <div className="mt-4 space-y-4 text-sm text-slate-600 dark:text-slate-300">
-                {actionCenterItems.map((item) => (
-                  <div
-                    key={item.title}
-                    className="rounded-2xl border border-white/40 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5"
-                  >
-                    <p className="font-semibold text-slate-900 dark:text-white">
-                      {item.title}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                      {item.detail}
-                    </p>
-                    <Link
-                      href={item.href}
-                      className="mt-4 inline-flex text-sm font-semibold text-brand-600 transition hover:text-brand-700 dark:text-brand-200"
-                    >
-                      {item.cta}
-                    </Link>
-                  </div>
-                ))}
-                <div className="rounded-2xl border border-brand-100/70 bg-brand-50/50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                  <p className="font-semibold text-slate-900 dark:text-white">
-                    Match progress
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    {interestBoardData.accepted.length} accepted match
-                    {interestBoardData.accepted.length === 1 ? "" : "es"}, {interestBoardData.sent.length} outgoing interest
-                    {interestBoardData.sent.length === 1 ? "" : "s"}, and {interestBoardData.received.length} incoming request
-                    {interestBoardData.received.length === 1 ? "" : "s"}.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <BrowseResults
+              profiles={profiles}
+              signedIn={Boolean(session.user.id)}
+              emptyMessage={
+                currentUser?.isApproved
+                  ? "No approved profiles are visible yet. New matches will show up here as more members go live."
+                  : "Recommendations are paused until your own profile clears approval."
+              }
+            />
+            <ActionCenter
+              items={actionCenterItems}
+              matchProgress={`${interestBoardData.accepted.length} accepted match${
+                interestBoardData.accepted.length === 1 ? "" : "es"
+              }, ${interestBoardData.sent.length} outgoing interest${
+                interestBoardData.sent.length === 1 ? "" : "s"
+              }, and ${interestBoardData.received.length} incoming request${
+                interestBoardData.received.length === 1 ? "" : "s"
+              }.`}
+            />
           </div>
         </section>
       </main>
-    </div>
+    </PageBackdrop>
   );
 }

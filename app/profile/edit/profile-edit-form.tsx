@@ -96,7 +96,7 @@ export default function ProfileEditForm({
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <Navbar />
-      <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+      <main className="w-full px-4 py-10 sm:px-6 lg:px-8">
         <div className="glass-card rounded-3xl p-8">
           <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
             Edit profile

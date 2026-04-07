@@ -1,12 +1,12 @@
 export default function Footer() {
   return (
     <footer className="border-t border-slate-200 bg-white/80 py-10 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-400">
-      <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 sm:px-6 md:grid-cols-[1.2fr_1fr_1fr]">
+      <div className="grid w-full gap-6 px-4 sm:px-6 lg:px-8 xl:px-12 md:grid-cols-[1.2fr_1fr_1fr]">
         <div>
           <img
             src="/profiles/footer-logo.jpg"
             alt="Sneh Matrimony footer logo"
-            className="mb-4 h-20 w-auto rounded-2xl object-cover"
+            className="h-24 w-auto rounded-2xl object-cover"
           />
           <p className="mt-2 max-w-sm">
             A modern, heart-led platform for families seeking meaningful

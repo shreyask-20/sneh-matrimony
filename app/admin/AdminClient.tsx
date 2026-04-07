@@ -120,7 +120,12 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
   const updateUser = async (
     id: string,
-    payload: Partial<{ decision: "APPROVED" | "REJECTED" | "BLOCKED"; remarks: string; profileVisible: boolean }>
+    payload: Partial<{
+      decision: "APPROVED" | "REJECTED" | "BLOCKED";
+      remarks: string;
+      profileVisible: boolean;
+      roleName: "ADMIN" | "USER";
+    }>
   ) => {
     setLoading(true);
     setError(null);
@@ -165,6 +170,19 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     await updateUser(user.id, { decision, remarks: trimmedRemarks });
   };
 
+  const handleRoleChange = async (user: AdminUser, nextRole: "ADMIN" | "USER") => {
+    if (user.roleName === nextRole) return;
+
+    const confirmMessage =
+      nextRole === "ADMIN"
+        ? `Promote ${user.name ?? user.email ?? user.id} to admin?`
+        : `Demote ${user.name ?? user.email ?? user.id} to user?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    await updateUser(user.id, { roleName: nextRole });
+  };
+
   const updatePhoto = async (
     photoId: number,
     status: "APPROVED" | "REJECTED",
@@ -187,10 +205,12 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     }
   };
 
-  const pendingUsers = allUsers.filter((user) => !user.isApproved);
-  const approvedUsers = allUsers.filter((user) => user.isApproved);
-  const visibleUsers = allUsers.filter((user) => user.profileVisible);
-  const baseUsers = allUsers;
+  const memberUsers = allUsers.filter((user) => user.roleName === "USER");
+  const adminUsers = allUsers.filter((user) => user.roleName === "ADMIN");
+  const pendingUsers = memberUsers.filter((user) => !user.isApproved);
+  const approvedUsers = memberUsers.filter((user) => user.isApproved);
+  const visibleUsers = memberUsers.filter((user) => user.profileVisible);
+  const baseUsers = activeTab === "queue" ? memberUsers : allUsers;
   const isLogsTab = activeTab === "logs";
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
@@ -242,10 +262,10 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     );
   }, [logs, normalizedSearch]);
 
-  const pendingPhotoUsers = allUsers.filter((user) =>
+  const pendingPhotoUsers = memberUsers.filter((user) =>
     user.photos.some((photo) => photo.status === "PENDING")
   ).length;
-  const rejectedPhotoUsers = allUsers.filter((user) =>
+  const rejectedPhotoUsers = memberUsers.filter((user) =>
     user.photos.some((photo) => photo.status === "REJECTED")
   ).length;
 
@@ -256,7 +276,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
   return (
     <div className="min-h-screen bg-[#fbf6f8] pb-6 dark:bg-slate-950">
-      <div className="mx-auto grid w-full max-w-[1400px] gap-6 px-3 py-4 sm:px-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="grid w-full gap-6 px-3 py-4 sm:px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6 xl:px-8">
         <aside className="h-fit rounded-3xl border border-brand-100/60 bg-white p-5 text-sm text-slate-700 shadow-[0_14px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 lg:sticky lg:top-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-sm font-semibold text-white">
@@ -343,8 +363,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { label: "Total Users", value: allUsers.length },
-              { label: "Pending Approvals", value: pendingUsers.length },
-              { label: "Approved Users", value: approvedUsers.length },
+              { label: "Member Approvals", value: pendingUsers.length },
+              { label: "Approved Members", value: approvedUsers.length },
               { label: "Visible Profiles", value: visibleUsers.length },
             ].map((card) => (
               <div
@@ -467,6 +487,9 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               label={user.isApproved ? "Approved" : "Pending"}
                               tone={user.isApproved ? "verified" : "neutral"}
                             />
+                            {user.roleName === "ADMIN" ? (
+                              <Badge label="Admin" tone="premium" />
+                            ) : null}
                             {user.profileVisible ? (
                               <Badge label="Visible" tone="premium" />
                             ) : null}
@@ -546,39 +569,63 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <label className="flex items-center gap-2 text-xs text-slate-500">
-                            Visible
-                            <input
-                              type="checkbox"
-                              checked={user.profileVisible}
-                              disabled={!user.isApproved}
+                            Role
+                            <select
+                              className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+                              value={user.roleName}
                               onChange={(event) =>
-                                updateUser(user.id, {
-                                  profileVisible: event.target.checked,
-                                })
+                                handleRoleChange(
+                                  user,
+                                  event.target.value as "ADMIN" | "USER"
+                                )
                               }
-                            />
+                            >
+                              <option value="USER">User</option>
+                              <option value="ADMIN">Admin</option>
+                            </select>
                           </label>
-                          <Button
-                            size="sm"
-                            disabled={user.isApproved}
-                            onClick={() => handleDecision(user, "APPROVED")}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleDecision(user, "REJECTED")}
-                          >
-                            Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDecision(user, "BLOCKED")}
-                          >
-                            Block
-                          </Button>
+                          {user.roleName === "USER" ? (
+                            <>
+                              <label className="flex items-center gap-2 text-xs text-slate-500">
+                                Visible
+                                <input
+                                  type="checkbox"
+                                  checked={user.profileVisible}
+                                  disabled={!user.isApproved}
+                                  onChange={(event) =>
+                                    updateUser(user.id, {
+                                      profileVisible: event.target.checked,
+                                    })
+                                  }
+                                />
+                              </label>
+                              <Button
+                                size="sm"
+                                disabled={user.isApproved}
+                                onClick={() => handleDecision(user, "APPROVED")}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleDecision(user, "REJECTED")}
+                              >
+                                Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDecision(user, "BLOCKED")}
+                              >
+                                Block
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-400">
+                              Admin accounts are not part of the approval queue.
+                            </span>
+                          )}
                         </div>
                       </div>
                       {user.photos.length > 0 ? (

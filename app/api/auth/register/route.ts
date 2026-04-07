@@ -33,6 +33,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!body.photos || body.photos.length === 0) {
+    return NextResponse.json(
+      { error: "At least one primary profile photo is required." },
+      { status: 400 }
+    );
+  }
+
   const existing = await prisma.user.findFirst({
     where: {
       OR: [{ email }, { phone }],
@@ -65,14 +72,12 @@ export async function POST(request: Request) {
       education: body.education?.trim() || null,
       city: body.city?.trim() || null,
       bio: body.bio?.trim() || null,
-      photos: body.photos?.length
-        ? {
-            create: body.photos.map((photo) => ({
-              url: photo.url,
-              publicId: photo.publicId,
-            })),
-          }
-        : undefined,
+      photos: {
+        create: body.photos.map((photo) => ({
+          url: photo.url,
+          publicId: photo.publicId,
+        })),
+      },
       preferences: {
         create: {
           preferredAgeRange: body.preferredAgeRange?.trim() || null,

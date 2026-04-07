@@ -1,9 +1,18 @@
-﻿"use client";
+"use client";
 
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Button from "./Button";
 import AnimatedGradientButton from "./AnimatedGradientButton";
 import SignOutButton from "./SignOutButton";
 import { useSession } from "next-auth/react";
+import {
+  Home,
+  LayoutDashboard,
+  MessageCircleMore,
+  UserCircle2,
+  ShieldCheck,
+} from "lucide-react";
 
 type NavbarProps = {
   className?: string;
@@ -15,11 +24,63 @@ export default function Navbar({
   variant = "solid",
 }: NavbarProps) {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const roleName = session?.user?.roleName;
+  const isAdmin = roleName === "ADMIN";
   const isBlend = variant === "blend";
+  const [unreadConversationCount, setUnreadConversationCount] = useState(0);
   const loginButtonClass = isBlend
     ? ""
     : "text-brand-600 border-brand-200 bg-white/90 hover:text-brand-700";
+
+  useEffect(() => {
+    if (status !== "authenticated" || isAdmin) {
+      setUnreadConversationCount(0);
+      return;
+    }
+
+    const controller = new AbortController();
+    let active = true;
+
+    const loadUnreadCount = async () => {
+      try {
+        const response = await fetch("/api/chat/unread-count", {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+
+        const data = (await response.json()) as {
+          unreadConversationCount?: number;
+        };
+
+        if (active) {
+          setUnreadConversationCount(data.unreadConversationCount ?? 0);
+        }
+      } catch {
+        if (active) {
+          setUnreadConversationCount(0);
+        }
+      }
+    };
+
+    void loadUnreadCount();
+
+    const handleFocus = () => {
+      void loadUnreadCount();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    const interval = window.setInterval(() => {
+      void loadUnreadCount();
+    }, 60000);
+
+    return () => {
+      active = false;
+      controller.abort();
+      window.removeEventListener("focus", handleFocus);
+      window.clearInterval(interval);
+    };
+  }, [status, isAdmin, pathname]);
 
   return (
     <header
@@ -42,31 +103,42 @@ export default function Navbar({
             isBlend ? "text-white/90" : "text-slate-700"
           }`}
         >
-          <a
-            className={`transition ${
-              isBlend ? "hover:text-white" : "hover:text-brand-500"
-            }`}
-            href="/browse"
-          >
-            Browse
-          </a>
-          <a
-            className={`transition ${
-              isBlend ? "hover:text-white" : "hover:text-brand-500"
-            }`}
-            href="/dashboard"
-          >
-            Dashboard
-          </a>
-          <a
-            className={`transition ${
-              isBlend ? "hover:text-white" : "hover:text-brand-500"
-            }`}
-            href="/chat"
-          >
-            Messages
-          </a>
-          {roleName === "ADMIN" ? (
+          {!isAdmin ? (
+            <>
+              <a
+                className={`transition ${
+                  isBlend ? "hover:text-white" : "hover:text-brand-500"
+                }`}
+                href="/browse"
+              >
+                Browse
+              </a>
+              <a
+                className={`transition ${
+                  isBlend ? "hover:text-white" : "hover:text-brand-500"
+                }`}
+                href="/dashboard"
+              >
+                Dashboard
+              </a>
+              <a
+                className={`transition ${
+                  isBlend ? "hover:text-white" : "hover:text-brand-500"
+                }`}
+                href="/chat"
+              >
+                <span className="inline-flex items-center gap-2">
+                  Messages
+                  {unreadConversationCount > 0 ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
+                      {unreadConversationCount}
+                    </span>
+                  ) : null}
+                </span>
+              </a>
+            </>
+          ) : null}
+          {isAdmin ? (
             <a
               className={`transition ${
                 isBlend ? "hover:text-white" : "hover:text-brand-500"
@@ -79,7 +151,21 @@ export default function Navbar({
         </div>
         <div className="flex items-center gap-3">
           {status === "authenticated" ? (
-            <SignOutButton />
+            <>
+              {!isAdmin ? (
+                <Button
+                  asChild
+                  variant="secondary"
+                  className="h-10 rounded-full border-brand-100/70 bg-white/90 px-4 text-slate-700 shadow-sm hover:bg-brand-50"
+                >
+                  <a href="/profile" className="inline-flex items-center gap-2">
+                    <UserCircle2 className="h-4 w-4" />
+                    Profile
+                  </a>
+                </Button>
+              ) : null}
+              <SignOutButton />
+            </>
           ) : status === "unauthenticated" ? (
             <>
               <AnimatedGradientButton
@@ -96,6 +182,70 @@ export default function Navbar({
           ) : null}
         </div>
       </nav>
+      {status === "authenticated" ? (
+        <div
+          className={`flex items-center gap-2 overflow-x-auto px-4 pb-3 text-sm sm:px-6 md:hidden ${
+            isBlend ? "text-white/90" : "text-slate-700"
+          }`}
+        >
+          {!isAdmin ? (
+            <>
+              <a
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                  isBlend
+                    ? "border-white/15 bg-white/10 hover:bg-white/15"
+                    : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+                }`}
+                href="/browse"
+              >
+                <Home className="h-4 w-4" />
+                Browse
+              </a>
+              <a
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                  isBlend
+                    ? "border-white/15 bg-white/10 hover:bg-white/15"
+                    : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+                }`}
+                href="/dashboard"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </a>
+              <a
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                  isBlend
+                    ? "border-white/15 bg-white/10 hover:bg-white/15"
+                    : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+                }`}
+                href="/chat"
+              >
+                <MessageCircleMore className="h-4 w-4" />
+                <span className="inline-flex items-center gap-2">
+                  Messages
+                  {unreadConversationCount > 0 ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
+                      {unreadConversationCount}
+                    </span>
+                  ) : null}
+                </span>
+              </a>
+            </>
+          ) : (
+            <a
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                isBlend
+                  ? "border-white/15 bg-white/10 hover:bg-white/15"
+                  : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+              }`}
+              href="/admin"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Admin
+            </a>
+          )}
+        </div>
+      ) : null}
     </header>
   );
 }

@@ -28,7 +28,7 @@ export default function Hero() {
           />
         ))}
       </div>
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="relative z-10 grid w-full items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 xl:px-12">
         <div className="space-y-6">
           <p className="text-xs uppercase tracking-[0.3em] text-brand-50">
             Trusted by modern families

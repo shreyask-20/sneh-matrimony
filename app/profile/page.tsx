@@ -28,6 +28,9 @@ export default async function ProfilePage() {
       lastName: true,
       birthDate: true,
       city: true,
+      email: true,
+      phone: true,
+      maritalStatus: true,
       education: true,
       profession: true,
       religion: true,
@@ -76,13 +79,15 @@ export default async function ProfilePage() {
   const familySummary = user.familyDetails
     ? `Father: ${user.familyDetails.fatherName}, Mother: ${user.familyDetails.motherName}. Siblings: ${user.familyDetails.totalBrothers} brother(s), ${user.familyDetails.totalSisters} sister(s).`
     : "Family details have not been shared yet.";
+  const contactEmail = user.email ?? "Not shared";
+  const contactPhone = user.phone ?? "Not shared";
   const visibilityLabel = user.profileVisible ? "Visible in browse" : "Hidden from browse";
   const approvalLabel = user.isApproved ? "Approved" : "Pending review";
 
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="w-full px-4 py-12 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between gap-4">
           <BackButton fallbackHref="/dashboard" />
           <Button asChild variant="secondary">
@@ -123,6 +128,32 @@ export default async function ProfilePage() {
                 <Button asChild variant="ghost">
                   <Link href="/chat">Messages</Link>
                 </Button>
+              </div>
+              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-5 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Email</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {contactEmail}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Phone</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {contactPhone}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Marital status</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {user.maritalStatus ?? "Not shared"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Visibility</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {visibilityLabel}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="space-y-5">
@@ -168,7 +199,18 @@ export default async function ProfilePage() {
                   user.bio ??
                   "This profile is ready for meaningful conversations, and you can keep improving it from the edit page."
                 }
-                family={familySummary}
+                family={
+                  user.familyDetails
+                    ? {
+                        fatherName: user.familyDetails.fatherName,
+                        motherName: user.familyDetails.motherName,
+                        totalBrothers: user.familyDetails.totalBrothers,
+                        totalSisters: user.familyDetails.totalSisters,
+                        marriedBrothers: user.familyDetails.marriedBrothers,
+                        marriedSisters: user.familyDetails.marriedSisters,
+                      }
+                    : familySummary
+                }
                 preferences={
                   user.preferences
                     ? {

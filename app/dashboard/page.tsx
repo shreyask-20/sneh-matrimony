@@ -50,7 +50,7 @@ export default async function DashboardPage({
     redirect("/admin");
   }
 
-  const currentUser = await prisma.user.findUnique({
+  const currentUserPromise = prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
       firstName: true,
@@ -73,56 +73,7 @@ export default async function DashboardPage({
     },
   });
 
-  const requiredFields = [
-    currentUser?.name,
-    currentUser?.gender,
-    currentUser?.birthDate,
-    currentUser?.maritalStatus,
-    currentUser?.height,
-    currentUser?.profession,
-    currentUser?.education,
-    currentUser?.city,
-  ];
-  const completedRequired = requiredFields.filter(Boolean).length;
-  const approvedPhotoCount =
-    currentUser?.photos.filter((photo) => photo.status === "APPROVED").length ?? 0;
-  const pendingPhotoCount =
-    currentUser?.photos.filter((photo) => photo.status === "PENDING").length ?? 0;
-  const rejectedPhotoCount =
-    currentUser?.photos.filter((photo) => photo.status === "REJECTED").length ?? 0;
-  const primaryPhoto = currentUser?.photos[0];
-  const primaryPhotoApproved = primaryPhoto?.status === "APPROVED";
-  const photosComplete = primaryPhotoApproved ? 1 : 0;
-  const totalRequired = requiredFields.length + 1;
-  const completed = completedRequired + photosComplete;
-  const completionPercent = Math.round((completed / totalRequired) * 100);
-  const isComplete = completionPercent === 100;
-  const displayName =
-    currentUser?.firstName ??
-    currentUser?.name?.split(" ")[0] ??
-    session.user.name?.split(" ")[0] ??
-    "there";
-  const approvalLabel = currentUser?.isApproved ? "Approved" : "Pending review";
-  const visibilityLabel = currentUser?.profileVisible ? "Visible in browse" : "Hidden from browse";
-  const profileHealthLabel = isComplete ? "Profile complete" : "Needs attention";
-  let nextStepMessage = "Complete the missing profile details so your account can move to review.";
-  if (currentUser?.isApproved) {
-    nextStepMessage = currentUser?.profileVisible
-      ? "Your profile is live and ready for new interests."
-      : primaryPhoto
-        ? "Your profile is approved, but your primary photo still needs approval before it can go live."
-        : "Your profile is approved, but you still need a primary photo before it can go live.";
-  } else if (isComplete) {
-    nextStepMessage = "Your profile is complete. The admin team can review it next.";
-  }
-  const profiles = await getCandidateProfiles({
-    prisma,
-    currentUserId: session.user.id,
-    currentUserGender: currentUser?.gender,
-    limit: 4,
-  });
-
-  const [receivedInterests, sentInterests, acceptedInterests] = await Promise.all([
+  const interestsPromise = Promise.all([
     prisma.interest.findMany({
       where: {
         toUserId: session.user.id,
@@ -229,8 +180,17 @@ export default async function DashboardPage({
     }),
   ]);
 
-  const unreadMessageRows = shouldShowLoginNotice
-    ? await prisma.message.findMany({
+  const profilesTask = session.user.gender
+    ? getCandidateProfiles({
+        prisma,
+        currentUserId: session.user.id,
+        currentUserGender: session.user.gender,
+        limit: 4,
+      })
+    : null;
+
+  const unreadMessagePromise = shouldShowLoginNotice
+    ? prisma.message.findMany({
         where: {
           readAt: null,
           senderId: { not: session.user.id },
@@ -242,7 +202,71 @@ export default async function DashboardPage({
           conversationId: true,
         },
       })
-    : [];
+    : Promise.resolve([]);
+
+  const [
+    currentUser,
+    [receivedInterests, sentInterests, acceptedInterests],
+    profilesSeed,
+    unreadMessageRows,
+  ] = await Promise.all([
+    currentUserPromise,
+    interestsPromise,
+    profilesTask ?? Promise.resolve(null),
+    unreadMessagePromise,
+  ]);
+
+  const profiles =
+    profilesSeed ??
+    (await getCandidateProfiles({
+      prisma,
+      currentUserId: session.user.id,
+      currentUserGender: currentUser?.gender ?? null,
+      limit: 4,
+    }));
+
+  const requiredFields = [
+    currentUser?.name,
+    currentUser?.birthDate,
+    currentUser?.maritalStatus,
+    currentUser?.height,
+    currentUser?.profession,
+    currentUser?.education,
+    currentUser?.city,
+  ];
+  const completedRequired = requiredFields.filter(Boolean).length;
+  const approvedPhotoCount =
+    currentUser?.photos.filter((photo) => photo.status === "APPROVED").length ?? 0;
+  const pendingPhotoCount =
+    currentUser?.photos.filter((photo) => photo.status === "PENDING").length ?? 0;
+  const rejectedPhotoCount =
+    currentUser?.photos.filter((photo) => photo.status === "REJECTED").length ?? 0;
+  const primaryPhoto = currentUser?.photos[0];
+  const primaryPhotoApproved = primaryPhoto?.status === "APPROVED";
+  const photosComplete = primaryPhotoApproved ? 1 : 0;
+  const totalRequired = requiredFields.length + 1;
+  const completed = completedRequired + photosComplete;
+  const completionPercent = Math.round((completed / totalRequired) * 100);
+  const isComplete = completionPercent === 100;
+  const displayName =
+    currentUser?.firstName ??
+    currentUser?.name?.split(" ")[0] ??
+    session.user.name?.split(" ")[0] ??
+    "there";
+  const approvalLabel = currentUser?.isApproved ? "Approved" : "Pending review";
+  const visibilityLabel = currentUser?.profileVisible ? "Visible in browse" : "Hidden from browse";
+  const profileHealthLabel = isComplete ? "Profile complete" : "Needs attention";
+  let nextStepMessage = "Complete the missing profile details so your account can move to review.";
+  if (currentUser?.isApproved) {
+    nextStepMessage = currentUser?.profileVisible
+      ? "Your profile is live and ready for new interests."
+      : primaryPhoto
+        ? "Your profile is approved, but your primary photo still needs approval before it can go live."
+        : "Your profile is approved, but you still need a primary photo before it can go live.";
+  } else if (isComplete) {
+    nextStepMessage = "Your profile is complete. The admin team can review it next.";
+  }
+
   const unreadMessageCount = unreadMessageRows.length;
   const unreadConversationCount = new Set(
     unreadMessageRows.map((row) => row.conversationId)

@@ -64,7 +64,7 @@ const profiles = [
     community: "Kayastha",
     motherTongue: "Hindi",
     bio: "Calm, ambitious, and values long-term stability with a grounded partner.",
-    photo: "/profiles/p2.jpg",
+    photo: "/profiles/me1%20(1).jpg",
     family: {
       fatherName: "Sanjay Verma",
       motherName: "Kiran Verma",
@@ -128,7 +128,7 @@ const profiles = [
     community: "Nair",
     motherTongue: "Malayalam",
     bio: "Travel-friendly consultant who likes structured plans, good food, and calm evenings.",
-    photo: "/profiles/p4.jpg",
+    photo: "/profiles/me1%20(2).jpg",
     family: {
       fatherName: "Mohan Nair",
       motherName: "Sujatha Nair",
@@ -192,7 +192,7 @@ const profiles = [
     community: "Patel",
     motherTongue: "Gujarati",
     bio: "Marketing lead who enjoys live music, cricket, and quiet family dinners.",
-    photo: "/profiles/p6.png",
+    photo: "/profiles/me1%20(3).jpg",
     family: {
       fatherName: "Harshad Patel",
       motherName: "Nisha Patel",
@@ -256,7 +256,7 @@ const profiles = [
     community: "Punjabi",
     motherTongue: "Punjabi",
     bio: "Architecture enthusiast who enjoys sketching, slow coffee, and contemporary design.",
-    photo: "/profiles/p8.jpg",
+    photo: "/profiles/me1%20(4).jpg",
     family: {
       fatherName: "Gurpreet Singh",
       motherName: "Harpreet Kaur",
@@ -320,7 +320,7 @@ const profiles = [
     community: "Marathi",
     motherTongue: "Marathi",
     bio: "Teacher by profession, reader by habit, and someone who values stability and honesty.",
-    photo: "/profiles/p10.png",
+    photo: "/profiles/me1%20(5).jpg",
     family: {
       fatherName: "Vijay Joshi",
       motherName: "Sunita Joshi",
@@ -384,7 +384,7 @@ const profiles = [
     community: "Marwari",
     motherTongue: "Hindi",
     bio: "Engineer who likes clean products, weekend bike rides, and conversations that go somewhere.",
-    photo: "/profiles/p12.jpg",
+    photo: "/profiles/me1%20(1).jpg",
     family: {
       fatherName: "Mahendra Mehta",
       motherName: "Bhavna Mehta",

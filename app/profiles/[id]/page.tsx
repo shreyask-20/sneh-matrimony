@@ -29,6 +29,15 @@ export default async function PublicProfilePage({
     redirect("/profile");
   }
 
+  let currentUserGender = session?.user?.gender ?? null;
+  if (currentUserId && !currentUserGender) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { gender: true },
+    });
+    currentUserGender = currentUser?.gender ?? null;
+  }
+
   const user = await prisma.user.findFirst({
     where: {
       id,
@@ -43,6 +52,9 @@ export default async function PublicProfilePage({
       lastName: true,
       birthDate: true,
       city: true,
+      email: true,
+      phone: true,
+      maritalStatus: true,
       education: true,
       profession: true,
       gender: true,
@@ -82,11 +94,7 @@ export default async function PublicProfilePage({
   }
 
   if (currentUserId) {
-    const currentUser = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { gender: true },
-    });
-    const targetGender = getOppositeGender(currentUser?.gender);
+    const targetGender = getOppositeGender(currentUserGender);
 
     if (!targetGender || user.gender?.trim() !== targetGender) {
       notFound();
@@ -149,11 +157,21 @@ export default async function PublicProfilePage({
   const familySummary = user.familyDetails
     ? `Father: ${user.familyDetails.fatherName}, Mother: ${user.familyDetails.motherName}. Siblings: ${user.familyDetails.totalBrothers} brother(s), ${user.familyDetails.totalSisters} sister(s).`
     : "Family details have not been shared yet.";
+  const canRevealContact = derivedInterestState === "accepted";
+  const contactEmail = canRevealContact
+    ? user.email ?? "Not shared"
+    : "Available after a mutual match";
+  const contactPhone = canRevealContact
+    ? user.phone ?? "Not shared"
+    : "Available after a mutual match";
+  const contactNote = canRevealContact
+    ? "You’ve matched. Contact details are now visible."
+    : "Contact details stay hidden until there is a mutual match.";
 
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="w-full px-4 py-12 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-4">
           <BackButton fallbackHref="/browse" />
         </div>
@@ -195,6 +213,32 @@ export default async function PublicProfilePage({
                     Chat
                   </Button>
                 )}
+              </div>
+              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-5 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Email</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {contactEmail}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Phone</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {contactPhone}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Marital status</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {user.maritalStatus ?? "Not shared"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase text-slate-400">Contact note</p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {contactNote}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="space-y-5">
@@ -245,7 +289,18 @@ export default async function PublicProfilePage({
                   user.bio ??
                   "This member has not added a detailed bio yet, but their profile is ready for meaningful conversation."
                 }
-                family={familySummary}
+                family={
+                  user.familyDetails
+                    ? {
+                        fatherName: user.familyDetails.fatherName,
+                        motherName: user.familyDetails.motherName,
+                        totalBrothers: user.familyDetails.totalBrothers,
+                        totalSisters: user.familyDetails.totalSisters,
+                        marriedBrothers: user.familyDetails.marriedBrothers,
+                        marriedSisters: user.familyDetails.marriedSisters,
+                      }
+                    : familySummary
+                }
                 preferences={
                   user.preferences
                     ? {

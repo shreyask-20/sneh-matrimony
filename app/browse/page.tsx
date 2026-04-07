@@ -14,8 +14,8 @@ export default async function BrowsePage() {
     redirect("/admin");
   }
   const currentUserId = session?.user?.id ?? null;
-  const currentUser = currentUserId
-    ? await prisma.user.findUnique({
+  const currentUserPromise = currentUserId
+    ? prisma.user.findUnique({
         where: { id: currentUserId },
         select: {
           gender: true,
@@ -23,17 +23,34 @@ export default async function BrowsePage() {
           profileVisible: true,
         },
       })
+    : Promise.resolve(null);
+  const profilesPromise = session?.user?.gender
+    ? getCandidateProfiles({
+        prisma,
+        currentUserId,
+        currentUserGender: session.user.gender,
+      })
     : null;
-  const profiles = await getCandidateProfiles({
-    prisma,
-    currentUserId,
-    currentUserGender: currentUser?.gender,
-  });
+
+  const [currentUser, profilesSeed] = await Promise.all([
+    currentUserPromise,
+    profilesPromise ?? Promise.resolve(null),
+  ]);
+
+  const profiles =
+    profilesSeed ??
+    (currentUserId
+      ? await getCandidateProfiles({
+          prisma,
+          currentUserId,
+          currentUserGender: currentUser?.gender ?? null,
+        })
+      : []);
 
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="grid w-full gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[260px_1fr] lg:px-8">
+      <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[260px_1fr] lg:px-8">
         <aside className="glass-card h-fit rounded-3xl p-6">
           <h2 className="font-serif text-xl text-slate-900 dark:text-white">
             Filters

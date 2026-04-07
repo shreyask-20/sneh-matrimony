@@ -156,7 +156,7 @@ export default function Navbar({
                 <Button
                   asChild
                   variant="secondary"
-                  className="h-10 rounded-full border-brand-100/70 bg-white/90 px-4 text-slate-700 shadow-sm hover:bg-brand-50"
+                  className="h-10 rounded-20 border-brand-100/70 bg-white/90 px-4 text-slate-700 shadow-sm hover:bg-brand-50"
                 >
                   <a href="/profile" className="inline-flex items-center gap-2">
                     <UserCircle2 className="h-4 w-4" />

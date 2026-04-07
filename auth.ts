@@ -49,6 +49,7 @@ export const authOptions: NextAuthOptions = {
               `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
             image: user.image ?? undefined,
             roleName: user.roleName,
+            gender: user.gender ?? undefined,
           };
         } catch {
           return null;
@@ -61,6 +62,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.roleName = (user as { roleName?: RoleName }).roleName;
+        token.gender = (user as { gender?: string | null }).gender ?? undefined;
       }
       return token;
     },
@@ -70,6 +72,9 @@ export const authOptions: NextAuthOptions = {
       }
       if (session.user && token?.roleName) {
         session.user.roleName = token.roleName as "ADMIN" | "USER";
+      }
+      if (session.user && token?.gender) {
+        session.user.gender = token.gender as string;
       }
       return session;
     },

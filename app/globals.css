@@ -145,12 +145,8 @@
 }
 
 .marquee-track {
-  animation: profile-marquee 32s linear infinite;
+  animation: profile-marquee 48s linear infinite;
   will-change: transform;
-}
-
-.marquee-track:hover {
-  animation-play-state: paused;
 }
 
 .marquee-fade {

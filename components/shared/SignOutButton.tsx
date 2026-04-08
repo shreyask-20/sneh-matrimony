@@ -5,7 +5,10 @@ import Button from "./Button";
 
 export default function SignOutButton() {
   return (
-    <Button onClick={() => signOut({ callbackUrl: "/auth/login" })}>
+    <Button
+      className="h-10 rounded-20 px-4"
+      onClick={() => signOut({ callbackUrl: "/auth/login" })}
+    >
       Sign out
     </Button>
   );

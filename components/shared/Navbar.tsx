@@ -90,7 +90,7 @@ export default function Navbar({
           : "bg-white/95 backdrop-blur border-b border-brand-100/40 shadow-[0_6px_18px_rgba(127,16,62,0.08)]"
       } ${className}`}
     >
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-1 sm:px-6">
+      <nav className="flex w-full items-center justify-between px-4 py-1 sm:px-6 lg:px-8">
         <a className="flex items-center" href="/">
           <img
             src={isBlend ? "/profiles/nav-logo1.png" : "/profiles/nav-logo.png"}
@@ -99,6 +99,39 @@ export default function Navbar({
           />
         </a>
         <div
+          className={`hidden items-center gap-2 text-xs lg:flex ${
+            isBlend ? "text-white/80" : "text-slate-600"
+          }`}
+        >
+          <span
+            className={`rounded-full border px-3 py-1 transition ${
+              isBlend
+                ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
+                : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
+            }`}
+          >
+            Privacy-first
+          </span>
+          <span
+            className={`rounded-full border px-3 py-1 transition ${
+              isBlend
+                ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
+                : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
+            }`}
+          >
+            Verified profiles
+          </span>
+          <span
+            className={`rounded-full border px-3 py-1 transition ${
+              isBlend
+                ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
+                : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
+            }`}
+          >
+            Secure chat
+          </span>
+        </div>
+        <div
           className={`hidden items-center gap-6 text-sm md:flex ${
             isBlend ? "text-white/90" : "text-slate-700"
           }`}
@@ -106,24 +139,30 @@ export default function Navbar({
           {!isAdmin ? (
             <>
               <a
-                className={`transition ${
-                  isBlend ? "hover:text-white" : "hover:text-brand-500"
+                className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                  isBlend
+                    ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                    : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
                 }`}
                 href="/browse"
               >
                 Browse
               </a>
               <a
-                className={`transition ${
-                  isBlend ? "hover:text-white" : "hover:text-brand-500"
+                className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                  isBlend
+                    ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                    : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
                 }`}
                 href="/dashboard"
               >
                 Dashboard
               </a>
               <a
-                className={`transition ${
-                  isBlend ? "hover:text-white" : "hover:text-brand-500"
+                className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                  isBlend
+                    ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                    : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
                 }`}
                 href="/chat"
               >
@@ -140,8 +179,10 @@ export default function Navbar({
           ) : null}
           {isAdmin ? (
             <a
-              className={`transition ${
-                isBlend ? "hover:text-white" : "hover:text-brand-500"
+              className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                isBlend
+                  ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                  : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
               }`}
               href="/admin"
             >

@@ -2,7 +2,7 @@ import { profiles } from "../../data/profiles";
 import ProfileCard from "../shared/ProfileCard";
 
 export default function FeaturedProfiles() {
-  const marqueeProfiles = [...profiles, ...profiles];
+  const marqueeProfiles = [...profiles, ...profiles, ...profiles, ...profiles];
   return (
     <section className="w-full px-4 pb-16 sm:px-6 lg:px-8 xl:px-12">
       <div className="mb-6 flex items-end justify-between">

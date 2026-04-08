@@ -3,6 +3,11 @@ import Badge from "../shared/Badge";
 
 const plans = [
   {
+    name: "Silver",
+    price: "₹2,999",
+    perks: ["Verified matches", "Direct chat access", "Basic support"],
+  },
+  {
     name: "Gold",
     price: "₹4,999",
     perks: ["Personal matchmaker", "Priority support", "Unlimited interests"],
@@ -21,10 +26,10 @@ export default function Subscriptions() {
       <div className="mb-8">
         <h2 className="section-heading">Premium memberships</h2>
         <p className="section-subtitle mt-2">
-          Choose a plan that suits your journey. Upgrade any time.
+          Choose a plan that suits your journey. Billed yearly. Upgrade any time.
         </p>
       </div>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         {plans.map((plan) => (
           <div
             key={plan.name}

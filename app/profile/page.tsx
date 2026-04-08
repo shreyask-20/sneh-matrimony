@@ -90,7 +90,11 @@ export default async function ProfilePage() {
       <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between gap-4">
           <BackButton fallbackHref="/dashboard" />
-          <Button asChild variant="secondary">
+          <Button
+            asChild
+            variant="secondary"
+            className="transition hover:bg-gradient-to-r hover:from-pink-100 hover:to-fuchsia-100 hover:text-slate-900"
+          >
             <Link href="/profile/edit">Edit profile</Link>
           </Button>
         </div>
@@ -119,10 +123,11 @@ export default async function ProfilePage() {
                 <Badge label={visibilityLabel} tone={user.profileVisible ? "premium" : "neutral"} />
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button asChild>
-                  <Link href="/profile/edit">Edit profile</Link>
-                </Button>
-                <Button asChild variant="secondary">
+                <Button
+                  asChild
+                  variant="primary"
+                  className="bg-slate-950 text-white hover:bg-slate-700"
+                >
                   <Link href="/browse">Browse matches</Link>
                 </Button>
                 <Button asChild variant="ghost">

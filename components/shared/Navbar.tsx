@@ -90,201 +90,205 @@ export default function Navbar({
           : "bg-white/95 backdrop-blur border-b border-brand-100/40 shadow-[0_6px_18px_rgba(127,16,62,0.08)]"
       } ${className}`}
     >
-      <nav className="flex w-full items-center justify-between px-4 py-1 sm:px-6 lg:px-8">
-        <a className="flex items-center" href="/">
-          <img
-            src={isBlend ? "/profiles/nav-logo1.png" : "/profiles/nav-logo.png"}
-            alt="Sneh Matrimony"
-            className="h-24 -my-2 w-auto object-contain"
-          />
-        </a>
-        <div
-          className={`hidden items-center gap-2 text-xs lg:flex ${
-            isBlend ? "text-white/80" : "text-slate-600"
-          }`}
-        >
-          <span
-            className={`rounded-full border px-3 py-1 transition ${
-              isBlend
-                ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
-                : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+        <nav className="flex w-full items-center justify-between py-1">
+          <a className="flex items-center" href="/">
+            <img
+              src={isBlend ? "/profiles/nav-logo1.png" : "/profiles/nav-logo.png"}
+              alt="Sneh Matrimony"
+              className="h-24 -my-2 w-auto object-contain"
+            />
+          </a>
+          <div
+            className={`hidden items-center gap-2 text-xs lg:flex ${
+              isBlend ? "text-white/80" : "text-slate-600"
             }`}
           >
-            Privacy-first
-          </span>
-          <span
-            className={`rounded-full border px-3 py-1 transition ${
-              isBlend
-                ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
-                : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
-            }`}
-          >
-            Verified profiles
-          </span>
-          <span
-            className={`rounded-full border px-3 py-1 transition ${
-              isBlend
-                ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
-                : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
-            }`}
-          >
-            Secure chat
-          </span>
-        </div>
-        <div
-          className={`hidden items-center gap-6 text-sm md:flex ${
-            isBlend ? "text-white/90" : "text-slate-700"
-          }`}
-        >
-          {!isAdmin ? (
-            <>
-              <a
-                className={`bg-[length:200%_100%] bg-right text-transparent transition ${
-                  isBlend
-                    ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
-                    : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
-                }`}
-                href="/browse"
-              >
-                Browse
-              </a>
-              <a
-                className={`bg-[length:200%_100%] bg-right text-transparent transition ${
-                  isBlend
-                    ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
-                    : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
-                }`}
-                href="/dashboard"
-              >
-                Dashboard
-              </a>
-              <a
-                className={`bg-[length:200%_100%] bg-right text-transparent transition ${
-                  isBlend
-                    ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
-                    : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
-                }`}
-                href="/chat"
-              >
-                <span className="inline-flex items-center gap-2">
-                  Messages
-                  {unreadConversationCount > 0 ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
-                      {unreadConversationCount}
-                    </span>
-                  ) : null}
-                </span>
-              </a>
-            </>
-          ) : null}
-          {isAdmin ? (
-            <a
-              className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+            <span
+              className={`rounded-full border px-3 py-1 transition ${
                 isBlend
-                  ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
-                  : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
+                  ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
+                  : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
               }`}
-              href="/admin"
             >
-              Admin
-            </a>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-3">
-          {status === "authenticated" ? (
-            <>
-              {!isAdmin ? (
-                <Button
-                  asChild
-                  variant="secondary"
-                  className="h-10 rounded-20 border-brand-100/70 bg-white/90 px-4 text-slate-700 shadow-sm hover:bg-brand-50"
+              Privacy-first
+            </span>
+            <span
+              className={`rounded-full border px-3 py-1 transition ${
+                isBlend
+                  ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
+                  : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
+              }`}
+            >
+              Verified profiles
+            </span>
+            <span
+              className={`rounded-full border px-3 py-1 transition ${
+                isBlend
+                  ? "border-white/20 bg-white/10 hover:bg-gradient-to-r hover:from-white/20 hover:to-white/5"
+                  : "border-brand-100 bg-brand-50/60 hover:bg-gradient-to-r hover:from-brand-100/80 hover:to-white"
+              }`}
+            >
+              Secure chat
+            </span>
+          </div>
+          <div
+            className={`hidden items-center gap-6 text-sm md:flex ${
+              isBlend ? "text-white/90" : "text-slate-700"
+            }`}
+          >
+            {!isAdmin ? (
+              <>
+                <a
+                  className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                    isBlend
+                      ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                      : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
+                  }`}
+                  href="/browse"
                 >
-                  <a href="/profile" className="inline-flex items-center gap-2">
-                    <UserCircle2 className="h-4 w-4" />
-                    Profile
-                  </a>
+                  Browse
+                </a>
+                <a
+                  className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                    isBlend
+                      ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                      : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
+                  }`}
+                  href="/dashboard"
+                >
+                  Dashboard
+                </a>
+                <a
+                  className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                    isBlend
+                      ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                      : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
+                  }`}
+                  href="/chat"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    Messages
+                    {unreadConversationCount > 0 ? (
+                      <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
+                        {unreadConversationCount}
+                      </span>
+                    ) : null}
+                  </span>
+                </a>
+              </>
+            ) : null}
+            {isAdmin ? (
+              <a
+                className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                  isBlend
+                    ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                    : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
+                }`}
+                href="/admin"
+              >
+                Admin
+              </a>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-3">
+            {status === "authenticated" ? (
+              <>
+                {!isAdmin ? (
+                  <Button
+                    asChild
+                    variant="secondary"
+                    className="h-10 rounded-20 border-brand-100/70 bg-white/90 px-4 text-slate-700 shadow-sm hover:bg-brand-50"
+                  >
+                    <a href="/profile" className="inline-flex items-center gap-2">
+                      <UserCircle2 className="h-4 w-4" />
+                      Profile
+                    </a>
+                  </Button>
+                ) : null}
+                <SignOutButton />
+              </>
+            ) : status === "unauthenticated" ? (
+              <>
+                <AnimatedGradientButton
+                  variant="ghost"
+                  className={`h-9 px-4 ${loginButtonClass}`}
+                  asChild
+                >
+                  <a href="/auth/login">Log in</a>
+                </AnimatedGradientButton>
+                <Button asChild>
+                  <a href="/auth/register">Create Profile</a>
                 </Button>
-              ) : null}
-              <SignOutButton />
-            </>
-          ) : status === "unauthenticated" ? (
-            <>
-              <AnimatedGradientButton
-                variant="ghost"
-                className={`h-9 px-4 ${loginButtonClass}`}
-                asChild
-              >
-                <a href="/auth/login">Log in</a>
-              </AnimatedGradientButton>
-              <Button asChild>
-                <a href="/auth/register">Create Profile</a>
-              </Button>
-            </>
-          ) : null}
-        </div>
-      </nav>
+              </>
+            ) : null}
+          </div>
+        </nav>
+      </div>
       {status === "authenticated" ? (
-        <div
-          className={`flex items-center gap-2 overflow-x-auto px-4 pb-3 text-sm sm:px-6 md:hidden ${
-            isBlend ? "text-white/90" : "text-slate-700"
-          }`}
-        >
-          {!isAdmin ? (
-            <>
+        <div className="w-full px-4 pb-3 sm:px-6 lg:px-8 xl:px-12 md:hidden">
+          <div
+            className={`flex items-center gap-2 overflow-x-auto text-sm ${
+              isBlend ? "text-white/90" : "text-slate-700"
+            }`}
+          >
+            {!isAdmin ? (
+              <>
+                <a
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                    isBlend
+                      ? "border-white/15 bg-white/10 hover:bg-white/15"
+                      : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+                  }`}
+                  href="/browse"
+                >
+                  <Home className="h-4 w-4" />
+                  Browse
+                </a>
+                <a
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                    isBlend
+                      ? "border-white/15 bg-white/10 hover:bg-white/15"
+                      : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+                  }`}
+                  href="/dashboard"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </a>
+                <a
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                    isBlend
+                      ? "border-white/15 bg-white/10 hover:bg-white/15"
+                      : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+                  }`}
+                  href="/chat"
+                >
+                  <MessageCircleMore className="h-4 w-4" />
+                  <span className="inline-flex items-center gap-2">
+                    Messages
+                    {unreadConversationCount > 0 ? (
+                      <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
+                        {unreadConversationCount}
+                      </span>
+                    ) : null}
+                  </span>
+                </a>
+              </>
+            ) : (
               <a
                 className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
                   isBlend
                     ? "border-white/15 bg-white/10 hover:bg-white/15"
                     : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
                 }`}
-                href="/browse"
+                href="/admin"
               >
-                <Home className="h-4 w-4" />
-                Browse
+                <ShieldCheck className="h-4 w-4" />
+                Admin
               </a>
-              <a
-                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
-                  isBlend
-                    ? "border-white/15 bg-white/10 hover:bg-white/15"
-                    : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
-                }`}
-                href="/dashboard"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </a>
-              <a
-                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
-                  isBlend
-                    ? "border-white/15 bg-white/10 hover:bg-white/15"
-                    : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
-                }`}
-                href="/chat"
-              >
-                <MessageCircleMore className="h-4 w-4" />
-                <span className="inline-flex items-center gap-2">
-                  Messages
-                  {unreadConversationCount > 0 ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
-                      {unreadConversationCount}
-                    </span>
-                  ) : null}
-                </span>
-              </a>
-            </>
-          ) : (
-            <a
-              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
-                isBlend
-                  ? "border-white/15 bg-white/10 hover:bg-white/15"
-                  : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
-              }`}
-              href="/admin"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              Admin
-            </a>
-          )}
+            )}
+          </div>
         </div>
       ) : null}
     </header>

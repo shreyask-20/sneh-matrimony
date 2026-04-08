@@ -1,7 +1,12 @@
 import type React from "react";
+import Link from "next/link";
 import Button from "../shared/Button";
 
-export default function Hero() {
+type HeroProps = {
+  isAuthenticated?: boolean;
+};
+
+export default function Hero({ isAuthenticated = false }: HeroProps) {
   return (
     <section className="relative pb-20 pt-12 sm:pt-14">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -45,7 +50,11 @@ export default function Hero() {
             feels like home.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button size="lg">Create Profile</Button>
+            <Button size="lg" asChild>
+              <Link href={isAuthenticated ? "/profile" : "/auth/register"}>
+                {isAuthenticated ? "View Profile" : "Create Profile"}
+              </Link>
+            </Button>
             <Button size="lg" variant="secondary">
               Browse Matches
             </Button>

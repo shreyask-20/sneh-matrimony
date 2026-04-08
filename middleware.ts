@@ -4,24 +4,48 @@ import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const currentOrigin = request.nextUrl.origin;
 
-  if (pathname.startsWith("/admin")) {
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
+  const resolveCurrentRole = async () => {
+    const response = await fetch(new URL("/api/admin/session", currentOrigin), {
+      headers: {
+        cookie: request.headers.get("cookie") ?? "",
+      },
+      cache: "no-store",
     });
-    if (!token || token.roleName !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", request.url));
+
+    if (!response.ok) {
+      return null;
     }
-    return NextResponse.next();
-  }
+
+    const data = (await response.json()) as { roleName?: string | null };
+    return data.roleName ?? null;
+  };
 
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
-  if (token?.roleName === "ADMIN") {
-    return NextResponse.redirect(new URL("/admin", request.url));
+  const tokenRoleName = token?.roleName;
+
+  if (pathname.startsWith("/admin")) {
+    if (!token || tokenRoleName !== "ADMIN") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    const currentRole = await resolveCurrentRole();
+    if (currentRole !== "ADMIN") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  if (tokenRoleName === "ADMIN") {
+    const currentRole = await resolveCurrentRole();
+    if (currentRole === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
   }
 
   return NextResponse.next();

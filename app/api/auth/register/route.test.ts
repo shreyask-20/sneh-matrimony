@@ -48,6 +48,11 @@ describe("POST /api/auth/register", () => {
         phone: "9999999999",
         password: "secret",
         gender: "Female",
+        photos: [
+          {
+            url: "https://res.cloudinary.com/demo/image/upload/v1/sneh-matrimony/profiles/photo.jpg",
+          },
+        ],
       }),
     });
 
@@ -75,7 +80,12 @@ describe("POST /api/auth/register", () => {
         password: "secret",
         gender: "Female",
         preferredAgeRange: "24-29",
-        photos: [{ url: "https://example.com/photo.jpg", publicId: "primary-photo" }],
+        photos: [
+          {
+            url: "https://res.cloudinary.com/demo/image/upload/v1/sneh-matrimony/profiles/photo.jpg",
+            publicId: "primary-photo",
+          },
+        ],
       }),
     });
 
@@ -107,5 +117,28 @@ describe("POST /api/auth/register", () => {
 
     expect(response.status).toBe(400);
     expect(body.error).toContain("primary profile photo");
+  });
+
+  it("returns 400 when photos are not from the approved upload flow", async () => {
+    prismaMock.user.findFirst.mockResolvedValue(null);
+
+    const request = new Request("http://localhost/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: "Test User",
+        email: "test@example.com",
+        phone: "9999999999",
+        password: "secret",
+        gender: "Female",
+        photos: [{ url: "https://example.com/photo.jpg" }],
+      }),
+    });
+
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toContain("approved upload flow");
   });
 });

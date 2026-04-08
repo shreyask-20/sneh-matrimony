@@ -7,7 +7,10 @@ export type UserForCard = {
   lastName: string | null;
   birthDate: Date | null;
   city: string | null;
+  profession: string | null;
   education: string | null;
+  religion: string | null;
+  height: string | null;
   bio: string | null;
   isApproved: boolean;
   profileVisible: boolean;
@@ -36,9 +39,9 @@ export function userToProfile(user: UserForCard): Profile {
     name,
     age,
     location: user.city ?? "",
-    faith: "",
+    faith: user.religion ?? "",
     education: user.education ?? "",
-    height: "",
+    height: user.height ?? "",
     image: user.photos[0]?.url ?? "/profiles/p1.jpg",
     verified: user.isApproved,
     premium: false,

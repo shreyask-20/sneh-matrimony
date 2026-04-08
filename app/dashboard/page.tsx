@@ -12,8 +12,6 @@ import Button from "../../components/shared/Button";
 import UnreadMessageToast from "../../components/shared/UnreadMessageToast";
 import ActionCenter from "../../components/dashboard/ActionCenter";
 import PageBackdrop from "../../components/shared/PageBackdrop";
-import BrowseResults from "../browse/BrowseResults";
-import { getCandidateProfiles } from "@/lib/candidateProfiles";
 
 export default async function DashboardPage({
   searchParams,
@@ -180,15 +178,6 @@ export default async function DashboardPage({
     }),
   ]);
 
-  const profilesTask = session.user.gender
-    ? getCandidateProfiles({
-        prisma,
-        currentUserId: session.user.id,
-        currentUserGender: session.user.gender,
-        limit: 4,
-      })
-    : null;
-
   const unreadMessagePromise = shouldShowLoginNotice
     ? prisma.message.findMany({
         where: {
@@ -207,23 +196,12 @@ export default async function DashboardPage({
   const [
     currentUser,
     [receivedInterests, sentInterests, acceptedInterests],
-    profilesSeed,
     unreadMessageRows,
   ] = await Promise.all([
     currentUserPromise,
     interestsPromise,
-    profilesTask ?? Promise.resolve(null),
     unreadMessagePromise,
   ]);
-
-  const profiles =
-    profilesSeed ??
-    (await getCandidateProfiles({
-      prisma,
-      currentUserId: session.user.id,
-      currentUserGender: currentUser?.gender ?? null,
-      limit: 4,
-    }));
 
   const requiredFields = [
     currentUser?.name,
@@ -356,18 +334,7 @@ export default async function DashboardPage({
       })
     ),
   };
-
-  const recommendationHeadline = currentUser?.isApproved
-    ? profiles.length > 0
-      ? "Recommended matches for you"
-      : "Recommendations will appear soon"
-    : "Complete approval to unlock recommendations";
-
-  const recommendationSubcopy = currentUser?.isApproved
-    ? profiles.length > 0
-      ? "These approved profiles are currently visible and ready for meaningful introductions."
-      : "We don't have any visible profiles to suggest right now. Check back after more members are approved."
-    : "Once your profile is approved, your recommendations will become much more relevant and active.";
+  const topAcceptedMatches = interestBoardData.accepted.slice(0, 3);
 
   const actionCenterItems = [
     {
@@ -419,7 +386,7 @@ export default async function DashboardPage({
     {
       label: "Browse matches",
       href: "/browse",
-      note: currentUser?.isApproved ? `${profiles.length} visible now` : "Unlock after approval",
+      note: currentUser?.isApproved ? "Ready to explore" : "Unlock after approval",
     },
     {
       label: "Messages",
@@ -529,46 +496,80 @@ export default async function DashboardPage({
                 />
               </div>
             </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              <div className="rounded-3xl border border-brand-100/60 bg-brand-50/40 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="text-xs uppercase tracking-[0.18em] text-brand-400">
-                  Membership Status
-                </p>
-                <p className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
-                  {approvalLabel}
-                </p>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  {currentUser?.isApproved
-                    ? "You can now appear to other members and receive interest requests."
-                    : "Your profile is waiting for admin review before it goes live."}
-                </p>
-              </div>
-              <div className="rounded-3xl border border-brand-100/60 bg-brand-50/40 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="text-xs uppercase tracking-[0.18em] text-brand-400">
-                  Profile Health
-                </p>
-                <p className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
-                  {profileHealthLabel}
-                </p>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  {completed}/{totalRequired} core requirements completed, including an approved primary photo.
-                </p>
-              </div>
-              <div className="rounded-3xl border border-brand-100/60 bg-brand-50/40 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <p className="text-xs uppercase tracking-[0.18em] text-brand-400">
-                  Primary Photo
-                </p>
-                <p className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
-                  {primaryPhotoApproved ? "Approved" : "Waiting for approval"}
-                </p>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  {approvedPhotoCount} approved, {pendingPhotoCount} pending, {rejectedPhotoCount} rejected.
-                </p>
-                {rejectedPhotoCount > 0 ? (
-                  <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
-                    Replace rejected photos from your profile editor to restore visibility.
+            <div className="mt-6 rounded-3xl border border-brand-100/60 bg-brand-50/40 p-5 dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-brand-400">
+                    Accepted Matches
                   </p>
-                ) : null}
+                  <h2 className="mt-2 font-serif text-2xl text-slate-900 dark:text-white">
+                    Your active matches
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {interestBoardData.accepted.length} active match
+                  {interestBoardData.accepted.length === 1 ? "" : "es"}
+                </p>
+              </div>
+              <div className="mt-5">
+                {topAcceptedMatches.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {topAcceptedMatches.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-3xl border border-white/60 bg-white/85 p-4 shadow-[0_12px_28px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-slate-950/40"
+                      >
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={item.profile.photoUrl ?? "/profiles/p1.jpg"}
+                            alt={item.profile.name}
+                            className="face-focus h-16 w-16 shrink-0 rounded-2xl"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-semibold text-slate-900 dark:text-white">
+                                  {item.profile.name}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                  {[item.profile.city, item.profile.profession]
+                                    .filter(Boolean)
+                                    .join(" - ") || "Active match"}
+                                </p>
+                              </div>
+                              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                Matched
+                              </span>
+                            </div>
+                            <div className="mt-4">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                asChild
+                                className="w-full"
+                              >
+                                <Link
+                                  href={
+                                    item.conversationId
+                                      ? `/chat?conversation=${item.conversationId}`
+                                      : "/chat"
+                                  }
+                                >
+                                  Open Chat
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-brand-100/70 bg-white/70 p-6 text-sm text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                    No accepted matches yet. They will show up here once someone
+                    accepts your interest.
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-6 space-y-2">
@@ -637,35 +638,8 @@ export default async function DashboardPage({
           <InterestBoard
             received={interestBoardData.received}
             sent={interestBoardData.sent}
-            accepted={interestBoardData.accepted}
           />
-          <div
-            id="interest-board"
-            className="grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]"
-          >
-            <div className="flex items-center justify-between lg:col-span-2">
-              <div>
-                <h2 className="font-serif text-2xl text-slate-900 dark:text-white">
-                  {recommendationHeadline}
-                </h2>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  {recommendationSubcopy}
-                </p>
-              </div>
-              <span className="text-sm text-brand-500">
-                {profiles.length} live recommendation
-                {profiles.length === 1 ? "" : "s"}
-              </span>
-            </div>
-            <BrowseResults
-              profiles={profiles}
-              signedIn={Boolean(session.user.id)}
-              emptyMessage={
-                currentUser?.isApproved
-                  ? "No approved profiles are visible yet. New matches will show up here as more members go live."
-                  : "Recommendations are paused until your own profile clears approval."
-              }
-            />
+          <div id="interest-board" className="space-y-6">
             <ActionCenter
               items={actionCenterItems}
               matchProgress={`${interestBoardData.accepted.length} accepted match${

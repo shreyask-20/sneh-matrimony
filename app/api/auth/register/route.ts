@@ -18,6 +18,20 @@ type RegisterPayload = {
   photos?: Array<{ url: string; publicId?: string }>;
 };
 
+function isAllowedPhotoUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === "res.cloudinary.com" &&
+      parsed.pathname.includes("/image/upload/") &&
+      parsed.pathname.includes("/sneh-matrimony/profiles/")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   const body = (await request.json()) as RegisterPayload;
 
@@ -36,6 +50,13 @@ export async function POST(request: Request) {
   if (!body.photos || body.photos.length === 0) {
     return NextResponse.json(
       { error: "At least one primary profile photo is required." },
+      { status: 400 }
+    );
+  }
+
+  if (!body.photos.every((photo) => isAllowedPhotoUrl(photo.url))) {
+    return NextResponse.json(
+      { error: "Profile photos must come from the approved upload flow." },
       { status: 400 }
     );
   }

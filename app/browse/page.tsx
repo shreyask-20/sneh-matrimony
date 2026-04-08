@@ -8,12 +8,44 @@ import { authOptions } from "@/auth";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 import { getCandidateProfiles } from "@/lib/candidateProfiles";
 
-export default async function BrowsePage() {
+type BrowseSearchParams = {
+  ageRange?: string | string[];
+  city?: string | string[];
+  religion?: string | string[];
+  education?: string | string[];
+  profession?: string | string[];
+  caste?: string | string[];
+};
+
+const firstQueryValue = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value;
+
+const normalizeQueryValue = (value: string | string[] | undefined) =>
+  firstQueryValue(value)?.trim() || null;
+
+export default async function BrowsePage({
+  searchParams,
+}: {
+  searchParams?: Promise<BrowseSearchParams>;
+}) {
   const session = await getServerSession(authOptions);
+  const resolvedSearchParams = (await (searchParams ??
+    Promise.resolve({} as BrowseSearchParams))) as BrowseSearchParams;
+
   if (session?.user?.roleName === "ADMIN") {
     redirect("/admin");
   }
+
   const currentUserId = session?.user?.id ?? null;
+  const searchFilters = {
+    ageRange: normalizeQueryValue(resolvedSearchParams.ageRange),
+    city: normalizeQueryValue(resolvedSearchParams.city),
+    religion: normalizeQueryValue(resolvedSearchParams.religion),
+    education: normalizeQueryValue(resolvedSearchParams.education),
+    profession: normalizeQueryValue(resolvedSearchParams.profession),
+    caste: normalizeQueryValue(resolvedSearchParams.caste),
+  };
+
   const currentUserPromise = currentUserId
     ? prisma.user.findUnique({
         where: { id: currentUserId },
@@ -24,11 +56,13 @@ export default async function BrowsePage() {
         },
       })
     : Promise.resolve(null);
+
   const profilesPromise = session?.user?.gender
     ? getCandidateProfiles({
         prisma,
         currentUserId,
         currentUserGender: session.user.gender,
+        filters: searchFilters,
       })
     : null;
 
@@ -44,8 +78,23 @@ export default async function BrowsePage() {
           prisma,
           currentUserId,
           currentUserGender: currentUser?.gender ?? null,
+          filters: searchFilters,
         })
-      : []);
+      : await getCandidateProfiles({
+          prisma,
+          currentUserId: null,
+          filters: searchFilters,
+        }));
+
+  const activeFilters = Object.entries(searchFilters).filter(([, value]) => value);
+  const emptyMessage =
+    profiles.length === 0
+      ? activeFilters.length > 0
+        ? `No matches found for these filters. Try broadening your search.`
+        : currentUser?.isApproved && currentUser?.profileVisible
+          ? "No other profiles are available right now. Browse does not show your own profile."
+          : "No profiles are visible yet. Please check back soon."
+      : undefined;
 
   return (
     <PageBackdrop>
@@ -56,21 +105,16 @@ export default async function BrowsePage() {
             Filters
           </h2>
           <div className="mt-4 space-y-3 text-sm">
-            {[
-              "Age",
-              "Height",
-              "Caste",
-              "Education",
-              "City",
-              "Profession",
-            ].map((label) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-white/40 bg-white/70 px-4 py-3 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
-              >
-                {label}
-              </div>
-            ))}
+            {["Age", "Height", "Caste", "Education", "City", "Profession"].map(
+              (label) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-white/40 bg-white/70 px-4 py-3 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+                >
+                  {label}
+                </div>
+              )
+            )}
           </div>
           <Button className="mt-6 w-full">Apply filters</Button>
         </aside>
@@ -83,6 +127,14 @@ export default async function BrowsePage() {
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 {profiles.length} profiles available for you.
               </p>
+              {activeFilters.length > 0 ? (
+                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-brand-500">
+                  Filtered by{" "}
+                  {activeFilters
+                    .map(([label, value]) => `${label}: ${value}`)
+                    .join(" | ")}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
               Swipe mode
@@ -92,11 +144,7 @@ export default async function BrowsePage() {
           <BrowseResults
             profiles={profiles}
             signedIn={Boolean(currentUserId)}
-            emptyMessage={
-              currentUser?.isApproved && currentUser?.profileVisible
-                ? "Your profile is approved and live, but Browse does not show your own profile. Sign in with another user to verify it appears there."
-                : undefined
-            }
+            emptyMessage={emptyMessage}
           />
         </section>
       </main>

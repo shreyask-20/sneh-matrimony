@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Navbar from "@/components/shared/Navbar";
+import BackButton from "@/components/shared/BackButton";
 import Button from "@/components/shared/Button";
 
 type InitialValues = {
@@ -98,9 +99,12 @@ export default function ProfileEditForm({
       <Navbar />
       <main className="w-full px-4 py-10 sm:px-6 lg:px-8">
         <div className="glass-card rounded-3xl p-8">
-          <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
-            Edit profile
-          </h1>
+          <div className="space-y-4">
+            <BackButton fallbackHref="/profile" />
+            <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+              Edit profile
+            </h1>
+          </div>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Complete your details so your profile can be approved.
           </p>

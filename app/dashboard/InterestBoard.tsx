@@ -23,7 +23,6 @@ type InterestItem = {
 type Props = {
   received: InterestItem[];
   sent: InterestItem[];
-  accepted: InterestItem[];
 };
 
 const interestDateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -98,11 +97,10 @@ function InterestCard({
   );
 }
 
-export default function InterestBoard({ received, sent, accepted }: Props) {
+export default function InterestBoard({ received, sent }: Props) {
   const router = useRouter();
   const [receivedItems, setReceivedItems] = useState(received);
   const [sentItems, setSentItems] = useState(sent);
-  const [acceptedItems, setAcceptedItems] = useState(accepted);
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const featuredReceived = receivedItems[0] ?? null;
   const remainingReceived = featuredReceived
@@ -133,13 +131,6 @@ export default function InterestBoard({ received, sent, accepted }: Props) {
 
       if (action === "accept" && targetReceived) {
         setReceivedItems((current) => current.filter((item) => item.id !== interestId));
-        setAcceptedItems((current) => [
-          {
-            ...targetReceived,
-            status: "ACCEPTED",
-          },
-          ...current,
-        ]);
       }
 
       if (action === "decline") {
@@ -168,46 +159,6 @@ export default function InterestBoard({ received, sent, accepted }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="glass-card rounded-3xl p-6">
-        <h3 className="font-serif text-xl text-slate-900 dark:text-white">
-          Accepted Matches
-        </h3>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Mutual matches ready for conversation.
-        </p>
-        <div className="mt-4 space-y-4">
-          {acceptedItems.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              No matches yet.
-            </p>
-          ) : (
-            acceptedItems.map((item) => (
-              <InterestCard
-                key={item.id}
-                item={item}
-                emphasis="matched"
-                statusLabel="Matched"
-                actions={
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() =>
-                      router.push(
-                        item.conversationId
-                          ? `/chat?conversation=${item.conversationId}`
-                          : "/chat"
-                      )
-                    }
-                  >
-                    Open Chat
-                  </Button>
-                }
-              />
-            ))
-          )}
-        </div>
-      </div>
-
       {featuredReceived ? (
         <div className="self-start rounded-3xl border border-brand-200/80 bg-brand-50/80 p-6 shadow-[0_18px_36px_rgba(127,16,62,0.10)] dark:border-white/15 dark:bg-white/[0.08]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-500">

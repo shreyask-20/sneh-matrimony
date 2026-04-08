@@ -93,7 +93,7 @@ export default async function ProfilePage() {
           <Button
             asChild
             variant="secondary"
-            className="transition hover:bg-gradient-to-r hover:from-pink-100 hover:to-fuchsia-100 hover:text-slate-900"
+            className="h-10 rounded-20 px-4 transition hover:bg-gradient-to-r hover:from-pink-100 hover:to-fuchsia-100 hover:text-slate-900"
           >
             <Link href="/profile/edit">Edit profile</Link>
           </Button>

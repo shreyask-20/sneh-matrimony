@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { Eye, EyeOff } from "lucide-react";
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
 import PageBackdrop from "../../../components/shared/PageBackdrop";
@@ -20,6 +21,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [gender, setGender] = useState("");
   const [profession, setProfession] = useState("");
   const [education, setEducation] = useState("");
@@ -153,7 +155,9 @@ export default function RegisterPage() {
   const uploadPhotos = async () => {
     if (photos.length === 0) return [];
     const orderedPhotos = getOrderedPhotos();
-    const signatureRes = await fetch("/api/upload/signature");
+    const signatureRes = await fetch("/api/upload/signature", {
+      method: "POST",
+    });
     if (!signatureRes.ok) {
       throw new Error("Failed to get upload signature");
     }
@@ -348,13 +352,31 @@ export default function RegisterPage() {
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                   />
-                  <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    placeholder="Create a password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                      placeholder="Create a password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                    {password.length > 0 ? (
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full p-1 text-slate-400 transition hover:text-brand-600 dark:text-slate-300"
+                        onClick={() => setShowPassword((current) => !current)}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : null}
+                  </div>
                 </>
               )}
               {activeStep === 1 && (

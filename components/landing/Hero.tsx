@@ -55,8 +55,8 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
                 {isAuthenticated ? "View Profile" : "Create Profile"}
               </Link>
             </Button>
-            <Button size="lg" variant="secondary">
-              Browse Matches
+            <Button size="lg" variant="secondary" asChild>
+              <Link href="/browse">Browse Matches</Link>
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
@@ -64,31 +64,44 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
             <span>Secure chat</span>
           </div>
         </div>
-        <div className="glass-card rounded-[32px] p-6">
+        <form
+          action="/browse"
+          method="get"
+          className="glass-card rounded-[32px] p-6"
+        >
           <div className="space-y-4 rounded-[24px] bg-rose-dawn p-6 dark:bg-white/5">
             <p className="text-xs uppercase tracking-[0.3em] text-brand-500">
               Quick search
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                "Age range",
-                "City",
-                "Religion",
-                "Education",
-                "Profession",
-                "Caste",
-              ].map((label) => (
-                <div
-                  key={label}
-                  className="rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200"
-                >
-                  {label}
-                </div>
+                { id: "hero-age-range", name: "ageRange", label: "Age range" },
+                { id: "hero-city", name: "city", label: "City" },
+                { id: "hero-religion", name: "religion", label: "Religion" },
+                { id: "hero-education", name: "education", label: "Education" },
+                { id: "hero-profession", name: "profession", label: "Profession" },
+                { id: "hero-caste", name: "caste", label: "Caste" },
+              ].map((field) => (
+                <label key={field.id} className="block">
+                  <span className="sr-only">{field.label}</span>
+                  <input
+                    id={field.id}
+                    name={field.name}
+                    type="text"
+                    placeholder={field.label}
+                    className="w-full rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand-300 focus:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200 dark:placeholder:text-slate-400"
+                  />
+                </label>
               ))}
             </div>
-            <Button className="w-full">Search Matches</Button>
+            <Button
+              type="submit"
+              className="w-full bg-slate-950 text-white hover:bg-slate-800"
+            >
+              Search Matches
+            </Button>
           </div>
-        </div>
+        </form>
       </div>
     </section>
   );

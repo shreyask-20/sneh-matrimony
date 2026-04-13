@@ -94,9 +94,9 @@ export default function Navbar({
         <nav className="flex w-full items-center justify-between py-1">
           <a className="flex items-center" href="/">
             <img
-              src={isBlend ? "/profiles/nav-logo1.png" : "/profiles/nav-logo.png"}
+              src={isBlend ? "/profiles/navi.png" : "/profiles/nav-logo.png"}
               alt="Sneh Matrimony"
-              className="h-24 -my-2 w-auto object-contain"
+              className={`${isBlend ? "h-20" : "h-24"} w-auto shrink-0 object-contain`}
             />
           </a>
           <div

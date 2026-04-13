@@ -99,6 +99,10 @@ model Horoscope {
   nakshatra          String
   rashi              String
   gotra              String
+  gan                String?
+  nadi               String?
+  charan             String?
+  chart              Json?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

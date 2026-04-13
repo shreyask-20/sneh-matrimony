@@ -135,7 +135,12 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error("Failed to update user");
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(data?.error ?? "Failed to update user");
+      }
       await fetchUsers("all");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update user");
@@ -471,11 +476,30 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   </div>
                 ) : (
                   filteredUsers.map((user) => (
-                    <div
-                      key={user.id}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-4">
+                    (() => {
+                      const primaryPhoto = user.photos[0] ?? null;
+                      const primaryPhotoApproved =
+                        primaryPhoto?.status === "APPROVED";
+                      const primaryPhotoPending =
+                        primaryPhoto?.status === "PENDING";
+                      const primaryPhotoRejected =
+                        primaryPhoto?.status === "REJECTED";
+                      const needsPrimaryPhotoApproval =
+                        user.roleName === "USER" && !primaryPhotoApproved;
+                      const approvalHelpText = !primaryPhoto
+                        ? "Upload a primary photo before approving this member."
+                        : primaryPhotoPending
+                        ? "Approve the primary photo first, then approve the member."
+                        : primaryPhotoRejected
+                        ? "This member needs a new approved primary photo before profile approval."
+                        : null;
+
+                      return (
+                        <div
+                          key={user.id}
+                          className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-semibold text-slate-900 dark:text-white">
@@ -553,6 +577,16 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               Photos: {user.photos.length}
                             </span>
                             <span>
+                              Primary:{" "}
+                              {primaryPhoto
+                                ? primaryPhoto.status === "APPROVED"
+                                  ? "Approved"
+                                  : primaryPhoto.status === "REJECTED"
+                                  ? "Rejected"
+                                  : "Pending"
+                                : "Missing"}
+                            </span>
+                            <span>
                               Pending: {
                                 user.photos.filter((photo) => photo.status === "PENDING").length
                               }
@@ -566,6 +600,11 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               Created {new Date(user.createdAt).toLocaleDateString()}
                             </span>
                           </div>
+                          {approvalHelpText ? (
+                            <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+                              {approvalHelpText}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <label className="flex items-center gap-2 text-xs text-slate-500">
@@ -591,7 +630,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                                 <input
                                   type="checkbox"
                                   checked={user.profileVisible}
-                                  disabled={!user.isApproved}
+                                  disabled={!user.isApproved || !primaryPhotoApproved}
                                   onChange={(event) =>
                                     updateUser(user.id, {
                                       profileVisible: event.target.checked,
@@ -601,10 +640,12 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               </label>
                               <Button
                                 size="sm"
-                                disabled={user.isApproved}
+                                disabled={user.isApproved || needsPrimaryPhotoApproval}
                                 onClick={() => handleDecision(user, "APPROVED")}
                               >
-                                Approve
+                                {needsPrimaryPhotoApproval
+                                  ? "Approve primary photo first"
+                                  : "Approve member"}
                               </Button>
                               <Button
                                 size="sm"
@@ -628,7 +669,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                           )}
                         </div>
                       </div>
-                      {user.photos.length > 0 ? (
+                          {user.photos.length > 0 ? (
                         <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                           {user.photos.map((photo) => (
                             <div
@@ -644,6 +685,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               </div>
                               <div className="mt-2 flex items-center justify-between">
                                 <span>
+                                  {photo.id === primaryPhoto?.id ? "Primary · " : ""}
                                   {photo.status === "APPROVED"
                                     ? "Approved"
                                     : photo.status === "REJECTED"
@@ -685,7 +727,9 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                           No photos uploaded yet.
                         </p>
                       )}
-                    </div>
+                        </div>
+                      );
+                    })()
                   ))
                 )}
               </div>

@@ -6,6 +6,7 @@ import Badge from "../../components/shared/Badge";
 import Button from "../../components/shared/Button";
 import BackButton from "../../components/shared/BackButton";
 import ProfileTabs from "../../components/profile/ProfileTabs";
+import ProfileGallery from "../../components/profile/ProfileGallery";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import PageBackdrop from "../../components/shared/PageBackdrop";
@@ -34,6 +35,7 @@ export default async function ProfilePage() {
       education: true,
       profession: true,
       religion: true,
+      community: true,
       motherTongue: true,
       bio: true,
       height: true,
@@ -59,7 +61,22 @@ export default async function ProfilePage() {
           preferredAgeRange: true,
           religionCommunity: true,
           locationPreference: true,
+          castePreference: true,
+          subCastePreference: true,
           expectations: true,
+        },
+      },
+      horoscope: {
+        select: {
+          horoscopeAvailable: true,
+          manglik: true,
+          nakshatra: true,
+          rashi: true,
+          gotra: true,
+          gan: true,
+          nadi: true,
+          charan: true,
+          chart: true,
         },
       },
     },
@@ -101,23 +118,7 @@ export default async function ProfilePage() {
         <div className="glass-card rounded-3xl p-8">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="space-y-4">
-              <img
-                src={photos[0].url}
-                alt={fullName}
-                className="face-focus-top h-72 w-full rounded-3xl"
-              />
-              {photos.length > 1 ? (
-                <div className="grid grid-cols-4 gap-2">
-                  {photos.slice(1, 5).map((photo) => (
-                    <img
-                      key={photo.url}
-                      src={photo.url}
-                      alt={fullName}
-                      className="face-focus h-16 w-full rounded-2xl"
-                    />
-                  ))}
-                </div>
-              ) : null}
+              <ProfileGallery photos={photos} alt={fullName} />
               <div className="flex flex-wrap gap-2">
                 <Badge label={approvalLabel} tone={user.isApproved ? "verified" : "neutral"} />
                 <Badge label={visibilityLabel} tone={user.profileVisible ? "premium" : "neutral"} />
@@ -193,6 +194,12 @@ export default async function ProfilePage() {
                   </p>
                 </div>
                 <div>
+                  <p className="text-xs uppercase text-slate-400">Community</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">
+                    {user.community ?? "Not shared"}
+                  </p>
+                </div>
+                <div>
                   <p className="text-xs uppercase text-slate-400">Height</p>
                   <p className="font-semibold text-slate-800 dark:text-slate-100">
                     {user.height ?? "Not shared"}
@@ -222,9 +229,26 @@ export default async function ProfilePage() {
                         preferredAgeRange: user.preferences.preferredAgeRange,
                         religionCommunity: user.preferences.religionCommunity,
                         locationPreference: user.preferences.locationPreference,
+                        castePreference: user.preferences.castePreference,
+                        subCastePreference: user.preferences.subCastePreference,
                         expectations: user.preferences.expectations,
                       }
                     : "Partner preferences have not been added yet."
+                }
+                horoscope={
+                  user.horoscope
+                    ? {
+                        horoscopeAvailable: user.horoscope.horoscopeAvailable,
+                        manglik: user.horoscope.manglik,
+                        nakshatra: user.horoscope.nakshatra,
+                        rashi: user.horoscope.rashi,
+                        gotra: user.horoscope.gotra,
+                        gan: user.horoscope.gan,
+                        nadi: user.horoscope.nadi,
+                        charan: user.horoscope.charan,
+                        chart: user.horoscope.chart,
+                      }
+                    : "Horoscope details have not been added yet."
                 }
               />
             </div>

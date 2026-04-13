@@ -1,0 +1,5 @@
+ALTER TABLE "Horoscope"
+ADD COLUMN "gan" TEXT,
+ADD COLUMN "nadi" TEXT,
+ADD COLUMN "charan" TEXT,
+ADD COLUMN "chart" JSONB;

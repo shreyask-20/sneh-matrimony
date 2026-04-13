@@ -28,7 +28,43 @@ export default async function ProfileEditPage() {
       profession: true,
       education: true,
       city: true,
+      religion: true,
+      community: true,
+      motherTongue: true,
       bio: true,
+      familyDetails: {
+        select: {
+          fatherName: true,
+          motherName: true,
+          totalBrothers: true,
+          totalSisters: true,
+          marriedBrothers: true,
+          marriedSisters: true,
+        },
+      },
+      horoscope: {
+        select: {
+          horoscopeAvailable: true,
+          manglik: true,
+          nakshatra: true,
+          rashi: true,
+          gotra: true,
+          gan: true,
+          nadi: true,
+          charan: true,
+          chart: true,
+        },
+      },
+      preferences: {
+        select: {
+          preferredAgeRange: true,
+          religionCommunity: true,
+          locationPreference: true,
+          castePreference: true,
+          subCastePreference: true,
+          expectations: true,
+        },
+      },
     },
   });
 

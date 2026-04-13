@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import HoroscopeChart from "./HoroscopeChart";
+import { normalizeHoroscopeChartInput } from "@/lib/horoscope";
 
-const tabs = ["About", "Family", "Preferences"] as const;
+const tabs = ["About", "Family", "Preferences", "Horoscope"] as const;
 
 type FamilyDetails = {
   fatherName: string;
@@ -42,6 +44,7 @@ export default function ProfileTabs({
   about,
   family,
   preferences,
+  horoscope,
 }: {
   about?: string;
   family?: string | FamilyDetails;
@@ -51,7 +54,22 @@ export default function ProfileTabs({
         preferredAgeRange?: string | null;
         religionCommunity?: string | null;
         locationPreference?: string | null;
+        castePreference?: string | null;
+        subCastePreference?: string | null;
         expectations?: string | null;
+      };
+  horoscope?:
+    | string
+    | {
+        horoscopeAvailable?: boolean | null;
+        manglik?: boolean | null;
+        nakshatra?: string | null;
+        rashi?: string | null;
+        gotra?: string | null;
+        gan?: string | null;
+        nadi?: string | null;
+        charan?: string | null;
+        chart?: unknown;
       };
 }) {
   const [active, setActive] = useState<(typeof tabs)[number]>("About");
@@ -173,6 +191,22 @@ export default function ProfileTabs({
                     {preferences.locationPreference ?? "Flexible"}
                   </p>
                 </div>
+                <div className="rounded-2xl bg-brand-50/50 px-4 py-3 dark:bg-white/[0.04]">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                    Caste preference
+                  </p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {preferences.castePreference ?? "Open"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-brand-50/50 px-4 py-3 dark:bg-white/[0.04]">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                    Sub-caste preference
+                  </p>
+                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                    {preferences.subCastePreference ?? "Open"}
+                  </p>
+                </div>
               </div>
               <div className="rounded-2xl border border-white/40 bg-white/80 px-4 py-4 dark:border-white/10 dark:bg-slate-950/40">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
@@ -182,6 +216,37 @@ export default function ProfileTabs({
                   {preferences.expectations ??
                     "This member is open to meaningful conversations and a compatible long-term match."}
                 </p>
+              </div>
+            </div>
+          )
+        )}
+        {active === "Horoscope" && (
+          typeof horoscope === "string" || !horoscope ? (
+            <p>
+              {horoscope ??
+                "Horoscope details have not been added yet."}
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <HoroscopeChart chart={normalizeHoroscopeChartInput(horoscope.chart)} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FieldCard
+                  label="Horoscope available"
+                  value={horoscope.horoscopeAvailable ? "Yes" : "No"}
+                />
+                <FieldCard
+                  label="Manglik"
+                  value={horoscope.manglik ? "Yes" : "No"}
+                />
+                <FieldCard
+                  label="Nakshatra"
+                  value={horoscope.nakshatra ?? "Not shared"}
+                />
+                <FieldCard label="Rashi" value={horoscope.rashi ?? "Not shared"} />
+                <FieldCard label="Gotra" value={horoscope.gotra ?? "Not shared"} />
+                <FieldCard label="Gan" value={horoscope.gan ?? "Not shared"} />
+                <FieldCard label="Nadi" value={horoscope.nadi ?? "Not shared"} />
+                <FieldCard label="Charan" value={horoscope.charan ?? "Not shared"} />
               </div>
             </div>
           )

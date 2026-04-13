@@ -206,51 +206,53 @@ export default async function ProfilePage() {
                   </p>
                 </div>
               </div>
-              <ProfileTabs
-                about={
-                  user.bio ??
-                  "This profile is ready for meaningful conversations, and you can keep improving it from the edit page."
-                }
-                family={
-                  user.familyDetails
-                    ? {
-                        fatherName: user.familyDetails.fatherName,
-                        motherName: user.familyDetails.motherName,
-                        totalBrothers: user.familyDetails.totalBrothers,
-                        totalSisters: user.familyDetails.totalSisters,
-                        marriedBrothers: user.familyDetails.marriedBrothers,
-                        marriedSisters: user.familyDetails.marriedSisters,
-                      }
-                    : familySummary
-                }
-                preferences={
-                  user.preferences
-                    ? {
-                        preferredAgeRange: user.preferences.preferredAgeRange,
-                        religionCommunity: user.preferences.religionCommunity,
-                        locationPreference: user.preferences.locationPreference,
-                        castePreference: user.preferences.castePreference,
-                        subCastePreference: user.preferences.subCastePreference,
-                        expectations: user.preferences.expectations,
-                      }
-                    : "Partner preferences have not been added yet."
-                }
-                horoscope={
-                  user.horoscope
-                    ? {
-                        horoscopeAvailable: user.horoscope.horoscopeAvailable,
-                        manglik: user.horoscope.manglik,
-                        nakshatra: user.horoscope.nakshatra,
-                        rashi: user.horoscope.rashi,
-                        gotra: user.horoscope.gotra,
-                        gan: user.horoscope.gan,
-                        nadi: user.horoscope.nadi,
-                        charan: user.horoscope.charan,
-                        chart: user.horoscope.chart,
-                      }
-                    : "Horoscope details have not been added yet."
-                }
-              />
+              <div className="lg:mt-6">
+                <ProfileTabs
+                  about={
+                    user.bio ??
+                    "This profile is ready for meaningful conversations, and you can keep improving it from the edit page."
+                  }
+                  family={
+                    user.familyDetails
+                      ? {
+                          fatherName: user.familyDetails.fatherName,
+                          motherName: user.familyDetails.motherName,
+                          totalBrothers: user.familyDetails.totalBrothers,
+                          totalSisters: user.familyDetails.totalSisters,
+                          marriedBrothers: user.familyDetails.marriedBrothers,
+                          marriedSisters: user.familyDetails.marriedSisters,
+                        }
+                      : familySummary
+                  }
+                  preferences={
+                    user.preferences
+                      ? {
+                          preferredAgeRange: user.preferences.preferredAgeRange,
+                          religionCommunity: user.preferences.religionCommunity,
+                          locationPreference: user.preferences.locationPreference,
+                          castePreference: user.preferences.castePreference,
+                          subCastePreference: user.preferences.subCastePreference,
+                          expectations: user.preferences.expectations,
+                        }
+                      : "Partner preferences have not been added yet."
+                  }
+                  horoscope={
+                    user.horoscope
+                      ? {
+                          horoscopeAvailable: user.horoscope.horoscopeAvailable,
+                          manglik: user.horoscope.manglik,
+                          nakshatra: user.horoscope.nakshatra,
+                          rashi: user.horoscope.rashi,
+                          gotra: user.horoscope.gotra,
+                          gan: user.horoscope.gan,
+                          nadi: user.horoscope.nadi,
+                          charan: user.horoscope.charan,
+                          chart: user.horoscope.chart,
+                        }
+                      : "Horoscope details have not been added yet."
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>

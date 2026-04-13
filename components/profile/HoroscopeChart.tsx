@@ -44,7 +44,7 @@ export default function HoroscopeChart({
 
   return (
     <div className="rounded-[28px] border border-white/40 bg-white/85 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-      <div className="relative mx-auto aspect-[4/3] w-full max-w-[520px]">
+      <div className="relative mx-auto aspect-[3/4] w-full max-w-[680px] sm:aspect-[4/3]">
         
         {/* ✅ FIXED SVG */}
         <svg
@@ -128,15 +128,15 @@ export default function HoroscopeChart({
         {housePositions.map((house) => (
           <div
             key={house.key}
-            className={`absolute flex min-w-[54px] -translate-x-1/2 -translate-y-1/2 flex-col gap-1 ${textAlignClass(
+            className={`absolute flex min-w-[54px] -translate-x-1/2 -translate-y-1/2 flex-col gap-1 md:min-w-[54px] ${textAlignClass(
               house.align
             )}`}
             style={{ left: house.x, top: house.y }}
           >
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:text-[10px] md:tracking-[0.18em]">
               {house.label}
             </span>
-            <span className="max-w-[84px] text-xs font-medium leading-4 text-slate-700 dark:text-slate-100">
+            <span className="max-w-[64px] text-[10px] font-medium leading-3 text-slate-700 break-words dark:text-slate-100 md:max-w-[84px] md:text-xs md:leading-4">
               {chart?.[house.key] || " "}
             </span>
           </div>

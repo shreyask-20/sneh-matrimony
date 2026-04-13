@@ -76,7 +76,26 @@ export default function ProfileTabs({
 
   return (
     <div>
-      <div className="flex flex-wrap gap-3">
+      <div className="md:hidden">
+        <label className="sr-only" htmlFor="profile-tab-select">
+          Select section
+        </label>
+        <div className="relative">
+          <select
+            id="profile-tab-select"
+            value={active}
+            onChange={(event) => setActive(event.target.value as (typeof tabs)[number])}
+            className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-100"
+          >
+            {tabs.map((tab) => (
+              <option key={tab} value={tab}>
+                {tab}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="hidden flex-wrap gap-3 md:flex">
         {tabs.map((tab) => (
           <button
             key={tab}

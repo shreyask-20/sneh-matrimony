@@ -21,7 +21,7 @@ export default function ProfileGallery({
       <img
         src={selectedPhoto.url}
         alt={alt}
-        className="face-focus-top h-72 w-full rounded-3xl"
+        className="face-focus-portrait w-full aspect-[3/3] rounded-3xl"
       />
       {photos.length > 1 ? (
         <div className="grid grid-cols-4 gap-2">

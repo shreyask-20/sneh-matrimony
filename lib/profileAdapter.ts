@@ -1,4 +1,5 @@
 import type { Profile } from "@/data/profiles";
+import { buildVerificationSummary } from "@/lib/verification";
 
 export type UserForCard = {
   id: string;
@@ -12,6 +13,7 @@ export type UserForCard = {
   religion: string | null;
   height: string | null;
   bio: string | null;
+  emailVerified: Date | null;
   isApproved: boolean;
   profileVisible: boolean;
   photos: Array<{ url: string }>;
@@ -44,6 +46,11 @@ export function userToProfile(user: UserForCard): Profile {
     height: user.height ?? "",
     image: user.photos[0]?.url ?? "/profiles/p1.jpg",
     verified: user.isApproved,
+    verification: buildVerificationSummary({
+      isApproved: user.isApproved,
+      emailVerified: user.emailVerified,
+      approvedPhotoCount: user.photos.length,
+    }),
     premium: false,
     about: user.bio ?? "Profile details are being updated.",
   };

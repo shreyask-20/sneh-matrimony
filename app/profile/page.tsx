@@ -10,6 +10,7 @@ import ProfileGallery from "../../components/profile/ProfileGallery";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import PageBackdrop from "../../components/shared/PageBackdrop";
+import { buildVerificationSummary } from "@/lib/verification";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -30,6 +31,7 @@ export default async function ProfilePage() {
       birthDate: true,
       city: true,
       email: true,
+      emailVerified: true,
       phone: true,
       maritalStatus: true,
       education: true,
@@ -100,6 +102,11 @@ export default async function ProfilePage() {
   const contactPhone = user.phone ?? "Not shared";
   const visibilityLabel = user.profileVisible ? "Visible in browse" : "Hidden from browse";
   const approvalLabel = user.isApproved ? "Approved" : "Pending review";
+  const verification = buildVerificationSummary({
+    isApproved: user.isApproved,
+    emailVerified: user.emailVerified,
+    approvedPhotoCount: user.photos.length,
+  });
 
   return (
     <PageBackdrop>
@@ -122,7 +129,23 @@ export default async function ProfilePage() {
               <div className="flex flex-wrap gap-2">
                 <Badge label={approvalLabel} tone={user.isApproved ? "verified" : "neutral"} />
                 <Badge label={visibilityLabel} tone={user.profileVisible ? "premium" : "neutral"} />
+                <Badge
+                  label={verification.tierLabel}
+                  tone={verification.badges.length > 0 ? "verified" : "neutral"}
+                />
               </div>
+              {verification.badges.length > 0 && (
+                <div className="flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-300">
+                  {verification.badges.map((badge) => (
+                    <span
+                      key={badge}
+                      className="rounded-full border border-white/60 bg-white/80 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/10 dark:text-slate-300"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap gap-3">
                 <Button
                   asChild

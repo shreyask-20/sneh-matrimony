@@ -1,3 +1,5 @@
+import type { VerificationSummary } from "../lib/verification";
+
 export type Profile = {
   id: number;
   name: string;
@@ -10,6 +12,7 @@ export type Profile = {
   verified?: boolean;
   premium?: boolean;
   about: string;
+  verification?: VerificationSummary;
 };
 
 export const profiles: Profile[] = [
@@ -24,6 +27,11 @@ export const profiles: Profile[] = [
     image: "/profiles/p1.jpg",
     verified: true,
     premium: true,
+    verification: {
+      tierLabel: "ID verified",
+      badges: ["Profile", "Photo", "Email", "ID"],
+      lastActiveLabel: "Active today",
+    },
     about:
       "Warm, artistic, and family-oriented. Loves music, coastal travel, and Sunday brunches.",
   },
@@ -37,6 +45,11 @@ export const profiles: Profile[] = [
     height: "5'9\"",
     image: "/profiles/p2.jpg",
     verified: true,
+    verification: {
+      tierLabel: "Photo verified",
+      badges: ["Profile", "Photo", "Email"],
+      lastActiveLabel: "Active 2 days ago",
+    },
     about:
       "Calm, thoughtful, and grounded. Enjoys trekking, reading, and long drives.",
   },
@@ -50,6 +63,11 @@ export const profiles: Profile[] = [
     height: "5'5\"",
     image: "/profiles/p3.png",
     premium: true,
+    verification: {
+      tierLabel: "Profile verified",
+      badges: ["Profile"],
+      lastActiveLabel: "Active this week",
+    },
     about:
       "Compassionate and driven. Loves cooking, wellness, and meaningful conversations.",
   },
@@ -62,6 +80,11 @@ export const profiles: Profile[] = [
     education: "MBA",
     height: "5'8\"",
     image: "/profiles/p4.jpg",
+    verification: {
+      tierLabel: "Verification pending",
+      badges: [],
+      lastActiveLabel: "Active this week",
+    },
     about:
       "Curious and optimistic. Enjoys travel photography and hosting friends.",
   },
@@ -75,6 +98,11 @@ export const profiles: Profile[] = [
     height: "5'3\"",
     image: "/profiles/p5.png",
     verified: true,
+    verification: {
+      tierLabel: "Email verified",
+      badges: ["Profile", "Email"],
+      lastActiveLabel: "Active today",
+    },
     about:
       "Balanced and family-focused. Loves art exhibits, coffee, and volunteering.",
   },

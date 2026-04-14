@@ -22,6 +22,12 @@ export default function ProfileCard({
   const locationLabel = profile.location || "Location not set";
   const educationLabel = profile.education || "Education not set";
   const faithLabel = profile.faith || "Not specified";
+  const verificationLabel =
+    profile.verification?.tierLabel ??
+    (profile.verified ? "Profile verified" : undefined);
+  const verificationBadges =
+    profile.verification?.badges ?? (profile.verified ? ["Profile"] : []);
+  const lastActiveLabel = profile.verification?.lastActiveLabel;
 
   return (
     <div
@@ -62,10 +68,26 @@ export default function ProfileCard({
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {profile.verified && <Badge label="Verified" tone="verified" />}
+          {verificationLabel && (
+            <Badge label={verificationLabel} tone="verified" />
+          )}
           {profile.premium && <Badge label="Premium" tone="premium" />}
         </div>
       </div>
+      {(verificationBadges.length > 0 || lastActiveLabel) && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
+          {verificationBadges.length > 0 && (
+            <span>
+              Verified: {verificationBadges.join(" · ")}
+            </span>
+          )}
+          {lastActiveLabel && (
+            <span className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+              {lastActiveLabel}
+            </span>
+          )}
+        </div>
+      )}
       <p
         className={`line-clamp-2 overflow-hidden text-sm text-slate-600 dark:text-slate-300`}
       >

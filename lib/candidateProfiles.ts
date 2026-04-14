@@ -144,6 +144,7 @@ export async function getCandidateProfiles({
       religion: true,
       height: true,
       bio: true,
+      emailVerified: true,
       isApproved: true,
       profileVisible: true,
       photos: {

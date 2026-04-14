@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 const WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUESTS = 20;
 const requestCounts = new Map<string, { count: number; resetAt: number }>();
+const MAX_FILE_SIZE = 1024 * 1024;
 
 function getEnv(name: string) {
   const value = process.env[name];
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = "sneh-matrimony/profiles";
 
-  const signatureBase = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+  const signatureBase = `folder=${folder}&max_file_size=${MAX_FILE_SIZE}&timestamp=${timestamp}${apiSecret}`;
   const signature = crypto
     .createHash("sha1")
     .update(signatureBase)
@@ -102,5 +103,6 @@ export async function POST(request: Request) {
     timestamp,
     folder,
     signature,
+    maxFileSize: MAX_FILE_SIZE,
   });
 }

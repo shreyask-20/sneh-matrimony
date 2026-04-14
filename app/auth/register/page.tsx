@@ -10,6 +10,8 @@ import PageBackdrop from "../../../components/shared/PageBackdrop";
 
 const steps = ["Basic info", "Personal", "Preferences", "Upload photos"];
 const MIN_PRIMARY_PHOTO_SIDE = 900;
+const MAX_PHOTO_BYTES = 1024 * 1024;
+const RECOMMENDED_PHOTO_BYTES = 500 * 1024;
 
 export default function RegisterPage() {
   const [activeStep, setActiveStep] = useState(0);
@@ -57,9 +59,18 @@ export default function RegisterPage() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-    const valid = Array.from(files).filter((file) =>
-      file.type.startsWith("image/")
+    const incoming = Array.from(files);
+    const oversized = incoming.filter((file) => file.size > MAX_PHOTO_BYTES);
+    const valid = incoming.filter(
+      (file) => file.type.startsWith("image/") && file.size <= MAX_PHOTO_BYTES
     );
+    if (oversized.length > 0) {
+      setError(
+        `Each photo must be 1MB or less. ${oversized.length} file${
+          oversized.length === 1 ? "" : "s"
+        } skipped.`
+      );
+    }
     setPhotos((prev) => {
       const next = [...prev, ...valid];
       if (prev.length === 0 && next.length > 0) {
@@ -114,8 +125,8 @@ export default function RegisterPage() {
       return "The primary photo must be an image.";
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      return "The primary photo must be smaller than 8MB.";
+    if (file.size > MAX_PHOTO_BYTES) {
+      return "The primary photo must be 1MB or smaller.";
     }
 
     const dimensions = await loadImageDimensions(file);
@@ -167,6 +178,7 @@ export default function RegisterPage() {
       timestamp: number;
       folder: string;
       signature: string;
+      maxFileSize: number;
     };
 
     const uploads = await Promise.all(
@@ -177,6 +189,7 @@ export default function RegisterPage() {
         formData.append("timestamp", signatureData.timestamp.toString());
         formData.append("folder", signatureData.folder);
         formData.append("signature", signatureData.signature);
+        formData.append("max_file_size", signatureData.maxFileSize.toString());
 
         const uploadRes = await fetch(
           `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
@@ -436,6 +449,10 @@ export default function RegisterPage() {
                 <>
                   <p className="rounded-2xl border border-brand-100/70 bg-brand-50/60 px-4 py-3 text-xs text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                     The first photo becomes your primary profile image. Choose a clear solo portrait with your face visible. You can keep adding extra photos after that.
+                  </p>
+                  <p className="rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-xs text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                    Max file size is 1MB per photo. For faster loading, aim for
+                    {` `}under {(RECOMMENDED_PHOTO_BYTES / 1024).toFixed(0)}KB.
                   </p>
                   <div
                     className={`relative rounded-2xl border border-dashed px-4 py-8 text-center text-sm transition ${

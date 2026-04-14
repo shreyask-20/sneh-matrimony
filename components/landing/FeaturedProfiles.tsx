@@ -1,7 +1,18 @@
-import { profiles } from "../../data/profiles";
+import Link from "next/link";
 import ProfileCard from "../shared/ProfileCard";
+import type { Profile } from "../../data/profiles";
+import Button from "../shared/Button";
 
-export default function FeaturedProfiles() {
+type FeaturedProfile = {
+  userId: string;
+  profile: Profile;
+};
+
+export default function FeaturedProfiles({
+  profiles,
+}: {
+  profiles: FeaturedProfile[];
+}) {
   const marqueeProfiles = [...profiles, ...profiles, ...profiles, ...profiles];
   return (
     <section className="w-full px-4 pb-16 sm:px-6 lg:px-8 xl:px-12">
@@ -16,17 +27,26 @@ export default function FeaturedProfiles() {
           View all
         </button>
       </div>
-      <div className="marquee-fade relative overflow-hidden rounded-3xl bg-rose-dawn py-6 dark:bg-white/5">
+      <div className="marquee-fade marquee-pause relative overflow-hidden rounded-3xl bg-rose-dawn py-6 dark:bg-white/5">
         <div className="marquee-track flex w-max gap-6 px-4">
-          {marqueeProfiles.map((profile, index) => (
+          {marqueeProfiles.map((item, index) => (
             <div
-              key={`${profile.id}-${index}`}
+              key={`${item.userId}-${index}`}
               className="min-w-[260px] max-w-[180px] shrink-0"
             >
               <ProfileCard
-                profile={profile}
-                actionLabel="Connect"
+                profile={item.profile}
                 size="compact"
+                actionSlot={
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="secondary"
+                    className="w-full whitespace-normal sm:w-auto"
+                  >
+                    <Link href={`/profiles/${item.userId}`}>View Profile</Link>
+                  </Button>
+                }
               />
             </div>
           ))}

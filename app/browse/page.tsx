@@ -136,10 +136,6 @@ export default async function BrowsePage({
                 </p>
               ) : null}
             </div>
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-              Swipe mode
-              <span className="h-2 w-2 rounded-full bg-brand-500" />
-            </div>
           </div>
           <BrowseResults
             profiles={profiles}

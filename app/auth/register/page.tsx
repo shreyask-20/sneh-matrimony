@@ -189,7 +189,6 @@ export default function RegisterPage() {
         formData.append("timestamp", signatureData.timestamp.toString());
         formData.append("folder", signatureData.folder);
         formData.append("signature", signatureData.signature);
-        formData.append("max_file_size", signatureData.maxFileSize.toString());
 
         const uploadRes = await fetch(
           `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
@@ -305,7 +304,7 @@ export default function RegisterPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/dashboard?login=1");
   };
 
   return (

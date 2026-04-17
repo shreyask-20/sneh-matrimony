@@ -91,7 +91,7 @@ export async function POST(request: Request) {
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = "sneh-matrimony/profiles";
 
-  const signatureBase = `folder=${folder}&max_file_size=${MAX_FILE_SIZE}&timestamp=${timestamp}${apiSecret}`;
+  const signatureBase = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
   const signature = crypto
     .createHash("sha1")
     .update(signatureBase)

@@ -148,14 +148,17 @@
   display: inline-flex;
   flex-direction: column;
   gap: 6px;
-  color: #fef6fb;
-  text-shadow: 0 12px 30px rgba(127, 16, 62, 0.35);
+  color: #1e0a14;
+  text-shadow: 0 12px 30px rgba(127, 16, 62, 0.18);
 }
 
 .romantic-title-accent {
-  color: #fff;
   font-style: italic;
   letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #9b1c4a 0%, #c2185b 45%, #7b1fa2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .marquee-track {

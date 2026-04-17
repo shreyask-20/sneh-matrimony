@@ -150,7 +150,7 @@ export async function getCandidateProfiles({
       photos: {
         where: { status: "APPROVED" },
         select: { url: true },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
       },
     },
     orderBy: { createdAt: "desc" },

@@ -70,7 +70,7 @@ export default async function PublicProfilePage({
       photos: {
         where: { status: "APPROVED" },
         select: { url: true },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
       },
       familyDetails: {
         select: {

@@ -32,7 +32,7 @@ export default function ProfileCard({
   return (
     <div
       className={`glass-card card-clean group flex flex-col gap-5 overflow-hidden rounded-3xl transition hover:-translate-y-1 hover:shadow-soft ${
-        isCompact ? "h-[400px] p-4" : "min-h-[560px] p-5"
+        isCompact ? "h-[450px] p-4" : "min-h-[560px] p-5"
       }`}
     >
       <div

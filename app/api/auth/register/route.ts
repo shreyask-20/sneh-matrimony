@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
+import crypto from "node:crypto";
 
 type RegisterPayload = {
   fullName?: string;
@@ -112,6 +114,24 @@ export async function POST(request: Request) {
       email: true,
     },
   });
+
+  // Send email verification (best-effort — don't fail registration if email fails)
+  try {
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires,
+      },
+    });
+
+    await sendVerificationEmail(email, token);
+  } catch {
+    // Non-fatal: user is created, verification can be resent later
+  }
 
   return NextResponse.json({ user }, { status: 201 });
 }

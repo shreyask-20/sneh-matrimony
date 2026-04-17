@@ -13,7 +13,7 @@ export default async function ProfileEditPage() {
     redirect("/admin");
   }
 
-  const user = await prisma.user.findUnique({
+const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
       name: true,
@@ -32,6 +32,15 @@ export default async function ProfileEditPage() {
       community: true,
       motherTongue: true,
       bio: true,
+      photos: {
+        select: {
+          id: true,
+          url: true,
+          status: true,
+          isPrimary: true,
+        },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+      },
       familyDetails: {
         select: {
           fatherName: true,

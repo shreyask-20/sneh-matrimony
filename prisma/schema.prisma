@@ -139,6 +139,7 @@ model Photo {
   publicId         String?
   status           PhotoStatus @default(PENDING)
   rejectionRemarks String?
+  isPrimary        Boolean     @default(false)
   createdAt        DateTime    @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

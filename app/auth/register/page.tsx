@@ -24,6 +24,7 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [gender, setGender] = useState("");
   const [profession, setProfession] = useState("");
   const [education, setEducation] = useState("");
@@ -142,10 +143,33 @@ export default function RegisterPage() {
 
   const validateStep = (step: number) => {
     if (step === 0) {
-      if (!fullName.trim()) return "Full name is required.";
-      if (!email.trim()) return "Email is required.";
-      if (!phone.trim()) return "Phone number is required.";
-      if (!password.trim()) return "Password is required.";
+      const errors: Record<string, string> = {};
+      if (!fullName.trim()) errors.fullName = "Full name is required.";
+      if (!email.trim()) {
+        errors.email = "Email is required.";
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim()))
+          errors.email = "Please enter a valid email address.";
+      }
+      if (!phone.trim()) {
+        errors.phone = "Phone number is required.";
+      } else {
+        const phoneRegex = /^(?:\+91|0)?[6-9]\d{9}$/;
+        if (!phoneRegex.test(phone.trim().replace(/\s+/g, "")))
+          errors.phone = "Enter a valid 10-digit Indian mobile number (e.g. 9876543210).";
+      }
+      if (!password.trim()) {
+        errors.password = "Password is required.";
+      } else if (password.length < 8) {
+        errors.password = "Password must be at least 8 characters.";
+      }
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        return Object.values(errors)[0];
+      }
+      setFieldErrors({});
+      return null;
     }
     if (step === 1) {
       if (!gender.trim()) return "Please select gender.";
@@ -346,48 +370,72 @@ export default function RegisterPage() {
             <div className="mt-6 grid gap-4">
               {activeStep === 0 && (
                 <>
-                  <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    placeholder="Full name"
-                    value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
-                  />
-                  <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    placeholder="Email address"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                  <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    placeholder="Phone number"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
-                  <div className="relative">
+                  <div>
                     <input
-                      className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                      placeholder="Create a password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      className={`w-full rounded-2xl border bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.fullName ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
+                      placeholder="Full name"
+                      value={fullName}
+                      onChange={(event) => { setFullName(event.target.value); setFieldErrors((e) => ({ ...e, fullName: "" })); }}
                     />
-                    {password.length > 0 ? (
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full p-1 text-slate-400 transition hover:text-brand-600 dark:text-slate-300"
-                        onClick={() => setShowPassword((current) => !current)}
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
+                    {fieldErrors.fullName && <p className="mt-1 text-xs text-red-500">{fieldErrors.fullName}</p>}
+                  </div>
+                  <div>
+                    <input
+                      className={`w-full rounded-2xl border bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.email ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
+                      placeholder="Email address"
+                      type="email"
+                      value={email}
+                      onChange={(event) => { setEmail(event.target.value); setFieldErrors((e) => ({ ...e, email: "" })); }}
+                    />
+                    {fieldErrors.email && <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>}
+                  </div>
+                  <div>
+                    <input
+                      className={`w-full rounded-2xl border bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.phone ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
+                      placeholder="Phone number (e.g. 9876543210)"
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={phone}
+                      onChange={(event) => {
+                        // Strip non-digits, allow optional leading + for +91 prefix
+                        const raw = event.target.value;
+                        // Keep only digits (and a leading + if present)
+                        const digitsOnly = raw.replace(/[^\d]/g, "");
+                        // If user typed +91 prefix, strip it so we store just the 10-digit number
+                        const stripped = digitsOnly.startsWith("91") && digitsOnly.length > 10
+                          ? digitsOnly.slice(2)
+                          : digitsOnly;
+                        // Hard cap at 10 digits
+                        if (stripped.length <= 10) {
+                          setPhone(stripped);
+                          setFieldErrors((e) => ({ ...e, phone: "" }));
                         }
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    ) : null}
+                      }}
+                    />
+                    {fieldErrors.phone && <p className="mt-1 text-xs text-red-500">{fieldErrors.phone}</p>}
+                  </div>
+                  <div>
+                    <div className="relative">
+                      <input
+                        className={`w-full rounded-2xl border bg-white/80 px-4 py-3 pr-12 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.password ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
+                        placeholder="Create a password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(event) => { setPassword(event.target.value); setFieldErrors((e) => ({ ...e, password: "" })); }}
+                      />
+                      {password.length > 0 ? (
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full p-1 text-slate-400 transition hover:text-brand-600 dark:text-slate-300"
+                          onClick={() => setShowPassword((current) => !current)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      ) : null}
+                    </div>
+                    {fieldErrors.password && <p className="mt-1 text-xs text-red-500">{fieldErrors.password}</p>}
                   </div>
                 </>
               )}

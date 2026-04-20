@@ -49,6 +49,29 @@ export async function POST(request: Request) {
     );
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return NextResponse.json(
+      { error: "Please enter a valid email address." },
+      { status: 400 }
+    );
+  }
+
+  const phoneRegex = /^(?:\+91|0)?[6-9]\d{9}$/;
+  if (!phoneRegex.test(phone.replace(/\s+/g, ""))) {
+    return NextResponse.json(
+      { error: "Enter a valid 10-digit Indian mobile number (e.g. 9876543210)." },
+      { status: 400 }
+    );
+  }
+
+  if (password.length < 8) {
+    return NextResponse.json(
+      { error: "Password must be at least 8 characters." },
+      { status: 400 }
+    );
+  }
+
   if (!body.photos || body.photos.length === 0) {
     return NextResponse.json(
       { error: "At least one primary profile photo is required." },

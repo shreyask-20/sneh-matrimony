@@ -243,7 +243,7 @@ export default function ProfileTabs({
           typeof horoscope === "string" || !horoscope ? (
             <p>
               {horoscope ??
-                "Horoscope details have not been added yet."}
+                "Horoscope details are not available."}
             </p>
           ) : (
             <div className="space-y-4">

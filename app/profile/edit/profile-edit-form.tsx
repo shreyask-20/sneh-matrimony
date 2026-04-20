@@ -119,6 +119,9 @@ export default function ProfileEditForm({
   const [horoscopeAvailable, setHoroscopeAvailable] = useState(
     initialValues?.horoscope?.horoscopeAvailable ?? false
   );
+  const [includeHoroscope, setIncludeHoroscope] = useState(
+    Boolean(initialValues?.horoscope)
+  );
   const [manglik, setManglik] = useState(
     initialValues?.horoscope?.manglik ?? false
   );
@@ -166,7 +169,9 @@ export default function ProfileEditForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
-  const previewChart = normalizeHoroscopeChartInput(chartValues);
+  const previewChart = includeHoroscope
+    ? normalizeHoroscopeChartInput(chartValues)
+    : null;
 
   const totalPhotoCount = existingPhotos.length + newPhotos.length;
 
@@ -435,9 +440,11 @@ export default function ProfileEditForm({
     if (!motherTongue.trim()) newFieldErrors.motherTongue = "This field is required";
     if (!fatherName.trim()) newFieldErrors.fatherName = "This field is required";
     if (!motherName.trim()) newFieldErrors.motherName = "This field is required";
-    if (!nakshatra.trim()) newFieldErrors.nakshatra = "This field is required";
-    if (!rashi.trim()) newFieldErrors.rashi = "This field is required";
-    if (!gotra.trim()) newFieldErrors.gotra = "This field is required";
+    if (includeHoroscope) {
+      if (!nakshatra.trim()) newFieldErrors.nakshatra = "This field is required";
+      if (!rashi.trim()) newFieldErrors.rashi = "This field is required";
+      if (!gotra.trim()) newFieldErrors.gotra = "This field is required";
+    }
     if (!preferredAgeRange.trim()) newFieldErrors.preferredAgeRange = "This field is required";
     if (!religionCommunity.trim()) newFieldErrors.religionCommunity = "This field is required";
     if (!locationPreference.trim()) newFieldErrors.locationPreference = "This field is required";
@@ -451,7 +458,9 @@ export default function ProfileEditForm({
       return;
     }
 
-    const parsedChart = normalizeHoroscopeChartInput(chartValues);
+    const parsedChart = includeHoroscope
+      ? normalizeHoroscopeChartInput(chartValues)
+      : null;
 
     const parsedTotalBrothers = Number(totalBrothers);
     const parsedTotalSisters = Number(totalSisters);
@@ -532,17 +541,20 @@ export default function ProfileEditForm({
           marriedBrothers: parsedMarriedBrothers,
           marriedSisters: parsedMarriedSisters,
         },
-        horoscope: {
-          horoscopeAvailable,
-          manglik,
-          nakshatra,
-          rashi,
-          gotra,
-          gan,
-          nadi,
-          charan,
-          chart: parsedChart,
-        },
+        horoscopeEnabled: includeHoroscope,
+        horoscope: includeHoroscope
+          ? {
+              horoscopeAvailable,
+              manglik,
+              nakshatra,
+              rashi,
+              gotra,
+              gan,
+              nadi,
+              charan,
+              chart: parsedChart,
+            }
+          : undefined,
         preferences: {
           preferredAgeRange,
           religionCommunity,
@@ -904,10 +916,23 @@ export default function ProfileEditForm({
               />
             </div>
             <div className="pt-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Horoscope
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Horoscope
+                </p>
+                <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-white/20 dark:bg-white/10"
+                    checked={includeHoroscope}
+                    onChange={(event) => setIncludeHoroscope(event.target.checked)}
+                  />
+                  Add horoscope details (optional)
+                </label>
+              </div>
             </div>
+            {includeHoroscope ? (
+            <>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <select
@@ -1017,6 +1042,12 @@ export default function ProfileEditForm({
                 </p>
               </div>
             </div>
+            </>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Horoscope details are optional. Turn this on if you want to share them.
+              </p>
+            )}
             <div className="pt-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                 Partner preferences

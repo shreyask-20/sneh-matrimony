@@ -42,7 +42,7 @@ export default async function HomePage() {
         <Hero isAuthenticated={isAuthenticated} />
       </div>
       <main>
-        <FeaturedProfiles profiles={featuredProfiles} />
+        <FeaturedProfiles profiles={featuredProfiles.profiles} />
         <HowItWorks />
         <About />
         <Testimonials />

@@ -41,20 +41,49 @@ function InterestCard({
   actions,
   statusLabel,
   emphasis = "default",
+  onOpenProfile,
 }: {
   item: InterestItem;
   actions?: React.ReactNode;
   statusLabel?: string;
   emphasis?: "default" | "incoming" | "matched";
+  onOpenProfile?: () => void;
 }) {
   const containerClass =
     emphasis === "matched"
         ? "border-emerald-200/80 bg-emerald-50/50 shadow-[0_14px_30px_rgba(16,185,129,0.08)] dark:border-emerald-400/20 dark:bg-emerald-500/10"
         : "border-white/40 bg-white/70 dark:border-white/10 dark:bg-white/5";
 
+  const interactiveProps = onOpenProfile
+    ? {
+        role: "link" as const,
+        tabIndex: 0,
+        "aria-label": `View profile of ${item.profile.name}`,
+        onClick: () => onOpenProfile(),
+        onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpenProfile();
+          }
+        },
+      }
+    : {};
+
+  const actionWrapperProps = onOpenProfile
+    ? {
+        onClick: (event: React.MouseEvent) => event.stopPropagation(),
+        onKeyDown: (event: React.KeyboardEvent) => event.stopPropagation(),
+      }
+    : {};
+
   return (
     <div
-      className={`rounded-2xl border p-4 text-sm text-slate-600 dark:text-slate-300 ${containerClass}`}
+      className={`rounded-2xl border p-4 text-sm text-slate-600 dark:text-slate-300 ${containerClass} ${
+        onOpenProfile
+          ? "cursor-pointer transition hover:shadow-[0_18px_30px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950"
+          : ""
+      }`}
+      {...interactiveProps}
     >
       <div className="flex items-start gap-4">
         <img
@@ -89,7 +118,12 @@ function InterestCard({
             <p className="text-xs text-slate-400">
               {formatInterestDate(item.createdAt)}
             </p>
-            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+            <div
+              className="flex flex-wrap items-center gap-2"
+              {...actionWrapperProps}
+            >
+              {actions}
+            </div>
           </div>
         </div>
       </div>
@@ -230,6 +264,7 @@ export default function InterestBoard({ received, sent }: Props) {
                 <InterestCard
                   key={item.id}
                   item={item}
+                  onOpenProfile={() => router.push(`/profiles/${item.profile.id}`)}
                   actions={
                     <>
                       <Button
@@ -273,6 +308,7 @@ export default function InterestBoard({ received, sent }: Props) {
                   key={item.id}
                   item={item}
                   statusLabel="Pending"
+                  onOpenProfile={() => router.push(`/profiles/${item.profile.id}`)}
                   actions={
                     <Button
                       size="sm"

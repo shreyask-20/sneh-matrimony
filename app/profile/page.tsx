@@ -272,7 +272,7 @@ export default async function ProfilePage() {
                           charan: user.horoscope.charan,
                           chart: user.horoscope.chart,
                         }
-                      : "Horoscope details have not been added yet."
+                      : "Horoscope details are not available."
                   }
                 />
               </div>

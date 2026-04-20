@@ -15,6 +15,7 @@ type CandidateArgs = {
   currentUserId: string | null;
   currentUserGender?: string | null;
   limit?: number;
+  offset?: number;
   filters?: CandidateSearchFilters;
 };
 
@@ -117,45 +118,51 @@ export async function getCandidateProfiles({
   currentUserId,
   currentUserGender,
   limit,
+  offset = 0,
   filters = {},
 }: CandidateArgs) {
   const targetGender = getOppositeGender(currentUserGender);
   const searchConditions = buildSearchConditions(filters);
   const shouldFilterGender = Boolean(currentUserId && targetGender);
 
-  const users = await prisma.user.findMany({
-    where: {
-      roleName: "USER",
-      isApproved: true,
-      profileVisible: true,
-      ...(currentUserId ? { id: { not: currentUserId } } : {}),
-      ...(shouldFilterGender ? { gender: targetGender } : {}),
-      ...(searchConditions.length > 0 ? { AND: searchConditions } : {}),
-    },
-    select: {
-      id: true,
-      name: true,
-      firstName: true,
-      lastName: true,
-      birthDate: true,
-      city: true,
-      profession: true,
-      education: true,
-      religion: true,
-      height: true,
-      bio: true,
-      emailVerified: true,
-      isApproved: true,
-      profileVisible: true,
-      photos: {
-        where: { status: "APPROVED" },
-        select: { url: true },
-        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+  const where: Prisma.UserWhereInput = {
+    roleName: "USER",
+    isApproved: true,
+    profileVisible: true,
+    ...(currentUserId ? { id: { not: currentUserId } } : {}),
+    ...(shouldFilterGender ? { gender: targetGender } : {}),
+    ...(searchConditions.length > 0 ? { AND: searchConditions } : {}),
+  };
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        firstName: true,
+        lastName: true,
+        birthDate: true,
+        city: true,
+        profession: true,
+        education: true,
+        religion: true,
+        height: true,
+        bio: true,
+        emailVerified: true,
+        isApproved: true,
+        profileVisible: true,
+        photos: {
+          where: { status: "APPROVED" },
+          select: { url: true },
+          orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-    ...(limit ? { take: limit } : {}),
-  });
+      orderBy: { createdAt: "desc" },
+      ...(limit ? { take: limit, skip: offset } : {}),
+    }),
+    prisma.user.count({ where }),
+  ]);
 
   const interests = currentUserId
     ? await prisma.interest.findMany({
@@ -198,9 +205,12 @@ export async function getCandidateProfiles({
     }
   }
 
-  return users.map((user: any) => ({
-    userId: user.id,
-    profile: userToProfile(user),
-    interestState: interestStateByUserId.get(user.id) ?? "none",
-  }));
+  return {
+    profiles: users.map((user: any) => ({
+      userId: user.id,
+      profile: userToProfile(user),
+      interestState: interestStateByUserId.get(user.id) ?? "none",
+    })),
+    total,
+  };
 }

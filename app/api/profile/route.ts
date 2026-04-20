@@ -18,6 +18,7 @@ type UpdatePayload = {
   community?: string;
   motherTongue?: string;
   bio?: string;
+  horoscopeEnabled?: boolean;
   familyDetails?: {
     fatherName?: string;
     motherName?: string;
@@ -74,8 +75,19 @@ export async function PATCH(request: Request) {
   const familyDetails = body.familyDetails;
   const horoscope = body.horoscope;
   const preferences = body.preferences;
-  const normalizedChart = normalizeHoroscopeChartInput(horoscope?.chart);
+  const horoscopeEnabled = body.horoscopeEnabled ?? horoscope !== undefined;
+  const normalizedChart = horoscopeEnabled
+    ? normalizeHoroscopeChartInput(horoscope?.chart)
+    : null;
   const chartValue = normalizedChart ?? Prisma.JsonNull;
+
+  const horoscopeMissing =
+    horoscopeEnabled &&
+    (horoscope?.horoscopeAvailable === undefined ||
+      horoscope?.manglik === undefined ||
+      !horoscope?.nakshatra?.trim() ||
+      !horoscope?.rashi?.trim() ||
+      !horoscope?.gotra?.trim());
 
   if (
     !body.religion?.trim() ||
@@ -87,11 +99,7 @@ export async function PATCH(request: Request) {
     familyDetails.totalSisters === undefined ||
     familyDetails.marriedBrothers === undefined ||
     familyDetails.marriedSisters === undefined ||
-    horoscope?.horoscopeAvailable === undefined ||
-    horoscope?.manglik === undefined ||
-    !horoscope.nakshatra?.trim() ||
-    !horoscope.rashi?.trim() ||
-    !horoscope.gotra?.trim() ||
+    horoscopeMissing ||
     !preferences?.preferredAgeRange?.trim() ||
     !preferences?.religionCommunity?.trim() ||
     !preferences?.locationPreference?.trim() ||
@@ -132,6 +140,44 @@ export async function PATCH(request: Request) {
   const [firstName, ...rest] = body.fullName.trim().split(/\s+/);
   const lastName = rest.join(" ");
 
+  const horoscopeUpsert = horoscopeEnabled
+    ? {
+        horoscope: {
+          upsert: {
+            create: {
+              horoscopeAvailable: horoscope!.horoscopeAvailable!,
+              manglik: horoscope!.manglik!,
+              nakshatra: horoscope!.nakshatra!.trim(),
+              rashi: horoscope!.rashi!.trim(),
+              gotra: horoscope!.gotra!.trim(),
+              gan: horoscope!.gan?.trim() || null,
+              nadi: horoscope!.nadi?.trim() || null,
+              charan: horoscope!.charan?.trim() || null,
+              chart: chartValue,
+            },
+            update: {
+              horoscopeAvailable: horoscope!.horoscopeAvailable!,
+              manglik: horoscope!.manglik!,
+              nakshatra: horoscope!.nakshatra!.trim(),
+              rashi: horoscope!.rashi!.trim(),
+              gotra: horoscope!.gotra!.trim(),
+              gan: horoscope!.gan?.trim() || null,
+              nadi: horoscope!.nadi?.trim() || null,
+              charan: horoscope!.charan?.trim() || null,
+              chart: chartValue,
+            },
+          },
+        },
+      }
+    : {};
+
+  // If horoscope was disabled, delete any existing horoscope record
+  if (!horoscopeEnabled) {
+    await prisma.horoscope.deleteMany({
+      where: { userId: session.user.id },
+    });
+  }
+
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
@@ -169,32 +215,6 @@ export async function PATCH(request: Request) {
           },
         },
       },
-      horoscope: {
-        upsert: {
-          create: {
-            horoscopeAvailable: horoscope.horoscopeAvailable,
-            manglik: horoscope.manglik,
-            nakshatra: horoscope.nakshatra.trim(),
-            rashi: horoscope.rashi.trim(),
-            gotra: horoscope.gotra.trim(),
-            gan: horoscope.gan?.trim() || null,
-            nadi: horoscope.nadi?.trim() || null,
-            charan: horoscope.charan?.trim() || null,
-            chart: chartValue,
-          },
-          update: {
-            horoscopeAvailable: horoscope.horoscopeAvailable,
-            manglik: horoscope.manglik,
-            nakshatra: horoscope.nakshatra.trim(),
-            rashi: horoscope.rashi.trim(),
-            gotra: horoscope.gotra.trim(),
-            gan: horoscope.gan?.trim() || null,
-            nadi: horoscope.nadi?.trim() || null,
-            charan: horoscope.charan?.trim() || null,
-            chart: chartValue,
-          },
-        },
-      },
       preferences: {
         upsert: {
           create: {
@@ -215,6 +235,7 @@ export async function PATCH(request: Request) {
           },
         },
       },
+      ...horoscopeUpsert,
     },
   });
 

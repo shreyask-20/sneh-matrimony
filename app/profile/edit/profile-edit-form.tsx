@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import HoroscopeChart from "@/components/profile/HoroscopeChart";
 import Navbar from "@/components/shared/Navbar";
 import BackButton from "@/components/shared/BackButton";
@@ -74,6 +75,7 @@ export default function ProfileEditForm({
 }: {
   initialValues: InitialValues;
 }) {
+  const router = useRouter();
   const [fullName, setFullName] = useState(initialValues?.name ?? "");
   const [gender, setGender] = useState(initialValues?.gender ?? "");
   const [birthDate, setBirthDate] = useState(
@@ -369,12 +371,10 @@ export default function ProfileEditForm({
 
     for (let i = 0; i < uploads.length; i++) {
       const upload = uploads[i];
-      // The new photo is primary if: no existing photos and it's the first new photo,
-      // or its overall index matches primaryPhotoIndex
+      // New photo uploaded is primary if it's the first one being uploaded and there are no other new photos after it,
+      // or if its position matches primaryPhotoIndex
       const overallIndex = existingPhotos.length + i;
-      const isPrimary = overallIndex === primaryPhotoIndex && existingPhotos.length === 0
-        ? true
-        : overallIndex === primaryPhotoIndex;
+      const isPrimary = overallIndex === primaryPhotoIndex;
 
       const res = await fetch("/api/photos", {
         method: "POST",
@@ -388,6 +388,27 @@ export default function ProfileEditForm({
       });
       if (!res.ok) {
         throw new Error("Failed to save photo.");
+      }
+
+      // If this photo is marked as primary, unset primary on existing photos
+      if (isPrimary) {
+        try {
+          for (const existingPhoto of existingPhotos) {
+            if (existingPhoto.isPrimary) {
+              await fetch("/api/photos", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  photoId: existingPhoto.id,
+                  isPrimary: false,
+                }),
+              });
+            }
+          }
+        } catch {
+          // Continue even if unset fails
+        }
       }
     }
   };
@@ -542,6 +563,7 @@ export default function ProfileEditForm({
 
     setFieldErrors({});
     setSuccess("Profile updated successfully.");
+    router.push("/profile");
   };
 
   return (

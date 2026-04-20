@@ -24,13 +24,67 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
 
-  const where: Prisma.UserWhereInput =
-    status === "pending"
-      ? { roleName: "USER", isApproved: false }
-      : {};
+  // For pending status, get users with isApproved: false AND no rejection/block in approval log
+  if (status === "pending") {
+    const rejectedUsers = await prisma.approvalLog.findMany({
+      where: {
+        decision: {
+          in: ["REJECTED", "BLOCKED"],
+        },
+      },
+      select: {
+        userId: true,
+      },
+      distinct: ["userId"],
+    });
 
+    const rejectedUserIds = rejectedUsers.map((log) => log.userId);
+
+    const users = await prisma.user.findMany({
+      where: {
+        roleName: "USER",
+        isApproved: false,
+        id: {
+          notIn: rejectedUserIds,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        gender: true,
+        profession: true,
+        education: true,
+        city: true,
+        bio: true,
+        birthDate: true,
+        maritalStatus: true,
+        height: true,
+        createdAt: true,
+        isApproved: true,
+        profileVisible: true,
+        roleName: true,
+        photos: {
+          select: {
+            id: true,
+            url: true,
+            status: true,
+            rejectionRemarks: true,
+          },
+          orderBy: { createdAt: "asc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ users });
+  }
+
+  // For all status, return all users
   const users = await prisma.user.findMany({
-    where,
     select: {
       id: true,
       name: true,

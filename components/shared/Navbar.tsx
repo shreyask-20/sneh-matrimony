@@ -12,6 +12,7 @@ import {
   MessageCircleMore,
   UserCircle2,
   ShieldCheck,
+  Heart,
 } from "lucide-react";
 
 type NavbarProps = {
@@ -155,6 +156,16 @@ export default function Navbar({
                       ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
                       : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
                   }`}
+                  href="/preferred-matches"
+                >
+                  Preferred Matches
+                </a>
+                <a
+                  className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                    isBlend
+                      ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
+                      : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
+                  }`}
                   href="/dashboard"
                 >
                   Dashboard
@@ -244,6 +255,17 @@ export default function Navbar({
                 >
                   <Home className="h-4 w-4" />
                   Browse
+                </a>
+                <a
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${
+                    isBlend
+                      ? "border-white/15 bg-white/10 hover:bg-white/15"
+                      : "border-brand-100 bg-white/90 hover:border-brand-200 hover:bg-brand-50"
+                  }`}
+                  href="/preferred-matches"
+                >
+                  <Heart className="h-4 w-4" />
+                  Preferred Matches
                 </a>
                 <a
                   className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 transition ${

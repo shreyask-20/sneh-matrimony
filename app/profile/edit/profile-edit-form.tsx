@@ -68,7 +68,6 @@ type InitialValues = {
 
 const MAX_PHOTOS = 6;
 const MAX_PHOTO_BYTES = 1024 * 1024;
-const MIN_PRIMARY_PHOTO_SIDE = 900;
 
 export default function ProfileEditForm({
   initialValues,
@@ -287,39 +286,10 @@ export default function ProfileEditForm({
     }
   };
 
-  const loadImageDimensions = (file: File) =>
-    new Promise<{ width: number; height: number }>((resolve, reject) => {
-      const previewUrl = URL.createObjectURL(file);
-      const image = new window.Image();
-      image.onload = () => {
-        URL.revokeObjectURL(previewUrl);
-        resolve({
-          width: image.naturalWidth,
-          height: image.naturalHeight,
-        });
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(previewUrl);
-        reject(new Error("Unable to read image."));
-      };
-      image.src = previewUrl;
-    });
-
   const validatePrimaryPhoto = async (file: File | undefined) => {
     if (!file) return null;
     if (file.size > MAX_PHOTO_BYTES) {
       return "The primary photo must be 1MB or smaller.";
-    }
-    try {
-      const dimensions = await loadImageDimensions(file);
-      if (
-        dimensions.width < MIN_PRIMARY_PHOTO_SIDE ||
-        dimensions.height < MIN_PRIMARY_PHOTO_SIDE
-      ) {
-        return "Primary photo should be at least 900px on both sides.";
-      }
-    } catch {
-      return "Unable to read the primary photo.";
     }
     return null;
   };

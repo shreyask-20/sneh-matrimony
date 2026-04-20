@@ -64,6 +64,7 @@ export default async function DashboardPage({
       bio: true,
       isApproved: true,
       profileVisible: true,
+      emailVerified: true,
       photos: {
         select: { id: true, status: true },
         orderBy: { createdAt: "asc" },
@@ -451,6 +452,26 @@ export default async function DashboardPage({
           </div>
         </aside>
         <section className="space-y-6">
+          {!currentUser?.emailVerified && (
+            <div className="rounded-3xl border border-amber-200/70 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">
+                    Email not verified
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                    Verify your email address to earn the Email Verified badge on your profile.
+                  </p>
+                </div>
+                <Link
+                  href="/auth/verify-email"
+                  className="shrink-0 rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
+                >
+                  Verify email
+                </Link>
+              </div>
+            </div>
+          )}
           {!isComplete ? (
             <div className="rounded-3xl border border-brand-100/60 bg-brand-50/60 p-6 text-sm text-slate-700">
               <div className="flex flex-wrap items-center justify-between gap-4">

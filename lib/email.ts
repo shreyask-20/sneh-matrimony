@@ -1,7 +1,8 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.EMAIL_FROM ?? "noreply@snehmatrimony.com";
+const FROM_ADDRESS = process.env.EMAIL_FROM ?? "noreply@snehmatrimonyindia.com";
+const FROM = `Sneh Matrimony <${FROM_ADDRESS}>`;
 const BASE_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
 export async function sendVerificationEmail(email: string, token: string) {

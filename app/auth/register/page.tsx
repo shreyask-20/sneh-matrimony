@@ -9,7 +9,6 @@ import Navbar from "../../../components/shared/Navbar";
 import PageBackdrop from "../../../components/shared/PageBackdrop";
 
 const steps = ["Basic info", "Personal", "Preferences", "Upload photos"];
-const MIN_PRIMARY_PHOTO_SIDE = 900;
 const MAX_PHOTO_BYTES = 1024 * 1024;
 const RECOMMENDED_PHOTO_BYTES = 500 * 1024;
 
@@ -99,24 +98,6 @@ export default function RegisterPage() {
     ];
   };
 
-  const loadImageDimensions = (file: File) =>
-    new Promise<{ width: number; height: number }>((resolve, reject) => {
-      const previewUrl = URL.createObjectURL(file);
-      const image = new window.Image();
-      image.onload = () => {
-        URL.revokeObjectURL(previewUrl);
-        resolve({
-          width: image.naturalWidth,
-          height: image.naturalHeight,
-        });
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(previewUrl);
-        reject(new Error("Unable to read the primary photo."));
-      };
-      image.src = previewUrl;
-    });
-
   const validatePrimaryPhoto = async (file: File | undefined) => {
     if (!file) {
       return "Please upload at least one primary profile photo.";
@@ -128,14 +109,6 @@ export default function RegisterPage() {
 
     if (file.size > MAX_PHOTO_BYTES) {
       return "The primary photo must be 1MB or smaller.";
-    }
-
-    const dimensions = await loadImageDimensions(file);
-    if (
-      dimensions.width < MIN_PRIMARY_PHOTO_SIDE ||
-      dimensions.height < MIN_PRIMARY_PHOTO_SIDE
-    ) {
-      return "Use a clearer primary photo with at least 900px on both sides.";
     }
 
     return null;

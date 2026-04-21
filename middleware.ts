@@ -20,19 +20,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect already-verified users away from the verify-email page
-  if (pathname === "/auth/verify-email" && token?.id) {
-    const { prisma } = await import("@/lib/prisma");
-    const user = await prisma.user.findUnique({
-      where: { id: token.id as string },
-      select: { emailVerified: true },
-    });
-    if (user?.emailVerified) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-    return NextResponse.next();
-  }
-
   // Auto-redirect admins to /admin when they land on non-admin pages
   if (token && roleName === "ADMIN") {
     return NextResponse.redirect(new URL("/admin", request.url));

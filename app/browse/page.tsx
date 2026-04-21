@@ -87,8 +87,8 @@ export default async function BrowsePage({
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[260px_1fr] lg:px-8">
-        <aside className="glass-card h-fit rounded-3xl p-6">
+      <main className="mx-auto w-full max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[260px_1fr] lg:px-8">
+        <aside className="glass-card hidden h-fit rounded-3xl p-6 lg:block">
           <h2 className="font-serif text-xl text-slate-900 dark:text-white">
             Filters
           </h2>
@@ -101,7 +101,7 @@ export default async function BrowsePage({
         <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+              <h1 className="font-serif text-2xl text-slate-900 sm:text-3xl dark:text-white">
                 Browse matches
               </h1>
               <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -114,6 +114,12 @@ export default async function BrowsePage({
                   {activeFilters.map(([label, value]) => `${label}: ${value}`).join(" · ")}
                 </p>
               )}
+            </div>
+            {/* Mobile filter button rendered inside BrowseFilters */}
+            <div className="lg:hidden">
+              <Suspense>
+                <BrowseFilters defaults={{}} />
+              </Suspense>
             </div>
           </div>
           <BrowseResults

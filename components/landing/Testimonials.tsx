@@ -39,11 +39,11 @@ export default function Testimonials() {
         {testimonials.map((testimonial) => (
           <Card key={testimonial.name}>
             <CardContent>
-              <div className="flex items-center gap-4">
+              <div className="overflow-hidden rounded-xl">
                 <img
                   src={testimonial.image}
                   alt={testimonial.name}
-                  className="h-38 w-110 rounded-lg object-cover"
+                  className="h-48 w-full object-cover"
                   loading="lazy"
                 />
               </div>

@@ -16,6 +16,6 @@ const toneVariantMap: Record<
 
 export default function Badge({ label, tone = "neutral" }: Props) {
   return (
-    <UiBadge variant={toneVariantMap[tone]}>{label}</UiBadge>
+    <UiBadge variant={toneVariantMap[tone]} className="whitespace-nowrap">{label}</UiBadge>
   );
 }

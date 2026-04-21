@@ -44,8 +44,8 @@ export default async function ProfilePage() {
       isApproved: true,
       profileVisible: true,
       photos: {
-        where: { status: "APPROVED" },
-        select: { url: true },
+        where: { status: { in: ["APPROVED", "PENDING"] } },
+        select: { url: true, status: true },
         orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
       },
       familyDetails: {
@@ -94,7 +94,7 @@ export default async function ProfilePage() {
   const age = user.birthDate
     ? Math.max(0, Math.floor((Date.now() - user.birthDate.getTime()) / 31557600000))
     : null;
-  const photos = user.photos.length > 0 ? user.photos : [{ url: "/profiles/p1.jpg" }];
+  const photos = user.photos.length > 0 ? user.photos : [{ url: "/profiles/p1.jpg", status: "APPROVED" as const }];
   const familySummary = user.familyDetails
     ? `Father: ${user.familyDetails.fatherName}, Mother: ${user.familyDetails.motherName}. Siblings: ${user.familyDetails.totalBrothers} brother(s), ${user.familyDetails.totalSisters} sister(s).`
     : "Family details have not been shared yet.";
@@ -105,7 +105,7 @@ export default async function ProfilePage() {
   const verification = buildVerificationSummary({
     isApproved: user.isApproved,
     emailVerified: user.emailVerified,
-    approvedPhotoCount: user.photos.length,
+    approvedPhotoCount: user.photos.filter(p => p.status === "APPROVED").length,
   });
 
   return (

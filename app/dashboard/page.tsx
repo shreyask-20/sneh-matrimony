@@ -11,6 +11,7 @@ import { normalizeConversationPair } from "@/lib/matchmaking";
 import Button from "../../components/shared/Button";
 import UnreadMessageToast from "../../components/shared/UnreadMessageToast";
 import ActionCenter from "../../components/dashboard/ActionCenter";
+import VerifyEmailBanner from "@/components/dashboard/VerifyEmailBanner";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 
 export default async function DashboardPage({
@@ -452,26 +453,7 @@ export default async function DashboardPage({
           </div>
         </aside>
         <section className="space-y-6">
-          {!currentUser?.emailVerified && (
-            <div className="rounded-3xl border border-amber-200/70 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">
-                    Email not verified
-                  </p>
-                  <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
-                    Verify your email address to earn the Email Verified badge on your profile.
-                  </p>
-                </div>
-                <Link
-                  href="/auth/verify-email"
-                  className="shrink-0 rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
-                >
-                  Verify email
-                </Link>
-              </div>
-            </div>
-          )}
+          {!currentUser?.emailVerified && <VerifyEmailBanner />}
           {!isComplete ? (
             <div className="rounded-3xl border border-brand-100/60 bg-brand-50/60 p-6 text-sm text-slate-700">
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -506,15 +488,25 @@ export default async function DashboardPage({
                   {nextStepMessage}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  label={approvalLabel}
-                  tone={currentUser?.isApproved ? "verified" : "neutral"}
-                />
-                <Badge
-                  label={visibilityLabel}
-                  tone={currentUser?.profileVisible ? "premium" : "neutral"}
-                />
+              <div className="flex flex-col items-end gap-1.5 pl-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge
+                    label={approvalLabel}
+                    tone={currentUser?.isApproved ? "verified" : "neutral"}
+                  />
+                  <Badge
+                    label={visibilityLabel}
+                    tone={currentUser?.profileVisible ? "premium" : "neutral"}
+                  />
+                </div>
+                {currentUser?.emailVerified ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:border-emerald-500/30 dark:bg-transparent dark:text-emerald-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Email verified
+                  </span>
+                ) : null}
               </div>
             </div>
             <div className="mt-6 rounded-3xl border border-brand-100/60 bg-brand-50/40 p-5 dark:border-white/10 dark:bg-white/[0.04]">

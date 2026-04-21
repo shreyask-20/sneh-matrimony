@@ -1,47 +1,63 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get("token");
+export async function POST(request: NextRequest) {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-  if (!token) {
-    return NextResponse.redirect(
-      new URL("/auth/verify-email?error=missing", request.url)
-    );
+  if (!token?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json() as { otp?: string };
+  const otp = body.otp?.trim();
+
+  if (!otp || !/^\d{5}$/.test(otp)) {
+    return NextResponse.json({ error: "Please enter a valid 5-digit code." }, { status: 400 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: token.id as string },
+    select: { email: true, emailVerified: true },
+  });
+
+  if (!user?.email) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  }
+
+  if (user.emailVerified) {
+    return NextResponse.json({ error: "Email is already verified." }, { status: 400 });
   }
 
   const record = await prisma.verificationToken.findFirst({
-    where: { token },
+    where: { identifier: user.email },
   });
 
   if (!record) {
-    return NextResponse.redirect(
-      new URL("/auth/verify-email?error=invalid", request.url)
-    );
+    return NextResponse.json({ error: "No verification code found. Please request a new one." }, { status: 400 });
   }
 
   if (record.expires < new Date()) {
-    await prisma.verificationToken.delete({
-      where: { identifier_token: { identifier: record.identifier, token } },
-    });
-    return NextResponse.redirect(
-      new URL("/auth/verify-email?error=expired", request.url)
-    );
+    await prisma.verificationToken.deleteMany({ where: { identifier: user.email } });
+    return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
   }
 
-  // Mark email as verified on the user
-  await prisma.user.updateMany({
-    where: { email: record.identifier },
+  if (record.token !== otp) {
+    return NextResponse.json({ error: "Incorrect code. Please try again." }, { status: 400 });
+  }
+
+  // Mark email as verified
+  await prisma.user.update({
+    where: { id: token.id as string },
     data: { emailVerified: new Date() },
   });
 
-  // Clean up the token
-  await prisma.verificationToken.delete({
-    where: { identifier_token: { identifier: record.identifier, token } },
-  });
+  // Clean up the OTP
+  await prisma.verificationToken.deleteMany({ where: { identifier: user.email } });
 
-  return NextResponse.redirect(
-    new URL("/auth/verify-email?success=1", request.url)
-  );
+  return NextResponse.json({ ok: true });
 }

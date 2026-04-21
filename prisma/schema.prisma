@@ -76,6 +76,16 @@ model User {
   shortlistedBy          Shortlist[]    @relation("ShortlistProfile")
   blocksInitiated        Block[]        @relation("BlockInitiator")
   blocksReceived         Block[]        @relation("BlockRecipient")
+
+  // Indexes for browse/filter queries — eliminates full table scans
+  @@index([isApproved, profileVisible, gender])
+  @@index([isApproved, profileVisible, city])
+  @@index([isApproved, profileVisible, religion])
+  @@index([isApproved, profileVisible, education])
+  @@index([isApproved, profileVisible, profession])
+  @@index([isApproved, profileVisible, community])
+  @@index([isApproved, profileVisible, birthDate])
+  @@index([createdAt])
 }
 
 model FamilyDetails {
@@ -176,6 +186,8 @@ model Conversation {
   messages Message[]
 
   @@unique([userOneId, userTwoId])
+  @@index([userOneId])
+  @@index([userTwoId])
   @@index([lastMessageAt])
 }
 
@@ -192,6 +204,7 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
+  @@index([readAt, senderId])
 }
 
 model Shortlist {

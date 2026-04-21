@@ -138,20 +138,22 @@ export async function POST(request: Request) {
     },
   });
 
-  // Send email verification (best-effort — don't fail registration if email fails)
+  // Send email verification OTP (best-effort — don't fail registration if email fails)
   try {
-    const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const otp = String(10000 + crypto.randomInt(90000));
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await prisma.verificationToken.deleteMany({ where: { identifier: email } });
 
     await prisma.verificationToken.create({
       data: {
         identifier: email,
-        token,
+        token: otp,
         expires,
       },
     });
 
-    await sendVerificationEmail(email, token);
+    await sendVerificationEmail(email, otp);
   } catch {
     // Non-fatal: user is created, verification can be resent later
   }

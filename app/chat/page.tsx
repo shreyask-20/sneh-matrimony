@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getOtherUserId } from "@/lib/chat";
 import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
 import PageBackdrop from "../../components/shared/PageBackdrop";
+import { MessageCircle } from "lucide-react";
 
 export default async function ChatPage({
   searchParams,
@@ -39,6 +40,7 @@ export default async function ChatPage({
           body: true,
           senderId: true,
           createdAt: true,
+          readAt: true,
         },
         orderBy: { createdAt: "asc" },
       },
@@ -47,7 +49,7 @@ export default async function ChatPage({
   });
 
   const otherUserIds = Array.from(
-    new Set(conversations.map((conversation) => getOtherUserId(conversation, session.user.id)))
+    new Set(conversations.map((c) => getOtherUserId(c, session.user.id)))
   );
 
   const otherUsers = otherUserIds.length
@@ -64,7 +66,7 @@ export default async function ChatPage({
             where: { status: "APPROVED" },
             select: { url: true },
             take: 1,
-            orderBy: { createdAt: "asc" },
+            orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
           },
         },
       })
@@ -91,39 +93,29 @@ export default async function ChatPage({
       const profile = userMap.get(otherUserId);
       if (!profile) return null;
 
+      const unreadCount = conversation.messages.filter(
+        (m) => m.senderId !== session.user.id && !m.readAt
+      ).length;
+
       return {
         id: conversation.id,
         profile,
         lastMessage: conversation.messages[conversation.messages.length - 1] ?? null,
-        messages: conversation.messages.map((message) => ({
-          id: message.id,
-          body: message.body,
-          senderId: message.senderId,
-          createdAt: message.createdAt.toISOString(),
+        unreadCount,
+        messages: conversation.messages.map((m) => ({
+          id: m.id,
+          body: m.body,
+          senderId: m.senderId,
+          createdAt: m.createdAt.toISOString(),
         })),
       };
     })
     .filter(Boolean) as Array<{
     id: number;
-    profile: {
-      id: string;
-      name: string;
-      city: string | null;
-      profession: string | null;
-      photoUrl: string | null;
-    };
-    lastMessage: {
-      id: number;
-      body: string;
-      senderId: string;
-      createdAt: Date;
-    } | null;
-    messages: Array<{
-      id: number;
-      body: string;
-      senderId: string;
-      createdAt: string;
-    }>;
+    profile: { id: string; name: string; city: string | null; profession: string | null; photoUrl: string | null };
+    lastMessage: { id: number; body: string; senderId: string; createdAt: Date } | null;
+    unreadCount: number;
+    messages: Array<{ id: number; body: string; senderId: string; createdAt: string }>;
   }>;
 
   const selectedConversationId = resolvedSearchParams?.conversation
@@ -132,10 +124,9 @@ export default async function ChatPage({
 
   const selectedConversation =
     conversationItems.find((item) => item.id === selectedConversationId) ?? null;
+
   const selectedConversationMessageCount =
-    selectedConversation?.messages.filter(
-      (message) => message.senderId === session.user.id
-    ).length ?? 0;
+    selectedConversation?.messages.filter((m) => m.senderId === session.user.id).length ?? 0;
   const remainingMessages = Math.max(
     0,
     MAX_MESSAGES_PER_USER_PER_CONVERSATION - selectedConversationMessageCount
@@ -148,71 +139,126 @@ export default async function ChatPage({
         senderId: { not: session.user.id },
         readAt: null,
       },
-      data: {
-        readAt: new Date(),
-      },
+      data: { readAt: new Date() },
     });
   }
 
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="grid w-full gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[320px_1fr] lg:px-8">
-        <aside className="glass-card h-fit rounded-3xl p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="font-serif text-xl text-slate-900 dark:text-white">
-                Conversations
-              </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Chat with accepted matches.
-              </p>
+      <main
+        className="grid w-full gap-0 lg:grid-cols-[340px_1fr]"
+        style={{ height: "calc(100vh - 80px)" }}
+      >
+        {/* ── Sidebar ── */}
+        <aside
+          className={`flex flex-col border-r border-white/30 bg-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60 ${
+            selectedConversation ? "hidden lg:flex" : "flex"
+          }`}
+        >
+          {/* Sidebar header */}
+          <div className="border-b border-white/30 bg-gradient-to-br from-brand-50/80 to-white/60 px-5 py-5 dark:border-white/10 dark:from-white/5 dark:to-transparent">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-fuchsia-500 shadow-sm">
+                  <MessageCircle className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-lg text-slate-900 dark:text-white">
+                    Messages
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {conversationItems.length} conversation{conversationItems.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+              {conversationItems.some((c) => c.unreadCount > 0) && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold text-white">
+                  {conversationItems.reduce((sum, c) => sum + c.unreadCount, 0)}
+                </span>
+              )}
             </div>
-            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-600 dark:bg-white/10 dark:text-white">
-              {conversationItems.length}
-            </span>
           </div>
-          <div className="mt-4 space-y-3">
+
+          {/* Conversation list */}
+          <div className="flex-1 overflow-y-auto">
             {conversationItems.length === 0 ? (
-              <div className="rounded-2xl border border-white/40 bg-white/70 px-4 py-6 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                No accepted matches yet. Once an interest is accepted, chat will appear here.
+              <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-50 dark:bg-white/5">
+                  <MessageCircle className="h-7 w-7 text-brand-400" />
+                </div>
+                <p className="font-medium text-slate-700 dark:text-slate-200">No conversations yet</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Once an interest is accepted, your chat will appear here.
+                </p>
+                <Link
+                  href="/browse"
+                  className="mt-2 rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                >
+                  Browse matches
+                </Link>
               </div>
             ) : (
-              conversationItems.map((conversation) => (
-                <Link
-                  key={conversation.id}
-                  href={`/chat?conversation=${conversation.id}`}
-                  className={`block rounded-2xl border px-4 py-3 text-sm transition ${
-                    selectedConversation?.id === conversation.id
-                      ? "border-brand-300 bg-brand-50/80 text-brand-700 dark:border-white/20 dark:bg-white/10 dark:text-white"
-                      : "border-white/40 bg-white/70 text-slate-600 hover:border-brand-200 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={conversation.profile.photoUrl ?? "/profiles/p1.jpg"}
-                      alt={conversation.profile.name}
-                      className="h-12 w-12 rounded-2xl object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-slate-900 dark:text-white">
-                        {conversation.profile.name}
-                      </p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                        {conversation.lastMessage?.body ?? "Start your conversation"}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))
+              <div className="divide-y divide-white/20 dark:divide-white/5">
+                {conversationItems.map((conversation) => {
+                  const isActive = selectedConversation?.id === conversation.id;
+                  return (
+                    <Link
+                      key={conversation.id}
+                      href={`/chat?conversation=${conversation.id}`}
+                      className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${
+                        isActive
+                          ? "bg-brand-50/90 dark:bg-white/10"
+                          : "hover:bg-white/60 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="relative shrink-0">
+                        <img
+                          src={conversation.profile.photoUrl ?? "/profiles/p1.jpg"}
+                          alt={conversation.profile.name}
+                          className="h-12 w-12 rounded-2xl object-cover shadow-sm"
+                        />
+                        {/* Online dot placeholder */}
+                        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-slate-950" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`truncate text-sm font-semibold ${isActive ? "text-brand-700 dark:text-white" : "text-slate-900 dark:text-white"}`}>
+                            {conversation.profile.name}
+                          </p>
+                          {conversation.lastMessage && (
+                            <span className="shrink-0 text-[10px] text-slate-400">
+                              {new Date(conversation.lastMessage.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 flex items-center justify-between gap-2">
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                            {conversation.lastMessage?.body ?? "Start your conversation"}
+                          </p>
+                          {conversation.unreadCount > 0 && (
+                            <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white">
+                              {conversation.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             )}
           </div>
         </aside>
-        <ChatWindow
-          currentUserId={session.user.id}
-          selectedConversation={selectedConversation}
-          remainingMessages={remainingMessages}
-        />
+
+        {/* ── Chat window ── */}
+        <div className={`${selectedConversation ? "flex" : "hidden lg:flex"} flex-col`}>
+          <ChatWindow
+            currentUserId={session.user.id}
+            selectedConversation={selectedConversation}
+            remainingMessages={remainingMessages}
+          />
+        </div>
       </main>
     </PageBackdrop>
   );

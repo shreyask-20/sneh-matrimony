@@ -28,23 +28,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Email is already verified." }, { status: 400 });
   }
 
-  // Delete any existing tokens for this email
+  // Delete any existing OTPs for this email
   await prisma.verificationToken.deleteMany({
     where: { identifier: user.email },
   });
 
-  const newToken = crypto.randomBytes(32).toString("hex");
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const otp = String(10000 + crypto.randomInt(90000));
+  const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
   await prisma.verificationToken.create({
     data: {
       identifier: user.email,
-      token: newToken,
+      token: otp,
       expires,
     },
   });
 
-  await sendVerificationEmail(user.email, newToken);
+  await sendVerificationEmail(user.email, otp);
 
   return NextResponse.json({ ok: true });
 }

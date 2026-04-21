@@ -4,48 +4,38 @@ import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const currentOrigin = request.nextUrl.origin;
-
-  const resolveCurrentRole = async () => {
-    const response = await fetch(new URL("/api/admin/session", currentOrigin), {
-      headers: {
-        cookie: request.headers.get("cookie") ?? "",
-      },
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = (await response.json()) as { roleName?: string | null };
-    return data.roleName ?? null;
-  };
 
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
-  const tokenRoleName = token?.roleName;
 
+  const roleName = token?.roleName as string | undefined;
+
+  // Protect /admin — only ADMIN role allowed
   if (pathname.startsWith("/admin")) {
-    if (!token || tokenRoleName !== "ADMIN") {
+    if (!token || roleName !== "ADMIN") {
       return NextResponse.redirect(new URL("/", request.url));
     }
-
-    const currentRole = await resolveCurrentRole();
-    if (currentRole !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-
     return NextResponse.next();
   }
 
-  if (tokenRoleName === "ADMIN") {
-    const currentRole = await resolveCurrentRole();
-    if (currentRole === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin", request.url));
+  // Redirect already-verified users away from the verify-email page
+  if (pathname === "/auth/verify-email" && token?.id) {
+    const { prisma } = await import("@/lib/prisma");
+    const user = await prisma.user.findUnique({
+      where: { id: token.id as string },
+      select: { emailVerified: true },
+    });
+    if (user?.emailVerified) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
+    return NextResponse.next();
+  }
+
+  // Auto-redirect admins to /admin when they land on non-admin pages
+  if (token && roleName === "ADMIN") {
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return NextResponse.next();

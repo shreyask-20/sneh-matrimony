@@ -54,8 +54,8 @@ export default function ProfileCard({
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)]" />
       </div>
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex h-14 items-start justify-between gap-2 overflow-hidden">
+        <div className="min-w-0 flex-1">
           <h3
             className={`font-serif text-slate-900 dark:text-white ${
               isCompact ? "text-base" : "text-lg"
@@ -67,27 +67,25 @@ export default function ProfileCard({
             {locationLabel} - {educationLabel}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex shrink-0 flex-col items-end gap-1">
           {verificationLabel && (
             <Badge label={verificationLabel} tone="verified" />
           )}
           {profile.premium && <Badge label="Premium" tone="premium" />}
         </div>
       </div>
-      {(verificationBadges.length > 0 || lastActiveLabel) && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
-          {verificationBadges.length > 0 && (
-            <span>
-              Verified: {verificationBadges.join(" · ")}
-            </span>
-          )}
-          {lastActiveLabel && (
-            <span className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-              {lastActiveLabel}
-            </span>
-          )}
-        </div>
-      )}
+      <div className="flex h-8 items-center gap-2 overflow-hidden text-xs text-slate-500 dark:text-slate-300">
+        {verificationBadges.length > 0 && (
+          <span className="truncate">
+            Verified: {verificationBadges.join(" · ")}
+          </span>
+        )}
+        {lastActiveLabel && (
+          <span className="shrink-0 text-[11px] uppercase tracking-[0.18em] text-slate-400">
+            {lastActiveLabel}
+          </span>
+        )}
+      </div>
       <p
         className={`line-clamp-2 overflow-hidden text-sm text-slate-600 dark:text-slate-300`}
       >

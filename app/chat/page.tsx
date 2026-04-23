@@ -7,7 +7,6 @@ import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getOtherUserId } from "@/lib/chat";
 import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
-import PageBackdrop from "../../components/shared/PageBackdrop";
 import { MessageCircle } from "lucide-react";
 
 export default async function ChatPage({
@@ -144,12 +143,9 @@ export default async function ChatPage({
   }
 
   return (
-    <PageBackdrop>
+    <div className="flex h-dvh flex-col overflow-hidden">
       <Navbar />
-      <main
-        className="grid w-full gap-0 lg:grid-cols-[340px_1fr]"
-        style={{ height: "calc(100vh - 80px)" }}
-      >
+      <main className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[340px_1fr]">
         {/* ── Sidebar ── */}
         <aside
           className={`flex flex-col border-r border-white/30 bg-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60 ${
@@ -252,7 +248,7 @@ export default async function ChatPage({
         </aside>
 
         {/* ── Chat window ── */}
-        <div className={`${selectedConversation ? "flex" : "hidden lg:flex"} flex-col`}>
+        <div className={`${selectedConversation ? "flex" : "hidden lg:flex"} min-h-0 flex-col`}>
           <ChatWindow
             currentUserId={session.user.id}
             selectedConversation={selectedConversation}
@@ -260,6 +256,6 @@ export default async function ChatPage({
           />
         </div>
       </main>
-    </PageBackdrop>
+    </div>
   );
 }

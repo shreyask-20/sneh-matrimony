@@ -223,21 +223,15 @@ export default async function PublicProfilePage({
                 </div>
               )}
               <div className="flex flex-wrap gap-3">
-                <InterestActionButton
-                  targetUserId={user.id}
-                  signedIn={Boolean(currentUserId)}
-                  initialState={derivedInterestState}
-                />
-                {conversation ? (
-                  <Button asChild variant="secondary">
-                    <Link href={`/chat?conversation=${conversation.id}`}>Chat</Link>
-                  </Button>
-                ) : (
-                  <Button variant="secondary" disabled>
-                    Chat
+                {derivedInterestState === "accepted" && (
+                  <Button asChild variant="primary" className="flex-1 sm:flex-none">
+                    <Link href={conversation ? `/chat?conversation=${conversation.id}` : "/chat"}>
+                      Open Chat
+                    </Link>
                   </Button>
                 )}
               </div>
+
               <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-5 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
                 <div>
                   <p className="text-xs uppercase text-slate-400">Email</p>
@@ -282,6 +276,44 @@ export default async function PublicProfilePage({
                     .join(" · ") || "Member profile"}
                 </p>
               </div>
+
+              {/* Primary match CTA — right below name where eyes land first */}
+              {currentUserId && (
+                <div className="rounded-2xl border border-brand-100/60 bg-gradient-to-r from-brand-50/80 to-fuchsia-50/60 p-4 dark:border-white/10 dark:from-white/[0.04] dark:to-white/[0.02]">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand-500">
+                    {derivedInterestState === "accepted"
+                      ? "You are matched"
+                      : derivedInterestState === "pending"
+                        ? "Interest sent"
+                        : derivedInterestState === "incoming"
+                          ? "They like you"
+                          : "Start a match"}
+                  </p>
+                  <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
+                    {derivedInterestState === "accepted"
+                      ? "You and this member have matched. Start a conversation."
+                      : derivedInterestState === "pending"
+                        ? "Your interest has been sent. You'll be notified when they respond."
+                        : derivedInterestState === "incoming"
+                          ? "This person has expressed interest in you. Respond from your dashboard."
+                          : `Send an interest to ${user.firstName ?? fullName.split(" ")[0]}. If they respond, you'll be connected.`}
+                  </p>
+                  {derivedInterestState === "accepted" ? (
+                    <Button asChild className="w-full bg-brand-600 text-white hover:bg-brand-700">
+                      <Link href={conversation ? `/chat?conversation=${conversation.id}` : "/chat"}>
+                        Open Chat
+                      </Link>
+                    </Button>
+                  ) : (
+                    <InterestActionButton
+                      targetUserId={user.id}
+                      signedIn={Boolean(currentUserId)}
+                      initialState={derivedInterestState}
+                      fullWidth
+                    />
+                  )}
+                </div>
+              )}
               <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/70 p-5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
                 <div>
                   <p className="text-xs uppercase text-slate-400">Education</p>

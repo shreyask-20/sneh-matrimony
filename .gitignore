@@ -40,3 +40,4 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 DESIGN_RULES.md
+reports/

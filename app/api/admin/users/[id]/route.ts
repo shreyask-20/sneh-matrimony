@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
+import { revalidateTag } from "next/cache";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -34,7 +35,7 @@ export async function PATCH(
   const body = (await request.json()) as UpdatePayload;
   const targetUser = await prisma.user.findUnique({
     where: { id },
-    select: { roleName: true },
+    select: { roleName: true, isApproved: true },
   });
 
   if (!targetUser) {
@@ -59,15 +60,18 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {};
   if (typeof body.profileVisible === "boolean") {
+    if (body.profileVisible && !targetUser.isApproved) {
+      return NextResponse.json(
+        { error: "Cannot make the profile visible until the member is approved." },
+        { status: 400 }
+      );
+    }
     if (
       body.profileVisible &&
       (!primaryPhoto || primaryPhoto.status !== "APPROVED")
     ) {
       return NextResponse.json(
-        {
-          error:
-            "Cannot make the profile visible until the primary photo is approved.",
-        },
+        { error: "Cannot make the profile visible until the primary photo is approved." },
         { status: 400 }
       );
     }
@@ -99,6 +103,10 @@ export async function PATCH(
       where: { id },
       data: updates,
     });
+    // Bust the featured profiles cache so the landing page reflects changes immediately
+    if ("isApproved" in updates || "profileVisible" in updates) {
+      revalidateTag("featured-profiles");
+    }
   }
 
   if (body.decision) {

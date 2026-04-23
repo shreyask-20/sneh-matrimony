@@ -22,7 +22,7 @@ const getFeaturedProfiles = unstable_cache(
       limit: 10,
     }),
   ["featured-profiles"],
-  { revalidate: 60 }
+  { revalidate: 60, tags: ["featured-profiles"] }
 );
 
 export default async function HomePage() {

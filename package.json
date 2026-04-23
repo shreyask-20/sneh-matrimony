@@ -12,7 +12,9 @@
     "lint": "next lint",
     "seed": "node prisma/seed.cjs",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run --reporter=json --outputFile=reports/unit-results.json && node scripts/generate-unit-report.mjs",
+    "test:load": "k6 run scripts/load-test.js",
+    "test:load:prod": "k6 run -e BASE_URL=https://sneha-matrimonial.vercel.app scripts/load-test.js"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"

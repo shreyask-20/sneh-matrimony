@@ -127,7 +127,19 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
       roleName: "ADMIN" | "USER";
     }>
   ) => {
-    setLoading(true);
+    // Optimistic update — apply change immediately to local state
+    const prevAllUsers = allUsers;
+    setAllUsers((prev) =>
+      prev.map((u) => {
+        if (u.id !== id) return u;
+        const next = { ...u };
+        if (payload.profileVisible !== undefined) next.profileVisible = payload.profileVisible;
+        if (payload.roleName) next.roleName = payload.roleName;
+        if (payload.decision === "APPROVED") next.isApproved = true;
+        if (payload.decision === "REJECTED" || payload.decision === "BLOCKED") next.isApproved = false;
+        return next;
+      })
+    );
     setError(null);
     try {
       const response = await fetch(`/api/admin/users/${id}`, {
@@ -136,16 +148,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
         body: JSON.stringify(payload),
       });
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as
-          | { error?: string }
-          | null;
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
         throw new Error(data?.error ?? "Failed to update user");
       }
-      await fetchUsers("all");
     } catch (err) {
+      // Revert on failure
+      setAllUsers(prevAllUsers);
       setError(err instanceof Error ? err.message : "Failed to update user");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -193,7 +202,18 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     status: "APPROVED" | "REJECTED",
     remarks?: string
   ) => {
-    setLoading(true);
+    // Optimistic update — flip photo status immediately
+    const prevAllUsers = allUsers;
+    setAllUsers((prev) =>
+      prev.map((u) => ({
+        ...u,
+        photos: u.photos.map((p) =>
+          p.id === photoId
+            ? { ...p, status, rejectionRemarks: remarks ?? p.rejectionRemarks }
+            : p
+        ),
+      }))
+    );
     setError(null);
     try {
       const response = await fetch(`/api/admin/photos/${photoId}`, {
@@ -202,11 +222,10 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
         body: JSON.stringify({ status, remarks }),
       });
       if (!response.ok) throw new Error("Failed to update photo");
-      await fetchUsers("all");
     } catch (err) {
+      // Revert on failure
+      setAllUsers(prevAllUsers);
       setError(err instanceof Error ? err.message : "Failed to update photo");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -631,6 +650,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                                   type="checkbox"
                                   checked={user.profileVisible}
                                   disabled={!user.isApproved || !primaryPhotoApproved}
+                                  title={
+                                    !user.isApproved
+                                      ? "Approve the member first"
+                                      : !primaryPhotoApproved
+                                        ? "Approve the primary photo first"
+                                        : undefined
+                                  }
                                   onChange={(event) =>
                                     updateUser(user.id, {
                                       profileVisible: event.target.checked,

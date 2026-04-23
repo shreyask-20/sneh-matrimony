@@ -1,10 +1,50 @@
 "use client";
 
-import { useRef, useState, Suspense, KeyboardEvent, ClipboardEvent } from "react";
+import { useRef, useState, useEffect, Suspense, KeyboardEvent, ClipboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/shared/Navbar";
 import PageBackdrop from "@/components/shared/PageBackdrop";
 import Button from "@/components/shared/Button";
+
+function AutoRedirect({ seconds }: { seconds: number }) {
+  const router = useRouter();
+  const [remaining, setRemaining] = useState(seconds);
+
+  useEffect(() => {
+    if (remaining <= 0) {
+      router.push("/dashboard");
+      return;
+    }
+    const timer = setTimeout(() => setRemaining((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [remaining, router]);
+
+  const circumference = 2 * Math.PI * 18;
+  const progress = (remaining / seconds) * circumference;
+
+  return (
+    <div className="mt-6 flex flex-col items-center gap-2">
+      <div className="relative flex h-12 w-12 items-center justify-center">
+        <svg className="-rotate-90" width="48" height="48">
+          <circle cx="24" cy="24" r="18" fill="none" stroke="#e2e8f0" strokeWidth="3" />
+          <circle
+            cx="24" cy="24" r="18" fill="none"
+            stroke="#10b981" strokeWidth="3"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference - progress}
+            strokeLinecap="round"
+            className="transition-all duration-1000"
+          />
+        </svg>
+        <span className="absolute text-sm font-semibold text-emerald-600">{remaining}</span>
+      </div>
+      <p className="text-xs text-slate-400 dark:text-slate-500">
+        Redirecting to dashboard in {remaining}s
+      </p>
+    </div>
+  );
+}
 
 function VerifyEmailContent() {
   const [digits, setDigits] = useState<string[]>(["", "", "", "", ""]);
@@ -105,7 +145,8 @@ function VerifyEmailContent() {
           Your email has been confirmed. The Email Verified badge will now
           appear on your profile.
         </p>
-        <Button asChild className="mt-8">
+        <AutoRedirect seconds={5} />
+        <Button asChild className="mt-4">
           <Link href="/profile">Go to profile</Link>
         </Button>
       </div>

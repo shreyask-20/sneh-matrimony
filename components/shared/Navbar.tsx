@@ -112,7 +112,7 @@ export default function Navbar({
       >
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
           <nav className="flex w-full items-center justify-between py-1">
-            <a className="flex items-center" href="/">
+            <a className="flex items-center -ml-3" href="/">
               <img
                 src={isBlend ? "/profiles/navi.png" : "/profiles/nav-logo.png"}
                 alt="Sneh Matrimony"

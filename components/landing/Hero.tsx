@@ -41,10 +41,10 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
           <h1 className="font-serif text-4xl text-slate-0 sm:text-5xl">
             <span className="romantic-title">
               Find Your Perfect
-              <span className="romantic-title-accent">Life Partner</span>
+              <span className="romantic-title">Life Partner</span>
             </span>
           </h1>
-          <p className="text-base text-slate-600 dark:text-slate-300 sm:text-lg">
+          <p className="text-base text-slate-700 dark:text-slate-300 sm:text-lg">
             Sneh Matrimony blends meaningful compatibility, privacy-first
             profiles, and curated matches to help you find a relationship that
             feels like home.
@@ -59,7 +59,7 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
               <Link href="/browse">Browse Matches</Link>
             </Button>
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-6 text-sm text-slate-900 dark:text-slate-400">
             <span>Verified profiles</span>
             <span>Secure chat</span>
           </div>

@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, User, Briefcase, Heart, Camera, CheckCircle2 } from "lucide-react";
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
 import PageBackdrop from "../../../components/shared/PageBackdrop";
 
-const steps = ["Basic info", "Personal", "Preferences", "Upload photos"];
+const steps = [
+  { label: "Basic info", icon: User },
+  { label: "Personal", icon: Briefcase },
+  { label: "Preferences", icon: Heart },
+  { label: "Upload photos", icon: Camera },
+];
 const MAX_PHOTO_BYTES = 1024 * 1024;
 const RECOMMENDED_PHOTO_BYTES = 500 * 1024;
 
@@ -307,40 +312,76 @@ export default function RegisterPage() {
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="w-full px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-10 text-center">
-          <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
-            Create your profile
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            A few steps away from curated, meaningful matches.
-          </p>
-        </div>
-        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-6">
-            {steps.map((step, index) => (
-              <button
-                key={step}
-                onClick={() => setActiveStep(index)}
-                className={`w-full rounded-2xl border p-4 text-left transition ${
-                  activeStep === index
-                    ? "border-brand-300 bg-brand-50/80 text-brand-700 dark:border-brand-500/40 dark:bg-white/5 dark:text-white"
-                    : "border-slate-200 bg-white/80 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
-                }`}
-                type="button"
-              >
-                <p className="text-xs uppercase tracking-[0.25em]">
-                  Step {index + 1}
-                </p>
-                <p className="mt-2 font-serif text-lg">{step}</p>
-              </button>
-            ))}
+      <main className="w-full px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+              Create your profile
+            </h1>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              A few steps away from curated, meaningful matches.
+            </p>
           </div>
+
+          {/* Step progress */}
+          <div className="mb-8">
+            <div className="flex items-start justify-between">
+              {steps.map((step, index) => {
+                const Icon = step.icon;
+                const done = index < activeStep;
+                const active = index === activeStep;
+                return (
+                  <div key={step.label} className="flex flex-1 flex-col items-center">
+                    <div className="flex w-full items-center">
+                      {/* Left connector */}
+                      <div className={`h-0.5 flex-1 rounded-full transition-all duration-300 ${
+                        index === 0 ? "invisible" : index <= activeStep ? "bg-brand-500" : "bg-slate-200 dark:bg-white/10"
+                      }`} />
+                      {/* Circle */}
+                      <button
+                        type="button"
+                        onClick={() => done && setActiveStep(index)}
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                          done
+                            ? "border-brand-500 bg-brand-500 text-white"
+                            : active
+                              ? "border-brand-500 bg-white text-brand-600 shadow-[0_0_0_4px_rgba(155,28,74,0.1)] dark:bg-slate-900"
+                              : "border-slate-200 bg-white text-slate-400 dark:border-white/10 dark:bg-slate-900"
+                        } ${done ? "cursor-pointer" : "cursor-default"}`}
+                      >
+                        {done ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-4 w-4" />}
+                      </button>
+                      {/* Right connector */}
+                      <div className={`h-0.5 flex-1 rounded-full transition-all duration-300 ${
+                        index === steps.length - 1 ? "invisible" : index < activeStep ? "bg-brand-500" : "bg-slate-200 dark:bg-white/10"
+                      }`} />
+                    </div>
+                    {/* Label */}
+                    <span className={`mt-2 hidden text-xs font-medium sm:block ${
+                      active ? "text-brand-600 dark:text-brand-300"
+                      : done ? "text-slate-600 dark:text-slate-300"
+                      : "text-slate-400"
+                    }`}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Form card */}
           <div className="glass-card rounded-3xl p-8">
-            <h2 className="font-serif text-2xl text-slate-900 dark:text-white">
-              {steps[activeStep]}
-            </h2>
-            <div className="mt-6 grid gap-4">
+            <div className="mb-6 border-b border-slate-100 pb-5 dark:border-white/10">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500">
+                Step {activeStep + 1} of {steps.length}
+              </p>
+              <h2 className="mt-1 font-serif text-2xl text-slate-900 dark:text-white">
+                {steps[activeStep].label}
+              </h2>
+            </div>
+            <div className="grid gap-4">
               {activeStep === 0 && (
                 <>
                   <div>
@@ -567,11 +608,12 @@ export default function RegisterPage() {
                 </>
               )}
             </div>
-            {error ? (
-              <p className="mt-4 text-sm text-red-500">{error}</p>
+            {error && Object.keys(fieldErrors).length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+                {error}
+              </div>
             ) : null}
-            <div className="mt-6 flex items-center justify-between">
-              <Button
+            <div className="mt-6 flex items-center justify-between">              <Button
                 type="button"
                 variant="ghost"
                 onClick={() =>
@@ -596,7 +638,6 @@ export default function RegisterPage() {
             </div>
           </div>
         </div>
-      </main>
-    </PageBackdrop>
+      </main>    </PageBackdrop>
   );
 }

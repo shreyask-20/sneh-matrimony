@@ -3,10 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2, Sparkles, ShieldCheck, Heart, Users } from "lucide-react";
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
 import PageBackdrop from "../../../components/shared/PageBackdrop";
+
+const trustPoints = [
+  { icon: ShieldCheck, text: "Verified profiles only" },
+  { icon: Heart, text: "Curated matches" },
+  { icon: Users, text: "Trusted by families" },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,99 +51,165 @@ export default function LoginPage() {
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="relative flex w-full flex-col items-center px-4 py-16 sm:px-6 lg:px-8">
-        <div
-          className={`glass-card relative w-full max-w-md rounded-3xl p-8 transition duration-300 ${
-            loading ? "scale-[0.99] opacity-90" : ""
-          }`}
-        >
-          {loading ? (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/70 p-8 text-center backdrop-blur-md dark:bg-slate-950/70">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 via-rose-500 to-fuchsia-500 text-white shadow-[0_14px_30px_rgba(176,38,88,0.35)]">
-                <Loader2 className="h-6 w-6 animate-spin" />
+      <main className="relative flex min-h-[calc(100vh-80px)] w-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+
+        <div className="w-full max-w-4xl">
+          <div className="grid gap-0 overflow-hidden rounded-3xl shadow-[0_32px_64px_rgba(127,16,62,0.12)] lg:grid-cols-[1fr_1.1fr]">
+
+            {/* Left panel — brand */}
+            <div className="relative hidden flex-col justify-between bg-gradient-to-br from-[#7F103E] via-[#9b1c4a] to-[#c2185b] p-10 lg:flex">
+              {/* Decorative circles */}
+              <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
+              <div className="pointer-events-none absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-white/5" />
+
+              <div className="relative z-10">
+                <img
+                  src="/profiles/navi.png"
+                  alt="Sneh Matrimony"
+                  className="h-16 w-auto object-contain"
+                />
+                <p className="mt-2 text-xs uppercase tracking-[0.25em] text-white/60">
+                  Sneh Matrimony
+                </p>
               </div>
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-500">
-                Signing you in
+
+              <div className="relative z-10 space-y-6">
+                <div>
+                  <h2 className="font-serif text-3xl leading-snug text-white">
+                    Find your perfect<br />life partner
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-white/70">
+                    A trusted space where meaningful connections begin and families come together.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {trustPoints.map(({ icon: Icon, text }) => (
+                    <div key={text} className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15">
+                        <Icon className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-sm text-white/80">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <p className="relative z-10 text-xs text-white/40">
+                © {new Date().getFullYear()} Sneh Matrimony. All rights reserved.
               </p>
-              <p className="mt-2 font-serif text-2xl text-slate-900 dark:text-white">
-                Just a moment
-              </p>
-              <p className="mt-2 max-w-xs text-sm text-slate-600 dark:text-slate-300">
-                Verifying your details and opening your dashboard.
-              </p>
-              <div className="mt-5 flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-brand-500 [animation-delay:-0.2s]" />
-                <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-brand-500 [animation-delay:-0.1s]" />
-                <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-brand-500" />
-              </div>
-              <div className="mt-6 h-1.5 w-full max-w-52 overflow-hidden rounded-full bg-brand-100/80 dark:bg-white/10">
-                <div className="h-full w-1/2 animate-pulse rounded-full bg-gradient-to-r from-brand-500 via-rose-500 to-fuchsia-500" />
-              </div>
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-brand-100/60 bg-white/70 px-3 py-1 text-xs text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                <Sparkles className="h-3.5 w-3.5 text-brand-500" />
-                Preparing your match dashboard
-              </div>
             </div>
-          ) : null}
-          <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
-            Welcome back
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            Log in to continue your matchmaking journey.
-          </p>
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <input
-              className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-              placeholder="Email or phone number"
-              value={identifier}
-              onChange={(event) => setIdentifier(event.target.value)}
-              disabled={loading}
-            />
-            <div className="relative">
-              <input
-                className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-12 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                disabled={loading}
-              />
-              {password.length > 0 ? (
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full p-1 text-slate-400 transition hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-300"
-                  onClick={() => setShowPassword((current) => !current)}
-                  disabled={loading}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              ) : null}
-            </div>
-            {error ? (
-              <p className="text-sm text-red-500">{error}</p>
-            ) : null}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Signing in
-                </span>
-              ) : (
-                "Log in"
+
+            {/* Right panel — form */}
+            <div className="relative bg-white px-8 py-10 dark:bg-slate-900 sm:px-10">
+              {/* Loading overlay */}
+              {loading && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-r-3xl bg-white/80 backdrop-blur-md dark:bg-slate-900/80">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-fuchsia-500 text-white shadow-lg">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                  <p className="font-serif text-xl text-slate-900 dark:text-white">Signing you in</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Just a moment…</p>
+                  <div className="mt-4 flex items-center gap-1.5">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-brand-500 [animation-delay:-0.2s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-brand-500 [animation-delay:-0.1s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-brand-500" />
+                  </div>
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-xs text-brand-600 dark:border-white/10 dark:bg-white/5 dark:text-brand-300">
+                    <Sparkles className="h-3 w-3" />
+                    Preparing your dashboard
+                  </div>
+                </div>
               )}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
-            New here?{" "}
-            <a className="font-semibold text-brand-500" href="/auth/register">
-              Create a profile
-            </a>
-          </p>
+
+              <div className="mb-8">
+                {/* Mobile logo */}
+                <img
+                  src="/profiles/nav-logo.png"
+                  alt="Sneh Matrimony"
+                  className="mb-6 h-12 w-auto object-contain lg:hidden"
+                />
+                <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+                  Welcome back
+                </h1>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  Sign in to continue your journey.
+                </p>
+              </div>
+
+              <form className="space-y-5" onSubmit={handleSubmit}>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Email or phone number
+                  </label>
+                  <input
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-brand-400 focus:bg-white focus:ring-2 focus:ring-brand-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/10"
+                    placeholder="you@example.com or 9876543210"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    disabled={loading}
+                    autoComplete="username"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm text-slate-800 outline-none transition focus:border-brand-400 focus:bg-white focus:ring-2 focus:ring-brand-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/10"
+                      placeholder="Enter your password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
+                      autoComplete="current-password"
+                    />
+                    {password.length > 0 && (
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-brand-600"
+                        onClick={() => setShowPassword((v) => !v)}
+                        disabled={loading}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full py-3 text-base" disabled={loading}>
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing in…
+                    </span>
+                  ) : "Sign in"}
+                </Button>
+              </form>
+
+              <div className="mt-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-100 dark:bg-white/10" />
+                <span className="text-xs text-slate-400">New to Sneh Matrimony?</span>
+                <div className="h-px flex-1 bg-slate-100 dark:bg-white/10" />
+              </div>
+
+              <a
+                href="/auth/register"
+                className="mt-4 flex w-full items-center justify-center rounded-2xl border border-brand-200 bg-brand-50/60 px-4 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-100/60 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-300 dark:hover:bg-brand-500/20"
+              >
+                Create a profile
+              </a>
+            </div>
+          </div>
         </div>
       </main>
     </PageBackdrop>

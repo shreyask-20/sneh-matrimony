@@ -162,7 +162,7 @@
 }
 
 .marquee-track {
-  animation: profile-marquee 48s linear infinite;
+  animation: profile-marquee 60s linear infinite;
   will-change: transform;
 }
 

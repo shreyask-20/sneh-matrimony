@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import crypto from "node:crypto";
-import { getToken } from "next-auth/jwt";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 const MAX_FILE_SIZE = 1024 * 1024;
@@ -11,14 +11,10 @@ function getEnv(name: string) {
   return value;
 }
 
-export async function POST(request: Request) {
-  // Must be authenticated
-  const token = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
-  if (!token?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function POST(request: NextRequest) {
   // Rate limit: 20 requests per 10 minutes per IP
+  // The signature itself is scoped to a specific folder and expires quickly,
+  // so even if obtained, it can only upload to sneh-matrimony/profiles/
   const ip = getClientIp(request);
   if (isRateLimited(`upload-sig:${ip}`, 20, 10 * 60 * 1000)) {
     return NextResponse.json(

@@ -48,6 +48,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Validate that the photo URL comes from the approved Cloudinary upload path
+  function isAllowedPhotoUrl(photoUrl: string) {
+    try {
+      const parsed = new URL(photoUrl);
+      return (
+        parsed.protocol === "https:" &&
+        parsed.hostname === "res.cloudinary.com" &&
+        parsed.pathname.includes("/image/upload/") &&
+        parsed.pathname.includes("/sneh-matrimony/profiles/")
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  if (!isAllowedPhotoUrl(url)) {
+    return NextResponse.json(
+      { error: 'Profile photos must come from the approved upload flow.' },
+      { status: 400 }
+    );
+  }
+
   // If this photo should be primary, clear existing primary first
   const shouldBePrimary = isPrimary === true || existingPhotos.length === 0;
 

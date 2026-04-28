@@ -41,3 +41,14 @@ yarn.lock
 pnpm-lock.yaml
 DESIGN_RULES.md
 reports/
+
+# ─── Test & load-test scripts (local only, never commit) ──────────────────────
+scripts/k6/
+scripts/test-*.cjs
+scripts/test-*.mjs
+scripts/run-load-tests.mjs
+scripts/generate-load-report.mjs
+scripts/generate-unit-report.mjs
+scripts/seed-load-test-users.cjs
+scripts/check-seed-users.cjs
+scripts/check-conversation.cjs

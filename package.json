@@ -13,8 +13,14 @@
     "seed": "node prisma/seed.cjs",
     "test": "vitest",
     "test:run": "vitest run --reporter=json --outputFile=reports/unit-results.json && node scripts/generate-unit-report.mjs",
-    "test:load": "k6 run scripts/load-test.js",
-    "test:load:prod": "k6 run -e BASE_URL=https://sneha-matrimonial.vercel.app scripts/load-test.js"
+    "test:load:seed": "node scripts/seed-load-test-users.cjs",
+    "test:endpoints": "node scripts/test-all-endpoints.cjs",
+    "test:reject-delete": "node scripts/test-reject-delete.cjs",
+    "test:diagnose": "node scripts/run-load-tests.mjs diagnostic",
+    "test:smoke": "node scripts/run-load-tests.mjs smoke",
+    "test:load": "node scripts/run-load-tests.mjs load",
+    "test:stress": "node scripts/run-load-tests.mjs stress",
+    "test:spike": "node scripts/run-load-tests.mjs spike"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"

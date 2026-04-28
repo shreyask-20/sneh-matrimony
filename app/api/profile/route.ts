@@ -48,6 +48,52 @@ type UpdatePayload = {
   };
 };
 
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      gender: true,
+      birthDate: true,
+      maritalStatus: true,
+      height: true,
+      profession: true,
+      education: true,
+      city: true,
+      religion: true,
+      community: true,
+      motherTongue: true,
+      bio: true,
+      isApproved: true,
+      profileVisible: true,
+      createdAt: true,
+      familyDetails: true,
+      horoscope: true,
+      preferences: true,
+      photos: {
+        select: { id: true, url: true, status: true, isPrimary: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ user });
+}
+
 export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

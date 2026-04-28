@@ -120,26 +120,6 @@ export default function Navbar({
               />
             </a>
 
-            {/* Desktop feature pills */}
-            <div
-              className={`hidden items-center gap-2 text-xs lg:flex ${
-                isBlend ? "text-white/80" : "text-slate-600"
-              }`}
-            >
-              {["Privacy-first", "Verified profiles", "Secure chat"].map((label) => (
-                <span
-                  key={label}
-                  className={`rounded-full border px-3 py-1 transition ${
-                    isBlend
-                      ? "border-white/20 bg-white/10"
-                      : "border-brand-100 bg-brand-50/60"
-                  }`}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-
             {/* Desktop nav links */}
             <div
               className={`hidden items-center gap-6 text-sm md:flex ${

@@ -33,6 +33,7 @@ export const authOptions: NextAuthOptions = {
           const user = await prisma.user.findFirst({
             where: {
               OR: [{ email: identifier }, { phone: identifier }],
+              deletedAt: null, // block soft-deleted accounts from signing in
             },
           });
 

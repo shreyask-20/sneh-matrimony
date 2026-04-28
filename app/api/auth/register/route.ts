@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import crypto from "node:crypto";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 type RegisterPayload = {
   fullName?: string;
@@ -35,6 +36,15 @@ function isAllowedPhotoUrl(url: string) {
 }
 
 export async function POST(request: Request) {
+  // Rate limit: 5 registrations per hour per IP
+  const ip = getClientIp(request);
+  if (isRateLimited(`register:${ip}`, 5, 60 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: "Too many registration attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   const body = (await request.json()) as RegisterPayload;
 
   const fullName = body.fullName?.trim() ?? "";

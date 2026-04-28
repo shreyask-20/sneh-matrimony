@@ -12,5 +12,9 @@ export function isInterestActionAllowed(
     return status === "PENDING";
   }
 
-  return status === "PENDING";
+  if (action === "ACCEPTED" || action === "DECLINED") {
+    return status === "PENDING";
+  }
+
+  return false;
 }

@@ -4,8 +4,18 @@ import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import crypto from "node:crypto";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 3 resend attempts per 15 minutes per IP
+  const ip = getClientIp(request);
+  if (isRateLimited(`resend-otp:${ip}`, 3, 15 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait before requesting another code." },
+      { status: 429 }
+    );
+  }
+
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,

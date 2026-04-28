@@ -116,7 +116,7 @@ export default function Navbar({
               <img
                 src={isBlend ? "/profiles/navi.png" : "/profiles/nav-logo.png"}
                 alt="Sneh Matrimony"
-                className={`${isBlend ? "h-14 sm:h-20" : "h-16 sm:h-24"} w-auto shrink-0 object-contain`}
+                className={`${isBlend ? "h-14 sm:h-20" : "h-10 sm:h-14"} w-auto shrink-0 object-contain`}
               />
             </a>
 

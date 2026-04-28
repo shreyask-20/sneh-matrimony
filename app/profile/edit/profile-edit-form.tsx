@@ -211,10 +211,12 @@ export default function ProfileEditForm({
     const oversized = incoming.filter((file) => file.size > MAX_PHOTO_BYTES);
     if (oversized.length > 0) {
       setPhotoError(
-        `Each photo must be 1MB or less. ${oversized.length} file${
+        `Photo must be 1 MB or less. ${oversized.length} ${
           oversized.length === 1 ? "" : "s"
-        } skipped.`
+        } .`
       );
+    } else {
+      setPhotoError(null);
     }
     const currentPhotos = newPhotos;
     const next = [...currentPhotos, ...valid];
@@ -226,7 +228,6 @@ export default function ProfileEditForm({
       return;
     }
     setNewPhotos(next);
-    setPhotoError(null);
   };
 
   const setPhotos = (photos: File[]) => {

@@ -12,6 +12,7 @@ type ChatMessage = {
   body: string;
   senderId: string;
   createdAt: string;
+  readAt?: string | null;
 };
 
 type SelectedConversation = {
@@ -242,6 +243,14 @@ export default function ChatWindow({
                     {isLastInGroup && (
                       <p className={`mt-1 px-1 text-[10px] text-slate-400 ${isMine ? "text-right" : "text-left"}`}>
                         {formatTimestamp(message.createdAt)}
+                        {isMine && (
+                          <span className="ml-1.5">
+                            {(message as ChatMessage & { readAt?: string | null }).readAt
+                              ? <span className="text-brand-400">✓✓</span>
+                              : <span className="text-slate-300">✓</span>
+                            }
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>

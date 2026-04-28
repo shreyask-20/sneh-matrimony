@@ -177,12 +177,7 @@ export default async function ProfilePage() {
                     {user.maritalStatus ?? "Not shared"}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase text-slate-400">Visibility</p>
-                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
-                    {visibilityLabel}
-                  </p>
-                </div>
+
               </div>
             </div>
             <div className="space-y-5">

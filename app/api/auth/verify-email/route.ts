@@ -2,8 +2,18 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 attempts per 15 minutes per IP — prevents OTP brute force
+  const ip = getClientIp(request);
+  if (isRateLimited(`verify-otp:${ip}`, 10, 15 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please wait before trying again." },
+      { status: 429 }
+    );
+  }
+
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,

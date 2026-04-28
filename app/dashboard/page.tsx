@@ -252,9 +252,11 @@ export default async function DashboardPage({
     unreadMessageRows.map((row) => row.conversationId)
   ).size;
 
-  const acceptedConversationPairs = acceptedInterests.map((item) =>
-    normalizeConversationPair(item.fromUserId, item.toUser.id)
-  );
+  const acceptedConversationPairs = acceptedInterests
+    .filter((item) => item.toUser != null)
+    .map((item) =>
+      normalizeConversationPair(item.fromUserId, item.toUser.id)
+    );
 
   const conversationsForAccepted = acceptedConversationPairs.length
     ? await prisma.conversation.findMany({
@@ -322,7 +324,9 @@ export default async function DashboardPage({
         profile: item.toUser,
       })
     ),
-    accepted: acceptedInterests.map((item) =>
+    accepted: acceptedInterests
+      .filter((item) => item.toUser != null && item.fromUser != null)
+      .map((item) =>
       ({
         ...toInterestItem({
           ...item,

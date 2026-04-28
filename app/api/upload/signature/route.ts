@@ -1,83 +1,26 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
+import { getToken } from "next-auth/jwt";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
-const WINDOW_MS = 10 * 60 * 1000;
-const MAX_REQUESTS = 20;
-const requestCounts = new Map<string, { count: number; resetAt: number }>();
 const MAX_FILE_SIZE = 1024 * 1024;
 
 function getEnv(name: string) {
   const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is not set`);
-  }
+  if (!value) throw new Error(`${name} is not set`);
   return value;
 }
 
-function getClientKey(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  const cfConnectingIp = request.headers.get("cf-connecting-ip");
-
-  return (
-    forwardedFor?.split(",")[0]?.trim() ||
-    realIp?.trim() ||
-    cfConnectingIp?.trim() ||
-    "anonymous"
-  );
-}
-
-function isSameSiteRequest(request: Request) {
-  const requestOrigin = new URL(request.url).origin;
-  const origin = request.headers.get("origin");
-  const referer = request.headers.get("referer");
-  const secFetchSite = request.headers.get("sec-fetch-site");
-
-  if (origin && origin !== requestOrigin) return false;
-
-  if (referer) {
-    try {
-      if (new URL(referer).origin !== requestOrigin) return false;
-    } catch {
-      return false;
-    }
-  }
-
-  if (
-    secFetchSite &&
-    secFetchSite !== "same-origin" &&
-    secFetchSite !== "same-site"
-  ) {
-    return false;
-  }
-
-  return Boolean(origin || referer || secFetchSite);
-}
-
-function isRateLimited(key: string) {
-  const now = Date.now();
-  const current = requestCounts.get(key);
-
-  if (!current || current.resetAt <= now) {
-    requestCounts.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return false;
-  }
-
-  if (current.count >= MAX_REQUESTS) {
-    return true;
-  }
-
-  current.count += 1;
-  return false;
-}
-
 export async function POST(request: Request) {
-  if (!isSameSiteRequest(request)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Must be authenticated
+  const token = await getToken({ req: request as any, secret: process.env.NEXTAUTH_SECRET });
+  if (!token?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const clientKey = getClientKey(request);
-  if (isRateLimited(clientKey)) {
+  // Rate limit: 20 requests per 10 minutes per IP
+  const ip = getClientIp(request);
+  if (isRateLimited(`upload-sig:${ip}`, 20, 10 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many signature requests. Please try again later." },
       { status: 429 }

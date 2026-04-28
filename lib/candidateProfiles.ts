@@ -129,6 +129,7 @@ export async function getCandidateProfiles({
     roleName: "USER",
     isApproved: true,
     profileVisible: true,
+    deletedAt: null, // exclude soft-deleted users
     ...(currentUserId ? { id: { not: currentUserId } } : {}),
     ...(shouldFilterGender ? { gender: targetGender } : {}),
     ...(searchConditions.length > 0 ? { AND: searchConditions } : {}),

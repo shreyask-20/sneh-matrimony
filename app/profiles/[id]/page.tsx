@@ -8,6 +8,8 @@ import BackButton from "../../../components/shared/BackButton";
 import ProfileTabs from "../../../components/profile/ProfileTabs";
 import ProfileGallery from "../../../components/profile/ProfileGallery";
 import InterestActionButton from "../../../components/shared/InterestActionButton";
+import ShortlistButton from "../../../components/shared/ShortlistButton";
+import BlockButton from "../../../components/shared/BlockButton";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeConversationPair } from "@/lib/matchmaking";
@@ -46,6 +48,7 @@ export default async function PublicProfilePage({
       roleName: "USER",
       isApproved: true,
       profileVisible: true,
+      deletedAt: null,
     },
     select: {
       id: true,
@@ -129,23 +132,33 @@ export default async function PublicProfilePage({
               { fromUserId: user.id, toUserId: currentUserId },
             ],
           },
-          select: {
-            status: true,
-            fromUserId: true,
-            toUserId: true,
-          },
+          select: { status: true, fromUserId: true, toUserId: true },
         })
       : null;
 
-  const conversation =
+  const [conversation, shortlistEntry, blockEntry] = await Promise.all([
     currentUserId
-      ? await prisma.conversation.findUnique({
-          where: {
-            userOneId_userTwoId: normalizeConversationPair(currentUserId, user.id),
-          },
+      ? prisma.conversation.findUnique({
+          where: { userOneId_userTwoId: normalizeConversationPair(currentUserId, user.id) },
           select: { id: true },
         })
-      : null;
+      : Promise.resolve(null),
+    currentUserId
+      ? prisma.shortlist.findUnique({
+          where: { userId_profileUserId: { userId: currentUserId, profileUserId: user.id } },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+    currentUserId
+      ? prisma.block.findUnique({
+          where: { blockerId_blockedUserId: { blockerId: currentUserId, blockedUserId: user.id } },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
+  ]);
+
+  const isShortlisted = !!shortlistEntry;
+  const isBlocked = !!blockEntry;
 
   const derivedInterestState:
     | "none"
@@ -222,15 +235,21 @@ export default async function PublicProfilePage({
                   ))}
                 </div>
               )}
-              <div className="flex flex-wrap gap-3">
-                {derivedInterestState === "accepted" && (
-                  <Button asChild variant="primary" className="flex-1 sm:flex-none">
-                    <Link href={conversation ? `/chat?conversation=${conversation.id}` : "/chat"}>
-                      Open Chat
-                    </Link>
-                  </Button>
-                )}
-              </div>
+
+              {/* Action buttons row */}
+              {currentUserId && (
+                <div className="flex flex-wrap gap-2">
+                  <ShortlistButton profileUserId={user.id} initialSaved={isShortlisted} />
+                  <BlockButton blockedUserId={user.id} initialBlocked={isBlocked} />
+                  {derivedInterestState === "accepted" && (
+                    <Button asChild variant="primary" className="flex-1 sm:flex-none">
+                      <Link href={conversation ? `/chat?conversation=${conversation.id}` : "/chat"}>
+                        Open Chat
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              )}
 
               <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-5 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
                 <div>

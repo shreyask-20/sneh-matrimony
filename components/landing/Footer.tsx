@@ -46,6 +46,23 @@ export default function Footer() {
         </div>
 
       </div>
+
+      {/* Bottom bar */}
+      <div className="mx-auto mt-8 max-w-6xl border-t border-slate-100 px-6 pt-6 dark:border-white/10">
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500">
+          © {new Date().getFullYear()} Sneh Matrimony. All rights reserved.{" "}
+          <span className="mx-1.5 text-slate-300 dark:text-slate-600">·</span>
+          Crafted by{" "}
+          <a
+            href="https://webweaverlabs.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-slate-500 transition-colors hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"
+          >
+            WebWeaverLabs
+          </a>
+        </p>
+      </div>
     </footer>
   );
 }

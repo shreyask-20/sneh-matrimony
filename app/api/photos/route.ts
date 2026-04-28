@@ -199,19 +199,36 @@ export async function DELETE(request: NextRequest) {
       .update(signatureBase)
       .digest('hex');
 
-    await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          public_id: photo.publicId,
-          timestamp,
-          api_key: apiKey,
-          signature,
-        }),
+    try {
+      const cloudinaryRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            public_id: photo.publicId,
+            timestamp,
+            api_key: apiKey,
+            signature,
+          }),
+        }
+      );
+      if (!cloudinaryRes.ok) {
+        console.error(
+          `Cloudinary delete failed for publicId=${photo.publicId}: HTTP ${cloudinaryRes.status}`
+        );
+      } else {
+        const result = await cloudinaryRes.json() as { result?: string };
+        if (result.result !== 'ok') {
+          console.error(
+            `Cloudinary delete returned unexpected result for publicId=${photo.publicId}:`,
+            result
+          );
+        }
       }
-    );
+    } catch (err) {
+      console.error(`Cloudinary delete threw for publicId=${photo.publicId}:`, err);
+    }
   }
 
   return NextResponse.json({ ok: true });

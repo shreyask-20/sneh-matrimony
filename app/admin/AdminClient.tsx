@@ -17,11 +17,13 @@ type AdminUser = {
   profession: string | null;
   education: string | null;
   city: string | null;
+  religion: string | null;
   bio: string | null;
   birthDate: string | null;
   maritalStatus: string | null;
   height: string | null;
   createdAt: string;
+  deletedAt: string | null;
   isApproved: boolean;
   profileVisible: boolean;
   roleName: "ADMIN" | "USER";
@@ -45,6 +47,7 @@ type ApprovalLog = {
 const tabs = [
   { id: "queue", label: "Approval Queue" },
   { id: "users", label: "All Users" },
+  { id: "deleted", label: "Deleted" },
   { id: "logs", label: "Approval Logs" },
 ];
 
@@ -63,15 +66,27 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
+  const [religionFilter, setReligionFilter] = useState("");
   const [userFilter, setUserFilter] = useState<
     "all" | "pending" | "approved" | "visible" | "with-pending-photos"
   >("all");
 
-  const fetchUsers = async (status: "pending" | "all") => {
+  const buildQueryString = (status: "pending" | "all" | "deleted") => {
+    const params = new URLSearchParams({ status });
+    if (searchQuery.trim()) params.set("search", searchQuery.trim());
+    if (genderFilter) params.set("gender", genderFilter);
+    if (cityFilter) params.set("city", cityFilter);
+    if (religionFilter) params.set("religion", religionFilter);
+    return params.toString();
+  };
+
+  const fetchUsers = async (status: "pending" | "all" | "deleted") => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/admin/users?status=${status}`);
+      const response = await fetch(`/api/admin/users?${buildQueryString(status)}`);
       if (!response.ok) throw new Error("Failed to load users");
       const data = (await response.json()) as { users: AdminUser[] };
       if (status === "all") {
@@ -733,7 +748,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                                       const remarks = window.prompt(
                                         "Reason for rejection?"
                                       );
-                                      updatePhoto(photo.id, "REJECTED", remarks ?? "");
+                                      if (remarks === null) return;
+                                      updatePhoto(photo.id, "REJECTED", remarks.trim());
                                     }}
                                   >
                                     Reject

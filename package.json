@@ -16,6 +16,7 @@
     "test:load:seed": "node scripts/seed-load-test-users.cjs",
     "test:endpoints": "node scripts/test-all-endpoints.cjs",
     "test:reject-delete": "node scripts/test-reject-delete.cjs",
+    "test:recent": "node scripts/test-recent-changes.cjs",
     "test:diagnose": "node scripts/run-load-tests.mjs diagnostic",
     "test:smoke": "node scripts/run-load-tests.mjs smoke",
     "test:load": "node scripts/run-load-tests.mjs load",

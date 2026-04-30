@@ -117,11 +117,27 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   };
 
   useEffect(() => {
-    fetchUsers("all");
+    if (activeTab === "deleted") {
+      fetchUsers("deleted");
+    } else {
+      fetchUsers("all");
+    }
     if (activeTab === "logs") {
       fetchLogs();
     }
   }, [activeTab]);
+
+  // Refetch when server-side filters change (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (activeTab === "deleted") {
+        fetchUsers("deleted");
+      } else {
+        fetchUsers("all");
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, genderFilter, cityFilter, religionFilter]);
 
   useEffect(() => {
     setUserFilter(activeTab === "queue" ? "pending" : "all");
@@ -241,6 +257,38 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
       // Revert on failure
       setAllUsers(prevAllUsers);
       setError(err instanceof Error ? err.message : "Failed to update photo");
+    }
+  };
+
+  const softDeleteUser = async (user: AdminUser) => {
+    if (!window.confirm(`Soft-delete ${user.name ?? user.email ?? user.id}? They will be hidden and cannot sign in, but data is preserved.`)) return;
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/delete`, { method: "POST" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "Failed to delete user");
+      }
+      // Remove from current list
+      setAllUsers((prev) => prev.filter((u) => u.id !== user.id));
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete user");
+    }
+  };
+
+  const restoreUser = async (user: AdminUser) => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/delete`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "Failed to restore user");
+      }
+      // Refetch deleted list
+      fetchUsers("deleted");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to restore user");
     }
   };
 
@@ -379,6 +427,32 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                     onChange={(event) => setSearchQuery(event.target.value)}
                   />
                 </div>
+                {/* Server-side filter dropdowns */}
+                {activeTab !== "logs" && (
+                  <>
+                    <select
+                      className="rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      value={genderFilter}
+                      onChange={(e) => setGenderFilter(e.target.value)}
+                    >
+                      <option value="">All genders</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                    <input
+                      className="w-28 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      placeholder="City"
+                      value={cityFilter}
+                      onChange={(e) => setCityFilter(e.target.value)}
+                    />
+                    <input
+                      className="w-28 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      placeholder="Religion"
+                      value={religionFilter}
+                      onChange={(e) => setReligionFilter(e.target.value)}
+                    />
+                  </>
+                )}
                 <Button
                   size="sm"
                   variant="secondary"
@@ -438,7 +512,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </p>
             </div>
 
-            {!isLogsTab ? (
+            {!isLogsTab && activeTab !== "deleted" ? (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {[
                   { id: "all", label: "All", count: baseUsers.length },
@@ -491,7 +565,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </div>
             ) : null}
 
-            {!loading && activeTab !== "logs" ? (
+            {!loading && activeTab !== "logs" && activeTab !== "deleted" ? (
               <div className={`mt-6 ${isEmptyState ? "flex flex-1" : "space-y-4"}`}>
                 {filteredUsers.length === 0 ? (
                   <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
@@ -702,6 +776,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               >
                                 Block
                               </Button>
+                              <button
+                                type="button"
+                                onClick={() => softDeleteUser(user)}
+                                className="rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+                              >
+                                Delete
+                              </button>
                             </>
                           ) : (
                             <span className="text-xs text-slate-400">
@@ -772,6 +853,50 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                         </div>
                       );
                     })()
+                  ))
+                )}
+              </div>
+            ) : null}
+
+            {!loading && activeTab === "deleted" ? (
+              <div className="mt-6 space-y-4">
+                {users.length === 0 ? (
+                  <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
+                    <div className="max-w-md">
+                      <p className="text-xs uppercase tracking-[0.2em] text-brand-400">Deleted Accounts</p>
+                      <h3 className="mt-3 font-serif text-2xl text-slate-900 dark:text-white">No deleted accounts</h3>
+                      <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                        Soft-deleted accounts will appear here. Data is preserved and accounts can be restored.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  users.map((user) => (
+                    <div key={user.id} className="rounded-2xl border border-red-100 bg-red-50/40 px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/5 dark:text-slate-200">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-900 dark:text-white">
+                              {user.name ?? (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Unnamed")}
+                            </p>
+                            <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
+                              Deleted
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">{user.email ?? "No email"} • {user.phone ?? "No phone"}</p>
+                          <p className="text-xs text-slate-400">
+                            Deleted: {user.deletedAt ? new Date(user.deletedAt).toLocaleString() : "Unknown"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => restoreUser(user)}
+                          className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+                        >
+                          Restore account
+                        </button>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>

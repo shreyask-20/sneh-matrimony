@@ -10,6 +10,7 @@ import ProfileGallery from "../../../components/profile/ProfileGallery";
 import InterestActionButton from "../../../components/shared/InterestActionButton";
 import ShortlistButton from "../../../components/shared/ShortlistButton";
 import BlockButton from "../../../components/shared/BlockButton";
+import AgeDisplay from "../../../components/shared/AgeDisplay";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeConversationPair } from "@/lib/matchmaking";
@@ -182,9 +183,7 @@ export default async function PublicProfilePage({
   const fullName =
     user.name ??
     (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Profile");
-  const age = user.birthDate
-    ? Math.max(0, Math.floor((Date.now() - user.birthDate.getTime()) / 31557600000))
-    : null;
+  // age is now calculated client-side via AgeDisplay component
   const photos = user.photos.length > 0 ? user.photos : [{ url: "/profiles/p1.jpg" }];
   const familySummary = user.familyDetails
     ? `Father: ${user.familyDetails.fatherName}, Mother: ${user.familyDetails.motherName}. Siblings: ${user.familyDetails.totalBrothers} brother(s), ${user.familyDetails.totalSisters} sister(s).`
@@ -282,7 +281,9 @@ export default async function PublicProfilePage({
               <div>
                 <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
                   {fullName}
-                  {age ? `, ${age}` : ""}
+                  {user.birthDate && (
+                    <>, <AgeDisplay birthDate={user.birthDate} /></>
+                  )}
                 </h1>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                   {[

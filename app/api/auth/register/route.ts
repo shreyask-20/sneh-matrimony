@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail } from "@/lib/email";
-import crypto from "node:crypto";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 type RegisterPayload = {
@@ -148,25 +146,8 @@ export async function POST(request: Request) {
     },
   });
 
-  // Send email verification OTP (best-effort — don't fail registration if email fails)
-  try {
-    const otp = String(10000 + crypto.randomInt(90000));
-    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-    await prisma.verificationToken.deleteMany({ where: { identifier: email } });
-
-    await prisma.verificationToken.create({
-      data: {
-        identifier: email,
-        token: otp,
-        expires,
-      },
-    });
-
-    await sendVerificationEmail(email, otp);
-  } catch {
-    // Non-fatal: user is created, verification can be resent later
-  }
+  // OTP is sent when the user clicks "Verify email" on the dashboard,
+  // not at registration time — avoids duplicate emails on first login.
 
   return NextResponse.json({ user }, { status: 201 });
 }

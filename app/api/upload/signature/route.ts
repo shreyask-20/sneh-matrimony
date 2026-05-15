@@ -13,8 +13,9 @@ function getEnv(name: string) {
 
 export async function POST(request: NextRequest) {
   // Rate limit: 20 requests per 10 minutes per IP
-  // The signature itself is scoped to a specific folder and expires quickly,
-  // so even if obtained, it can only upload to sneh-matrimony/profiles/
+  // The signature is scoped to sneh-matrimony/profiles/ folder and expires quickly.
+  // Unauthenticated access is intentional — registration uploads photos before a
+  // session exists. The actual photo record creation (POST /api/photos) requires auth.
   const ip = getClientIp(request);
   if (isRateLimited(`upload-sig:${ip}`, 20, 10 * 60 * 1000)) {
     return NextResponse.json(

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { neonConfig } from "@neondatabase/serverless";
@@ -16,7 +16,7 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL is not set");
   }
 
-  const log =
+  const log: Prisma.LogLevel[] =
     process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"];
 
   // Neon on Vercel: use the serverless driver (WebSocket) instead of pg Pool.

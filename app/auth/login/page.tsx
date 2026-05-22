@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { Eye, EyeOff, Loader2, Sparkles, ShieldCheck, Heart, Users } from "lucide-react";
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
@@ -15,7 +14,6 @@ const trustPoints = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +38,16 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/dashboard?login=1");
-      router.refresh();
+      // Wait for the session cookie before navigating (avoids race on Vercel).
+      await getSession();
+      const callbackUrl = new URLSearchParams(window.location.search).get(
+        "callbackUrl"
+      );
+      const destination = callbackUrl?.startsWith("/")
+        ? callbackUrl
+        : "/dashboard?login=1";
+      window.location.assign(destination);
+      return;
     } catch {
       setError("Unable to sign in right now. Please try again.");
       setLoading(false);

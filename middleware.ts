@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getAuthToken } from "@/lib/auth-token";
 
 // Routes that require a signed-in user (any role)
 const PROTECTED_PATHS = [
@@ -14,10 +14,7 @@ const PROTECTED_PATHS = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
+  const token = await getAuthToken(request);
 
   const roleName = token?.roleName as string | undefined;
 

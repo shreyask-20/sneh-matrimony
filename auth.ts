@@ -3,8 +3,13 @@ import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import type { RoleName } from "@prisma/client";
 
+const useSecureCookies =
+  process.env.NODE_ENV === "production" ||
+  process.env.NEXTAUTH_URL?.startsWith("https://") === true;
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies,
   pages: {
     signIn: "/auth/login",
   },

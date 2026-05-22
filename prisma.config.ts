@@ -11,6 +11,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL ?? fallbackDatabaseUrl,
+    // App runtime uses DATABASE_URL (Neon pooled). CLI migrations use DIRECT_URL when set.
+    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? fallbackDatabaseUrl,
   },
 });

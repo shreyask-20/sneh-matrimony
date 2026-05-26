@@ -72,3 +72,51 @@ screenshot*.png
 screenshot*.jpg
 *.screenshot.png
 *.screenshot.jpg
+
+# Test result images (local only, never commit)
+# Common test results folders and image patterns
+test-results/
+test-results/**/*.png
+test-results/**/*.jpg
+test-results/**/*.jpeg
+test-results/**/*.gif
+
+tests/results/
+tests/results/**/*.png
+tests/results/**/*.jpg
+tests/results/**/*.jpeg
+tests/results/**/*.gif
+
+reports/**/*.png
+reports/**/*.jpg
+reports/**/*.jpeg
+reports/**/*.gif
+
+# CI artifacts and screenshots from test runs
+artifacts/
+artifacts/**/*.png
+artifacts/**/*.jpg
+artifacts/**/*.jpeg
+artifacts/**/*.gif
+
+# Playwright/screenshots
+playwright-report/
+playwright-report/**/*.png
+playwright-report/**/*.jpg
+
+# Jest/Puppeteer snapshots or screenshots
+__image_snapshots__/
+__image_snapshots__/**/*.png
+__image_snapshots__/**/*.jpg
+
+# Mocha or other test screenshot folders
+mochawesome-report/
+mochawesome-report/**/*.png
+
+# Misc patterns
+*.test.png
+*.test.jpg
+*.test.jpeg
+*.spec.png
+*.spec.jpg
+*.spec.jpeg

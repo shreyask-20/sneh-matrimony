@@ -52,3 +52,23 @@ scripts/generate-unit-report.mjs
 scripts/seed-load-test-users.cjs
 scripts/check-seed-users.cjs
 scripts/check-conversation.cjs
+
+# Error reports and screenshots (local only, never commit)
+# Ignore markdown files named with "error" or "errors"
+*error*.md
+*errors*.md
+*.error.md
+*.err.md
+
+# Dedicated directory for error reports
+errors/
+
+# Screenshots and images used for error reporting
+screenshots/
+screenshots/**/*.png
+screenshots/**/*.jpg
+screenshots/**/*.jpeg
+screenshot*.png
+screenshot*.jpg
+*.screenshot.png
+*.screenshot.jpg

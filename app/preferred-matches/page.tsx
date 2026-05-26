@@ -79,9 +79,9 @@ export default async function PreferredMatchesPage() {
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
         <div className="mb-6">
-          <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+          <h1 className="font-serif text-2xl text-slate-900 dark:text-white sm:text-3xl">
             Preferred Matches
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
@@ -95,7 +95,7 @@ export default async function PreferredMatchesPage() {
         </div>
 
         {!hasPreferences ? (
-          <div className="rounded-3xl border border-brand-100/60 bg-brand-50/50 p-8 text-center dark:border-white/10 dark:bg-white/[0.04]">
+          <div className="rounded-3xl border border-brand-100/60 bg-brand-50/50 p-4 text-center dark:border-white/10 dark:bg-white/[0.04] sm:p-8">
             <p className="font-serif text-xl text-slate-900 dark:text-white">
               No preferences set yet
             </p>
@@ -104,14 +104,14 @@ export default async function PreferredMatchesPage() {
             </p>
             <Link
               href="/profile/edit"
-              className="mt-5 inline-flex rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white"
+              className="mt-5 inline-flex w-full justify-center rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white sm:w-auto"
             >
               Set preferences
             </Link>
           </div>
         ) : (
           <>
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 {profiles.length} profile{profiles.length === 1 ? "" : "s"} match your preferences.
               </p>

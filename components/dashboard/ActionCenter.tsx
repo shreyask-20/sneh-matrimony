@@ -25,9 +25,9 @@ export default function ActionCenter({ items, matchProgress }: Props) {
   );
 
   return (
-    <div className="glass-card rounded-3xl p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <div className="glass-card rounded-3xl p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h3 className="font-serif text-xl text-slate-900 dark:text-white">
             Action Center
           </h3>
@@ -42,7 +42,7 @@ export default function ActionCenter({ items, matchProgress }: Props) {
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
-          className="inline-flex items-center gap-2 rounded-full border border-brand-100/70 bg-white px-3 py-2 text-sm font-semibold text-brand-600 transition hover:border-brand-200 hover:bg-brand-50 dark:border-white/10 dark:bg-white/5 dark:text-brand-200 dark:hover:bg-white/10"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-brand-100/70 bg-white px-3 py-2 text-sm font-semibold text-brand-600 transition hover:border-brand-200 hover:bg-brand-50 dark:border-white/10 dark:bg-white/5 dark:text-brand-200 dark:hover:bg-white/10 sm:w-auto"
           aria-expanded={isOpen}
         >
           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}

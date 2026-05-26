@@ -20,6 +20,7 @@ const USER_SELECT = {
   firstName: true,
   lastName: true,
   email: true,
+  emailVerified: true,
   phone: true,
   gender: true,
   profession: true,

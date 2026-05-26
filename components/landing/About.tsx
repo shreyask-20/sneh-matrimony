@@ -7,7 +7,7 @@ const paragraphs = [
 
 export default function About() {
   return (
-    <section className="w-full px-4 pb-16 sm:px-6 lg:px-8 xl:px-12">
+    <section id="about" className="w-full px-4 pb-16 sm:px-6 lg:px-8 xl:px-12">
       <div className="mb-8">
         <p className="text-xs uppercase tracking-[0.3em] text-brand-500">
           Sneh Matrimony

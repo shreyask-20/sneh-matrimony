@@ -31,6 +31,103 @@ type CandidateSearchFilters = {
 const normalizeFilterValue = (value?: string | null) =>
   value?.trim() || null;
 
+const broadPreferenceTerms = new Set([
+  "any",
+  "anywhere",
+  "flexible",
+  "open",
+  "open to relocation",
+  "nearby",
+  "nearby cities",
+  "nearby metro cities",
+  "metro cities",
+  "compatible",
+  "compatible families",
+  "compatible family",
+  "compatible family background",
+  "compatible family values",
+  "family background",
+  "family values",
+  "family first",
+  "family-first",
+  "values driven match",
+  "values-driven match",
+  "values led families",
+  "values-led families",
+  "respectful family values",
+  "strong family values",
+  "stable families",
+  "modern family",
+  "grounded family",
+]);
+
+const fillerWords = new Set([
+  "a",
+  "an",
+  "and",
+  "background",
+  "cities",
+  "city",
+  "compatible",
+  "family",
+  "families",
+  "first",
+  "flexible",
+  "grounded",
+  "match",
+  "metro",
+  "modern",
+  "nearby",
+  "open",
+  "oriented",
+  "preferred",
+  "relocation",
+  "respectful",
+  "stable",
+  "strong",
+  "the",
+  "to",
+  "values",
+  "values-driven",
+  "values-led",
+]);
+
+export const parseTextPreferenceTerms = (value?: string | null) => {
+  const input = normalizeFilterValue(value);
+  if (!input) return [];
+
+  return input
+    .split(/\s*(?:,|\/|\||;|\bor\b)\s*/i)
+    .map((part) => part.trim())
+    .flatMap((part) => {
+      const normalizedPart = part
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!normalizedPart || broadPreferenceTerms.has(normalizedPart)) {
+        return [];
+      }
+
+      if (
+        normalizedPart.includes("flexible") ||
+        normalizedPart.includes("relocation") ||
+        normalizedPart === "open to all"
+      ) {
+        return [];
+      }
+
+      const words = normalizedPart
+        .split(/\s+/)
+        .filter((word) => !fillerWords.has(word));
+
+      const term = words.join(" ").trim();
+      return term ? [term] : [];
+    })
+    .filter((term, index, terms) => terms.indexOf(term) === index);
+};
+
 const shiftYears = (baseDate: Date, years: number) => {
   const date = new Date(baseDate);
   date.setFullYear(date.getFullYear() - years);
@@ -100,14 +197,26 @@ const buildSearchConditions = (
     ["profession", filters.profession],
     ["community", filters.caste],
   ] as const) {
-    const normalized = normalizeFilterValue(value);
-    if (!normalized) continue;
-    conditions.push({
-      [field]: {
-        contains: normalized,
-        mode: "insensitive",
-      },
-    });
+    const terms = parseTextPreferenceTerms(value);
+    if (terms.length === 0) continue;
+
+    conditions.push(
+      terms.length === 1
+        ? {
+            [field]: {
+              contains: terms[0],
+              mode: "insensitive",
+            },
+          }
+        : {
+            OR: terms.map((term) => ({
+              [field]: {
+                contains: term,
+                mode: "insensitive",
+              },
+            })),
+          }
+    );
   }
 
   return conditions;

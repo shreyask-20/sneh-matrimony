@@ -100,7 +100,7 @@ export default function BrowseFilters({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl border border-brand-100 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-brand-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-brand-100 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-brand-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 sm:w-auto"
         >
           <SlidersHorizontal className="h-4 w-4" />
           Filters
@@ -112,8 +112,8 @@ export default function BrowseFilters({
         </button>
 
         {open && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-3 backdrop-blur-sm">
+            <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl dark:bg-slate-900 sm:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-serif text-xl text-slate-900 dark:text-white">Filters</h2>
                 <button

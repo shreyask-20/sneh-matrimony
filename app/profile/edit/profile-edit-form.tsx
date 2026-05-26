@@ -552,11 +552,11 @@ export default function ProfileEditForm({
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <Navbar />
-      <main className="w-full px-4 py-10 sm:px-6 lg:px-8">
-        <div className="glass-card rounded-3xl p-8">
+      <main className="w-full px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <div className="glass-card rounded-3xl p-4 sm:p-8">
           <div className="space-y-4">
             <BackButton fallbackHref="/profile" />
-            <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+            <h1 className="font-serif text-2xl text-slate-900 dark:text-white sm:text-3xl">
               Edit profile
             </h1>
           </div>
@@ -570,7 +570,7 @@ export default function ProfileEditForm({
               </p>
             </div>
             <div className="space-y-2">
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6">
                 {existingPhotos.map((photo, index) => (
                   <div
                     key={photo.id}
@@ -588,7 +588,7 @@ export default function ProfileEditForm({
                     <button
                       type="button"
                       onClick={() => setPrimaryExistingPhoto(photo.id)}
-                      className="absolute left-1 top-1 rounded-full bg-black/50 px-2 py-1 text-xs text-white"
+                      className="absolute left-1 top-1 rounded-full bg-black/50 px-2 py-1 text-[10px] text-white sm:text-xs"
                     >
                       {photo.isPrimary ? "Primary" : "Set Primary"}
                     </button>
@@ -629,7 +629,7 @@ export default function ProfileEditForm({
                           );
                         }
                       }}
-                      className="absolute left-1 top-1 rounded-full bg-black/50 px-2 py-1 text-xs text-white"
+                      className="absolute left-1 top-1 rounded-full bg-black/50 px-2 py-1 text-[10px] text-white sm:text-xs"
                     >
                       {existingPhotos.length + index === primaryPhotoIndex
                         ? "Primary"

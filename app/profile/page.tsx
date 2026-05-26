@@ -111,7 +111,7 @@ export default async function ProfilePage() {
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-12 lg:px-8">
         <div className="mb-4 flex items-center justify-between gap-4">
           <BackButton fallbackHref="/dashboard" />
           <Button
@@ -122,8 +122,8 @@ export default async function ProfilePage() {
             <Link href="/profile/edit">Edit profile</Link>
           </Button>
         </div>
-        <div className="glass-card rounded-3xl p-8">
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="glass-card rounded-3xl p-4 sm:p-8">
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-8">
             <div className="space-y-4">
               <ProfileGallery photos={photos} alt={fullName} />
               <div className="flex flex-wrap gap-2">
@@ -146,22 +146,22 @@ export default async function ProfilePage() {
                   ))}
                 </div>
               )}
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Button
                   asChild
                   variant="primary"
-                  className="bg-slate-950 text-white hover:bg-slate-700"
+                  className="w-full bg-slate-950 text-white hover:bg-slate-700 sm:w-auto"
                 >
                   <Link href="/browse">Browse matches</Link>
                 </Button>
-                <Button asChild variant="ghost">
+                <Button asChild variant="ghost" className="w-full sm:w-auto">
                   <Link href="/chat">Messages</Link>
                 </Button>
               </div>
-              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-5 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
+              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-4 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2 sm:p-5">
                 <div>
                   <p className="text-xs uppercase text-slate-400">Email</p>
-                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                  <p className="mt-2 break-words font-semibold text-slate-800 dark:text-slate-100">
                     {contactEmail}
                   </p>
                 </div>
@@ -181,8 +181,8 @@ export default async function ProfilePage() {
               </div>
             </div>
             <div className="space-y-5">
-              <div>
-                <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+              <div className="min-w-0">
+                <h1 className="break-words font-serif text-2xl text-slate-900 dark:text-white sm:text-3xl">
                   {fullName}
                   {age ? `, ${age}` : ""}
                 </h1>
@@ -192,7 +192,7 @@ export default async function ProfilePage() {
                     .join(" · ") || "Member profile"}
                 </p>
               </div>
-              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/70 p-5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
+              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/70 p-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2 sm:p-5">
                 <div>
                   <p className="text-xs uppercase text-slate-400">Education</p>
                   <p className="font-semibold text-slate-800 dark:text-slate-100">

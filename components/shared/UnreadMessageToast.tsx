@@ -50,7 +50,7 @@ export default function UnreadMessageToast({
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-3xl border border-brand-100/70 bg-white px-4 py-4 shadow-[0_18px_40px_rgba(127,16,62,0.12)] dark:border-white/10 dark:bg-slate-950">
+    <div className="fixed bottom-4 left-4 right-4 z-50 rounded-3xl border border-brand-100/70 bg-white px-4 py-4 shadow-[0_18px_40px_rgba(127,16,62,0.12)] dark:border-white/10 dark:bg-slate-950 sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-sm">
       <p className="text-xs uppercase tracking-[0.18em] text-brand-400">
         New messages
       </p>
@@ -62,10 +62,10 @@ export default function UnreadMessageToast({
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
         Open messages to reply before this notice disappears.
       </p>
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Link
           href="/chat"
-          className="rounded-2xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-2xl bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white"
         >
           Open Messages
         </Link>

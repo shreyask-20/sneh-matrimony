@@ -22,6 +22,20 @@ type UpdatePayload = {
   roleName?: "ADMIN" | "USER";
 };
 
+const requiredProfileFields = [
+  ["Name", "name"],
+  ["Email", "email"],
+  ["Phone", "phone"],
+  ["Gender", "gender"],
+  ["City", "city"],
+  ["Date of birth", "birthDate"],
+  ["Profession", "profession"],
+  ["Education", "education"],
+  ["Marital status", "maritalStatus"],
+  ["Height", "height"],
+  ["Bio", "bio"],
+] as const;
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -35,7 +49,22 @@ export async function PATCH(
   const body = (await request.json()) as UpdatePayload;
   const targetUser = await prisma.user.findUnique({
     where: { id },
-    select: { roleName: true, isApproved: true },
+    select: {
+      roleName: true,
+      isApproved: true,
+      name: true,
+      email: true,
+      emailVerified: true,
+      phone: true,
+      gender: true,
+      city: true,
+      birthDate: true,
+      profession: true,
+      education: true,
+      maritalStatus: true,
+      height: true,
+      bio: true,
+    },
   });
 
   if (!targetUser) {
@@ -49,7 +78,7 @@ export async function PATCH(
     );
   }
 
-  const primaryPhoto = await prisma.photo.findFirst({
+  const photos = await prisma.photo.findMany({
     where: { userId: id },
     orderBy: { createdAt: "asc" },
     select: {
@@ -57,6 +86,16 @@ export async function PATCH(
       status: true,
     },
   });
+  const primaryPhoto = photos[0] ?? null;
+  const rejectedPhotoCount = photos.filter(
+    (photo) => photo.status === "REJECTED"
+  ).length;
+  const missingRequiredFields = requiredProfileFields
+    .filter(([, key]) => {
+      const value = targetUser[key];
+      return typeof value === "string" ? value.trim().length === 0 : !value;
+    })
+    .map(([label]) => label);
 
   const updates: Record<string, unknown> = {};
   if (typeof body.profileVisible === "boolean") {
@@ -75,6 +114,26 @@ export async function PATCH(
         { status: 400 }
       );
     }
+    if (body.profileVisible && missingRequiredFields.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Cannot make the profile visible until required fields are complete: ${missingRequiredFields.join(", ")}.`,
+        },
+        { status: 400 }
+      );
+    }
+    if (body.profileVisible && !targetUser.emailVerified) {
+      return NextResponse.json(
+        { error: "Cannot make the profile visible until email is verified." },
+        { status: 400 }
+      );
+    }
+    if (body.profileVisible && rejectedPhotoCount > 0) {
+      return NextResponse.json(
+        { error: "Cannot make the profile visible while photos are rejected." },
+        { status: 400 }
+      );
+    }
     updates.profileVisible = body.profileVisible;
   }
   if (body.roleName === "ADMIN" || body.roleName === "USER") {
@@ -87,6 +146,26 @@ export async function PATCH(
           error:
             "Cannot approve profile until the primary photo is approved.",
         },
+        { status: 400 }
+      );
+    }
+    if (missingRequiredFields.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Cannot approve profile until required fields are complete: ${missingRequiredFields.join(", ")}.`,
+        },
+        { status: 400 }
+      );
+    }
+    if (!targetUser.emailVerified) {
+      return NextResponse.json(
+        { error: "Cannot approve profile until email is verified." },
+        { status: 400 }
+      );
+    }
+    if (rejectedPhotoCount > 0) {
+      return NextResponse.json(
+        { error: "Cannot approve profile while photos are rejected." },
         { status: 400 }
       );
     }

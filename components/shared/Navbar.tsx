@@ -36,6 +36,21 @@ export default function Navbar({
   const loginButtonClass = isBlend
     ? ""
     : "text-brand-600 border-brand-200 bg-white/90 hover:text-brand-700";
+  const isActivePath = (href: string) =>
+    href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const desktopNavLinks = !isAdmin
+    ? [
+        { href: "/browse", icon: Home, label: "Browse", badge: null },
+        { href: "/preferred-matches", icon: Heart, label: "Preferred Matches", badge: null },
+        { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
+        {
+          href: "/chat",
+          icon: MessageCircleMore,
+          label: "Messages",
+          badge: unreadConversationCount > 0 ? unreadConversationCount : null,
+        },
+      ]
+    : [{ href: "/admin", icon: ShieldCheck, label: "Admin", badge: null }];
 
   // Close menu on route change
   useEffect(() => {
@@ -122,59 +137,47 @@ export default function Navbar({
 
             {/* Desktop nav links */}
             <div
-              className={`hidden items-center gap-6 text-sm md:flex ${
-                isBlend ? "text-white/90" : "text-slate-700"
+              className={`hidden items-center rounded-2xl border p-1 text-sm backdrop-blur md:flex ${
+                isBlend
+                  ? "border-white/15 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
+                  : "border-brand-100/70 bg-brand-50/45 shadow-sm"
               }`}
             >
-              {!isAdmin ? (
-                <>
-                  {[
-                    { href: "/browse", label: "Browse" },
-                    { href: "/preferred-matches", label: "Preferred Matches" },
-                    { href: "/dashboard", label: "Dashboard" },
-                  ].map(({ href, label }) => (
-                    <a
-                      key={href}
-                      href={href}
-                      className={`bg-[length:200%_100%] bg-right text-transparent transition ${
-                        isBlend
-                          ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
-                          : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
-                      }`}
-                    >
-                      {label}
-                    </a>
-                  ))}
+              {desktopNavLinks.map(({ href, icon: Icon, label, badge }) => {
+                const active = isActivePath(href);
+                return (
                   <a
-                    href="/chat"
-                    className={`bg-[length:200%_100%] bg-right text-transparent transition ${
+                    key={href}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={`group relative inline-flex h-10 items-center gap-2 rounded-xl px-3.5 font-medium transition ${
                       isBlend
-                        ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
-                        : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
+                        ? active
+                          ? "bg-white text-brand-700 shadow-sm"
+                          : "text-white/90 hover:bg-white/15 hover:text-white"
+                        : active
+                          ? "bg-brand-50 text-brand-700 shadow-sm ring-1 ring-brand-100"
+                          : "text-slate-600 hover:bg-brand-50/70 hover:text-brand-700"
                     }`}
                   >
-                    <span className="inline-flex items-center gap-2">
-                      Messages
-                      {unreadConversationCount > 0 && (
-                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
-                          {unreadConversationCount}
-                        </span>
-                      )}
-                    </span>
+                    <Icon
+                      className={`h-4 w-4 transition ${
+                        active
+                          ? "text-brand-600"
+                          : isBlend
+                            ? "text-white/75 group-hover:text-white"
+                            : "text-slate-400 group-hover:text-brand-500"
+                      }`}
+                    />
+                    <span>{label}</span>
+                    {badge != null && (
+                      <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-brand-700 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white shadow-sm">
+                        {badge}
+                      </span>
+                    )}
                   </a>
-                </>
-              ) : (
-                <a
-                  href="/admin"
-                  className={`bg-[length:200%_100%] bg-right text-transparent transition ${
-                    isBlend
-                      ? "bg-gradient-to-r from-white/80 to-white bg-clip-text hover:bg-left"
-                      : "bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text hover:bg-left"
-                  }`}
-                >
-                  Admin
-                </a>
-              )}
+                );
+              })}
             </div>
 
             {/* Right side */}

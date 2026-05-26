@@ -120,3 +120,50 @@ mochawesome-report/**/*.png
 *.spec.png
 *.spec.jpg
 *.spec.jpeg
+
+# Snapshot directories and generated test images
+*-snapshots/
+**/*-snapshots/
+tests/**/*.{png,jpg,jpeg,gif,svg,webp}
+**/*.{png,jpg,jpeg,gif,svg,webp}
+
+# Test scripts, configs and test code (local only, never commit)
+# Test directories
+tests/
+test/
+**/tests/
+
+# Common test file patterns
+**/*.spec.{js,ts,tsx,cjs,mjs}
+**/*.test.{js,ts,tsx,cjs,mjs}
+**/*.e2e.{js,ts,tsx,cjs,mjs}
+**/*.integration.{js,ts,tsx,cjs,mjs}
+
+# Test runner configs and fixtures
+playwright.config.*
+vitest.config.*
+jest.config.*
+jest.*
+karma.conf.*
+cypress/
+.cypress/
+
+# Test helper and setup scripts
+test-setup.*
+setupTests.*
+**/setupTests.*
+
+# Scripts containing tests
+scripts/test*/
+scripts/**/*test*
+scripts/**/*spec*
+scripts/**/*.spec.*
+scripts/**/*.test.*
+
+# Coverage and instrumentation
+.nyc_output/
+coverage/
+
+# Misc test artifacts
+*.spec.*
+*.test.*

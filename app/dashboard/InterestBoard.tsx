@@ -85,11 +85,11 @@ function InterestCard({
       }`}
       {...interactiveProps}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex gap-3 sm:items-start sm:gap-4">
         <img
           src={item.profile.photoUrl ?? "/profiles/p1.jpg"}
           alt={item.profile.name}
-          className="face-focus h-20 w-20 shrink-0 rounded-2xl"
+          className="face-focus h-16 w-16 shrink-0 rounded-2xl sm:h-20 sm:w-20"
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -119,7 +119,7 @@ function InterestCard({
               {formatInterestDate(item.createdAt)}
             </p>
             <div
-              className="flex flex-wrap items-center gap-2"
+              className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center"
               {...actionWrapperProps}
             >
               {actions}
@@ -194,13 +194,13 @@ export default function InterestBoard({ received, sent }: Props) {
   return (
     <div className="space-y-6">
       {featuredReceived ? (
-        <div className="self-start rounded-3xl border border-brand-200/80 bg-brand-50/80 p-6 shadow-[0_18px_36px_rgba(127,16,62,0.10)] dark:border-white/15 dark:bg-white/[0.08]">
+        <div className="self-start rounded-3xl border border-brand-200/80 bg-brand-50/80 p-4 shadow-[0_18px_36px_rgba(127,16,62,0.10)] dark:border-white/15 dark:bg-white/[0.08] sm:p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-500">
             Priority Interest
           </p>
           <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start">
             <div className="min-w-0 flex-1">
-              <p className="font-serif text-2xl text-slate-900 dark:text-white">
+              <p className="font-serif text-xl text-slate-900 dark:text-white sm:text-2xl">
                 {featuredReceived.profile.name}
               </p>
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
@@ -215,10 +215,11 @@ export default function InterestBoard({ received, sent }: Props) {
               <p className="mt-4 text-xs text-slate-400">
                 Received on {formatInterestDate(featuredReceived.createdAt)}
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 <Button
                   size="sm"
                   onClick={() => updateInterest(featuredReceived.id, "accept")}
+                  className="w-full justify-center sm:w-auto"
                   disabled={loadingId === featuredReceived.id}
                 >
                   {loadingId === featuredReceived.id ? "Saving..." : "Accept"}
@@ -227,6 +228,7 @@ export default function InterestBoard({ received, sent }: Props) {
                   size="sm"
                   variant="ghost"
                   onClick={() => updateInterest(featuredReceived.id, "decline")}
+                  className="w-full justify-center sm:w-auto"
                   disabled={loadingId === featuredReceived.id}
                 >
                   Decline
@@ -236,14 +238,14 @@ export default function InterestBoard({ received, sent }: Props) {
             <img
               src={featuredReceived.profile.photoUrl ?? "/profiles/p1.jpg"}
               alt={featuredReceived.profile.name}
-              className="face-focus-top h-52 w-full rounded-3xl lg:w-[280px] lg:flex-none"
+              className="face-focus-top h-48 w-full rounded-3xl sm:h-52 lg:w-[280px] lg:flex-none"
             />
           </div>
         </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="glass-card self-start rounded-3xl p-6">
+        <div className="glass-card self-start rounded-3xl p-4 sm:p-6">
           <h3 className="font-serif text-xl text-slate-900 dark:text-white">
             Received
           </h3>
@@ -270,6 +272,7 @@ export default function InterestBoard({ received, sent }: Props) {
                       <Button
                         size="sm"
                         onClick={() => updateInterest(item.id, "accept")}
+                        className="w-full justify-center sm:w-auto"
                         disabled={loadingId === item.id}
                       >
                         {loadingId === item.id ? "Saving..." : "Accept"}
@@ -278,6 +281,7 @@ export default function InterestBoard({ received, sent }: Props) {
                         size="sm"
                         variant="ghost"
                         onClick={() => updateInterest(item.id, "decline")}
+                        className="w-full justify-center sm:w-auto"
                         disabled={loadingId === item.id}
                       >
                         Decline
@@ -290,7 +294,7 @@ export default function InterestBoard({ received, sent }: Props) {
           </div>
         </div>
 
-        <div className="glass-card self-start rounded-3xl p-6">
+        <div className="glass-card self-start rounded-3xl p-4 sm:p-6">
           <h3 className="font-serif text-xl text-slate-900 dark:text-white">
             Sent
           </h3>
@@ -314,6 +318,7 @@ export default function InterestBoard({ received, sent }: Props) {
                       size="sm"
                       variant="ghost"
                       onClick={() => updateInterest(item.id, "withdraw")}
+                      className="w-full justify-center sm:w-auto"
                       disabled={loadingId === item.id}
                     >
                       {loadingId === item.id ? "Saving..." : "Withdraw"}

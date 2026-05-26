@@ -32,7 +32,7 @@ export default function ProfileCard({
   return (
     <div
       className={`glass-card card-clean group flex flex-col gap-5 overflow-hidden rounded-3xl transition hover:-translate-y-1 hover:shadow-soft ${
-        isCompact ? "h-[450px] p-4" : "min-h-[560px] p-5"
+        isCompact ? "h-auto min-h-[420px] p-4 sm:h-[450px]" : "min-h-[520px] p-4 sm:min-h-[560px] sm:p-5"
       }`}
     >
       <div
@@ -54,7 +54,7 @@ export default function ProfileCard({
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)]" />
       </div>
-      <div className="flex h-14 items-start justify-between gap-2 overflow-hidden">
+      <div className="flex min-h-14 items-start justify-between gap-2 overflow-hidden">
         <div className="min-w-0 flex-1">
           <h3
             className={`font-serif text-slate-900 dark:text-white ${
@@ -91,7 +91,7 @@ export default function ProfileCard({
       >
         {profile.about}
       </p>
-      <div className="mt-auto flex items-center justify-between">
+      <div className="mt-auto flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
           {faithLabel}
         </p>

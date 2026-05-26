@@ -57,7 +57,7 @@ export default function LoginPage() {
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="relative flex min-h-[calc(100vh-80px)] w-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <main className="relative flex min-h-[calc(100vh-80px)] w-full items-center justify-center px-3 py-6 sm:px-6 sm:py-12 lg:px-8">
 
         <div className="w-full max-w-4xl">
           <div className="grid gap-0 overflow-hidden rounded-3xl shadow-[0_32px_64px_rgba(127,16,62,0.12)] lg:grid-cols-[1fr_1.1fr]">
@@ -107,7 +107,7 @@ export default function LoginPage() {
             </div>
 
             {/* Right panel — form */}
-            <div className="relative bg-white px-8 py-10 dark:bg-slate-900 sm:px-10">
+            <div className="relative bg-white px-4 py-8 dark:bg-slate-900 sm:px-10 sm:py-10">
               {/* Loading overlay */}
               {loading && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-r-3xl bg-white/80 backdrop-blur-md dark:bg-slate-900/80">
@@ -135,7 +135,7 @@ export default function LoginPage() {
                   alt="Sneh Matrimony"
                   className="mb-6 h-12 w-auto object-contain lg:hidden"
                 />
-                <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+                <h1 className="font-serif text-2xl text-slate-900 dark:text-white sm:text-3xl">
                   Welcome back
                 </h1>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -202,9 +202,9 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-6 flex items-center gap-2 sm:gap-3">
                 <div className="h-px flex-1 bg-slate-100 dark:bg-white/10" />
-                <span className="text-xs text-slate-400">New to Sneh Matrimony?</span>
+                <span className="shrink-0 text-xs text-slate-400">New to Sneh Matrimony?</span>
                 <div className="h-px flex-1 bg-slate-100 dark:bg-white/10" />
               </div>
 

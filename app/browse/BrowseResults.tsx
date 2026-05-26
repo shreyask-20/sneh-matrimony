@@ -45,14 +45,14 @@ export default function BrowseResults({
 
   return (
     <>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         {profiles.map(({ profile, userId, interestState }) => (
           <ProfileCard
             key={userId}
             profile={profile}
             actionSlot={
-              <div className="flex flex-wrap items-center gap-2">
-                <Button asChild size="sm" variant="ghost">
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button asChild size="sm" variant="ghost" className="w-full justify-center sm:w-auto">
                   <Link href={`/profiles/${userId}`}>View Profile</Link>
                 </Button>
                 <InterestActionButton

@@ -12,6 +12,7 @@ type AdminUser = {
   firstName: string | null;
   lastName: string | null;
   email: string | null;
+  emailVerified: string | null;
   phone: string | null;
   gender: string | null;
   profession: string | null;
@@ -44,6 +45,45 @@ type ApprovalLog = {
   user: { id: string; name: string | null; email: string | null };
 };
 
+const requiredProfileFields: Array<{
+  key: keyof Pick<
+    AdminUser,
+    | "name"
+    | "email"
+    | "phone"
+    | "gender"
+    | "city"
+    | "birthDate"
+    | "profession"
+    | "education"
+    | "maritalStatus"
+    | "height"
+    | "bio"
+  >;
+  label: string;
+}> = [
+  { key: "name", label: "Name" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "gender", label: "Gender" },
+  { key: "city", label: "City" },
+  { key: "birthDate", label: "Date of birth" },
+  { key: "profession", label: "Profession" },
+  { key: "education", label: "Education" },
+  { key: "maritalStatus", label: "Marital status" },
+  { key: "height", label: "Height" },
+  { key: "bio", label: "Bio" },
+];
+
+function getMissingRequiredFields(user: AdminUser) {
+  return requiredProfileFields
+    .filter((field) => {
+      const value = user[field.key];
+      return typeof value === "string" ? value.trim().length === 0 : !value;
+    })
+    .map((field) => field.label);
+}
+
 const tabs = [
   { id: "queue", label: "Approval Queue" },
   { id: "users", label: "All Users" },
@@ -72,6 +112,9 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   const [userFilter, setUserFilter] = useState<
     "all" | "pending" | "approved" | "visible" | "with-pending-photos"
   >("all");
+  const [userSort, setUserSort] = useState<
+    "needs-action" | "newest" | "name" | "pending-photos"
+  >("needs-action");
 
   const buildQueryString = (status: "pending" | "all" | "deleted") => {
     const params = new URLSearchParams({ status });
@@ -332,6 +375,43 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     });
   }, [baseUsers, normalizedSearch, userFilter]);
 
+  const sortedUsers = useMemo(() => {
+    const pendingPhotoCount = (user: AdminUser) =>
+      user.photos.filter((photo) => photo.status === "PENDING").length;
+
+    const needsActionScore = (user: AdminUser) => {
+      const primaryStatus = user.photos[0]?.status;
+      return (
+        (!user.isApproved ? 80 : 0) +
+        (primaryStatus === "PENDING" ? 50 : 0) +
+        (!primaryStatus ? 35 : 0) +
+        (primaryStatus === "REJECTED" ? 30 : 0) +
+        pendingPhotoCount(user) * 12 +
+        (!user.bio?.trim() ? 4 : 0)
+      );
+    };
+
+    return [...filteredUsers].sort((a, b) => {
+      if (userSort === "name") {
+        const aName = a.name ?? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim();
+        const bName = b.name ?? `${b.firstName ?? ""} ${b.lastName ?? ""}`.trim();
+        return aName.localeCompare(bName);
+      }
+
+      if (userSort === "pending-photos") {
+        const photoDelta = pendingPhotoCount(b) - pendingPhotoCount(a);
+        if (photoDelta !== 0) return photoDelta;
+      }
+
+      if (userSort === "needs-action") {
+        const scoreDelta = needsActionScore(b) - needsActionScore(a);
+        if (scoreDelta !== 0) return scoreDelta;
+      }
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [filteredUsers, userSort]);
+
   const filteredLogs = useMemo(() => {
     if (!normalizedSearch) return logs;
 
@@ -363,8 +443,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
   return (
     <div className="min-h-screen bg-[#fbf6f8] pb-6 dark:bg-slate-950">
-      <div className="grid w-full gap-6 px-3 py-4 sm:px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6 xl:px-8">
-        <aside className="h-fit rounded-3xl border border-brand-100/60 bg-white p-5 text-sm text-slate-700 shadow-[0_14px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 lg:sticky lg:top-4">
+      <div className="grid w-full gap-4 px-2 py-3 sm:px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6 lg:px-6 xl:px-8">
+        <aside className="h-fit rounded-2xl border border-brand-100/60 bg-white p-4 text-sm text-slate-700 shadow-[0_14px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200 sm:rounded-3xl sm:p-5 lg:sticky lg:top-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-sm font-semibold text-white">
               SM
@@ -378,7 +458,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </p>
             </div>
           </div>
-          <div className="mt-6 flex flex-col gap-2">
+          <div className="mt-5 grid grid-cols-2 gap-2 text-xs sm:text-sm lg:flex lg:flex-col">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -399,10 +479,10 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
           </div>
         </aside>
 
-        <section className="flex min-h-[calc(100vh-3rem)] flex-col gap-4">
-          <div className="rounded-3xl border border-brand-100/60 bg-white px-5 py-4 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
+        <section className="flex min-h-0 flex-col gap-4 lg:min-h-[calc(100vh-3rem)]">
+          <div className="rounded-2xl border border-brand-100/60 bg-white px-4 py-4 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 sm:rounded-3xl sm:px-5">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.2em] text-brand-400">
                   {tabs.find((tab) => tab.id === activeTab)?.label}
                 </p>
@@ -410,18 +490,19 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   Welcome back, Admin
                 </h1>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center xl:w-auto">
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="w-full justify-center sm:w-auto"
                   onClick={() => router.push("/")}
                 >
                   Open Site
                 </Button>
-                <div className="flex items-center gap-2 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300">
+                <div className="col-span-2 flex min-w-0 items-center gap-2 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:col-span-1 sm:w-56">
                   <span>Search</span>
                   <input
-                    className="w-32 bg-transparent text-sm outline-none sm:w-40"
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none"
                     placeholder="Name, email"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
@@ -431,7 +512,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 {activeTab !== "logs" && (
                   <>
                     <select
-                      className="rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      className="w-full rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:w-auto"
                       value={genderFilter}
                       onChange={(e) => setGenderFilter(e.target.value)}
                     >
@@ -440,13 +521,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                       <option value="female">Female</option>
                     </select>
                     <input
-                      className="w-28 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      className="w-full rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:w-28"
                       placeholder="City"
                       value={cityFilter}
                       onChange={(e) => setCityFilter(e.target.value)}
                     />
                     <input
-                      className="w-28 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      className="w-full rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:w-28"
                       placeholder="Religion"
                       value={religionFilter}
                       onChange={(e) => setReligionFilter(e.target.value)}
@@ -456,6 +537,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="w-full justify-center sm:w-auto"
                   onClick={() => {
                     fetchUsers("all");
                     if (activeTab === "logs") fetchLogs();
@@ -465,6 +547,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 </Button>
                 <Button
                   size="sm"
+                  className="w-full justify-center sm:w-auto"
                   onClick={() => signOut({ callbackUrl: "/auth/login" })}
                 >
                   Sign out
@@ -472,48 +555,93 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </div>
             </div>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: "Total Users", value: allUsers.length },
-              { label: "Member Approvals", value: pendingUsers.length },
-              { label: "Approved Members", value: approvedUsers.length },
-              { label: "Visible Profiles", value: visibleUsers.length },
-            ].map((card) => (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              label: "Total users",
+              value: allUsers.length,
+              icon: "👥",
+              iconBg: "bg-violet-50 dark:bg-violet-500/10",
+              iconColor: "text-violet-600 dark:text-violet-400",
+              barColor: "bg-violet-500",
+            },
+            {
+              label: "Awaiting approval",
+              value: pendingUsers.length,
+              icon: "🕐",
+              iconBg: "bg-amber-50 dark:bg-amber-500/10",
+              iconColor: "text-amber-600 dark:text-amber-400",
+              barColor: "bg-amber-400",
+              badge: pendingUsers.length > 0 ? "Needs review" : null,
+              badgeStyle: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+            },
+            {
+              label: "Approved members",
+              value: approvedUsers.length,
+              icon: "✓",
+              iconBg: "bg-green-50 dark:bg-green-500/10",
+              iconColor: "text-green-600 dark:text-green-400",
+              barColor: "bg-green-500",
+            },
+            {
+              label: "Visible profiles",
+              value: visibleUsers.length,
+              icon: "👁",
+              iconBg: "bg-teal-50 dark:bg-teal-500/10",
+              iconColor: "text-teal-600 dark:text-teal-400",
+              barColor: "bg-teal-500",
+            },
+          ].map((card) => {
+            const pct = allUsers.length > 0
+              ? Math.min(10, Math.round((card.value / allUsers.length) * 100))
+              : 0;
+            return (
               <div
                 key={card.label}
-                className="rounded-3xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70"
+                className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70"
               >
-                <p className="text-xs uppercase tracking-[0.2em] text-brand-400">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm ${card.iconBg} ${card.iconColor} mb-3`}>
+                  {card.icon}
+                </div>
+                <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400 dark:text-slate-500">
                   {card.label}
                 </p>
-                <p className="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">
+                <p className="mt-1 text-[26px] font-semibold leading-none text-slate-900 dark:text-white">
                   {card.value}
                 </p>
-                <div className="mt-4 h-2 w-full rounded-full bg-brand-50 dark:bg-white/10">
+                <div className="my-3 h-[3px] w-full rounded-full bg-slate-100 dark:bg-white/10">
                   <div
-                    className="h-2 rounded-full bg-brand-600 dark:bg-white"
-                    style={{ width: `${Math.min(100, card.value * 10)}%` }}
+                    className={`h-[3px] rounded-full transition-all duration-500 ${card.barColor}`}
+                    style={{ width: `${pct}%` }}
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">{pct}% of total</span>
+                  {"badge" in card && card.badge ? (
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${card.badgeStyle}`}>
+                      {card.badge}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            ))}
-          </div>
-
-          <div className="flex min-h-[420px] flex-1 flex-col rounded-3xl border border-brand-100/60 bg-white p-5 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70">
-            <div className="flex items-center justify-between gap-3">
+            );
+          })}
+        </div>
+          <div className="flex min-h-[420px] flex-1 flex-col rounded-2xl border border-brand-100/60 bg-white p-3 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 sm:rounded-3xl sm:p-5">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <h2 className="font-serif text-xl text-slate-900 dark:text-white">
                 {activeTab === "logs" ? "Approval Logs" : "User Approvals"}
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
                 {isLogsTab
                   ? `${filteredLogs.length} recent actions`
-                  : `${filteredUsers.length} profile${filteredUsers.length === 1 ? "" : "s"} in this view`}
+                  : `${sortedUsers.length} profile${sortedUsers.length === 1 ? "" : "s"} in this view`}
               </p>
             </div>
 
             {!isLogsTab && activeTab !== "deleted" ? (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="mt-4 grid gap-3 lg:flex lg:flex-wrap lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
                 {[
                   { id: "all", label: "All", count: baseUsers.length },
                   { id: "pending", label: "Pending", count: pendingUsers.length },
@@ -547,6 +675,28 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                     {filter.label} · {filter.count}
                   </button>
                 ))}
+                </div>
+                <label className="flex w-full items-center justify-between gap-2 rounded-2xl border border-brand-100 bg-brand-50/50 px-3 py-2 text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:w-auto">
+                  Sort
+                  <select
+                    className="bg-transparent text-xs font-medium text-slate-700 outline-none dark:text-slate-100"
+                    value={userSort}
+                    onChange={(event) =>
+                      setUserSort(
+                        event.target.value as
+                          | "needs-action"
+                          | "newest"
+                          | "name"
+                          | "pending-photos"
+                      )
+                    }
+                  >
+                    <option value="needs-action">Needs action first</option>
+                    <option value="pending-photos">Pending photos first</option>
+                    <option value="newest">Newest first</option>
+                    <option value="name">Name A-Z</option>
+                  </select>
+                </label>
               </div>
             ) : (
               <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -583,7 +733,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                     </div>
                   </div>
                 ) : (
-                  filteredUsers.map((user) => (
+                  sortedUsers.map((user, index) => (
                     (() => {
                       const primaryPhoto = user.photos[0] ?? null;
                       const primaryPhotoApproved =
@@ -601,39 +751,93 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                         : primaryPhotoRejected
                         ? "This member needs a new approved primary photo before profile approval."
                         : null;
+                      const pendingPhotoCount = user.photos.filter(
+                        (photo) => photo.status === "PENDING"
+                      ).length;
+                      const rejectedPhotoCount = user.photos.filter(
+                        (photo) => photo.status === "REJECTED"
+                      ).length;
+                      const missingRequiredFields = getMissingRequiredFields(user);
+                      const requiredProfileComplete =
+                        missingRequiredFields.length === 0;
+                      const emailVerified = Boolean(user.emailVerified);
+                      const noRejectedPhotos = rejectedPhotoCount === 0;
+                      const approvalChecklist = [
+                        {
+                          label: "Primary photo approved",
+                          complete: primaryPhotoApproved,
+                          detail: primaryPhoto
+                            ? primaryPhoto.status.toLowerCase()
+                            : "missing",
+                        },
+                        {
+                          label: "Required profile fields complete",
+                          complete: requiredProfileComplete,
+                          detail: requiredProfileComplete
+                            ? "complete"
+                            : `Missing ${missingRequiredFields.length}`,
+                        },
+                        {
+                          label: "Email verified",
+                          complete: emailVerified,
+                          detail: emailVerified ? "verified" : "not verified",
+                        },
+                        {
+                          label: "No rejected photos",
+                          complete: noRejectedPhotos,
+                          detail: noRejectedPhotos
+                            ? "clear"
+                            : `${rejectedPhotoCount} rejected`,
+                        },
+                      ];
+                      const profileReadyForApproval = approvalChecklist.every(
+                        (item) => item.complete
+                      );
+                      const approvalButtonLabel = !primaryPhotoApproved
+                        ? "Approve primary photo first"
+                        : !requiredProfileComplete
+                        ? "Complete required fields first"
+                        : !emailVerified
+                        ? "Verify email first"
+                        : !noRejectedPhotos
+                        ? "Resolve rejected photos first"
+                        : "Approve member";
 
                       return (
                         <div
                           key={user.id}
-                          className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+                          className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
                         >
-                          <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-slate-900 dark:text-white">
-                              {user.name ??
-                                (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
-                                  "Unnamed")}
-                            </p>
-                            <Badge
-                              label={user.isApproved ? "Approved" : "Pending"}
-                              tone={user.isApproved ? "verified" : "neutral"}
-                            />
-                            {user.roleName === "ADMIN" ? (
-                              <Badge label="Admin" tone="premium" />
-                            ) : null}
-                            {user.profileVisible ? (
-                              <Badge label="Visible" tone="premium" />
-                            ) : null}
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500">
+          <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-5">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-100 px-2 text-[11px] font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-300">
+                                  {index + 1}
+                                </span>
+                                <p className="font-semibold text-slate-900 dark:text-white">
+                                  {user.name ??
+                                    (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+                                      "Unnamed")}
+                                </p>
+                                <Badge
+                                  label={user.isApproved ? "Approved" : "Pending"}
+                                  tone={user.isApproved ? "verified" : "neutral"}
+                                />
+                                {user.roleName === "ADMIN" ? (
+                                  <Badge label="Admin" tone="premium" />
+                                ) : null}
+                                {user.profileVisible ? (
+                                  <Badge label="Visible" tone="premium" />
+                                ) : null}
+                              </div>
+                          <p className="mt-1 break-words text-xs text-slate-500">
                             {user.email ?? "No email"} • {user.phone ?? "No phone"}
                           </p>
                           <p className="text-xs text-slate-500">
                             {user.gender ?? "Gender not set"} •{" "}
                             {user.city ?? "City not set"}
                           </p>
-                          <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2 xl:grid-cols-4">
+                          <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2 2xl:grid-cols-4">
                             <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
                               <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
                                 Profession
@@ -675,6 +879,11 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                             ) : null}
                             <span>ID: {user.id.slice(0, 8)}</span>
                           </div>
+                          {!requiredProfileComplete ? (
+                            <p className="mt-2 break-words text-xs text-amber-700 dark:text-amber-200">
+                              Missing: {missingRequiredFields.join(", ")}
+                            </p>
+                          ) : null}
                           <p className="mt-3 max-w-3xl rounded-2xl border border-brand-100/70 bg-brand-50/40 px-3 py-3 text-xs leading-6 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
                             {user.bio?.trim()
                               ? user.bio
@@ -696,16 +905,19 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                             </span>
                             <span>
                               Pending: {
-                                user.photos.filter((photo) => photo.status === "PENDING").length
+                                pendingPhotoCount
                               }
                             </span>
                             <span>
                               Rejected: {
-                                user.photos.filter((photo) => photo.status === "REJECTED").length
+                                rejectedPhotoCount
                               }
                             </span>
                             <span>
                               Created {new Date(user.createdAt).toLocaleDateString()}
+                            </span>
+                            <span>
+                              Email: {emailVerified ? "Verified" : "Not verified"}
                             </span>
                           </div>
                           {approvalHelpText ? (
@@ -713,28 +925,142 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               {approvalHelpText}
                             </p>
                           ) : null}
+                          {user.photos.length > 0 ? (
+                            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03] sm:p-4">
+                              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-[11px] font-semibold uppercase text-slate-400">
+                                  Photo review
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                  {pendingPhotoCount} pending, {rejectedPhotoCount} rejected
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                                {user.photos.map((photo) => {
+                                  const photoApproved = photo.status === "APPROVED";
+
+                                  return (
+                                    <div
+                                      key={photo.id}
+                                      className="rounded-2xl border border-slate-200 bg-white p-2 text-xs text-slate-500 shadow-sm dark:border-white/10 dark:bg-slate-950"
+                                    >
+                                      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-white/10">
+                                        <img
+                                          src={photo.url}
+                                          alt="Uploaded"
+                                          className="h-full w-full object-cover"
+                                        />
+                                        {photo.id === primaryPhoto?.id ? (
+                                          <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur dark:bg-slate-950/85 dark:text-slate-100">
+                                            Primary
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                        <span className="truncate">
+                                          {photoApproved
+                                            ? "Approved"
+                                            : photo.status === "REJECTED"
+                                            ? "Rejected"
+                                            : "Pending"}
+                                        </span>
+                                        <div className="flex gap-1">
+                                          <button
+                                            className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:hover:bg-transparent"
+                                            type="button"
+                                            disabled={photoApproved}
+                                            onClick={() => updatePhoto(photo.id, "APPROVED")}
+                                          >
+                                            Approve
+                                          </button>
+                                          <button
+                                            className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:hover:bg-transparent"
+                                            type="button"
+                                            onClick={() => {
+                                              const remarks = window.prompt(
+                                                "Reason for rejection?"
+                                              );
+                                              if (remarks === null) return;
+                                              updatePhoto(photo.id, "REJECTED", remarks.trim());
+                                            }}
+                                          >
+                                            Reject
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {photo.rejectionRemarks ? (
+                                        <p className="mt-2 text-xs text-slate-400">
+                                          {photo.rejectionRemarks}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-xs text-slate-400 dark:border-white/10 dark:bg-white/[0.03]">
+                              No photos uploaded yet.
+                            </p>
+                          )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <label className="flex items-center gap-2 text-xs text-slate-500">
-                            Role
-                            <select
-                              className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
-                              value={user.roleName}
-                              onChange={(event) =>
-                                handleRoleChange(
-                                  user,
-                                  event.target.value as "ADMIN" | "USER"
-                                )
-                              }
-                            >
-                              <option value="USER">User</option>
-                              <option value="ADMIN">Admin</option>
-                            </select>
-                          </label>
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03] sm:p-4">
+                          <p className="text-[11px] font-semibold uppercase text-slate-400">
+                            Review actions
+                          </p>
+                          <div className="mt-4 grid gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950">
+                              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                                Approval checklist
+                              </p>
+                              <div className="grid gap-2.5">
+                                {approvalChecklist.map((item) => (
+                                  <div
+                                    key={item.label}
+                                    className="flex flex-col items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs dark:bg-white/[0.04] sm:flex-row sm:items-center sm:gap-3"
+                                  >
+                                    <span
+                                      className={
+                                        item.complete
+                                          ? "min-w-0 font-medium leading-5 text-slate-700 dark:text-slate-200"
+                                          : "min-w-0 font-medium leading-5 text-amber-700 dark:text-amber-200"
+                                      }
+                                    >
+                                      {item.label}
+                                    </span>
+                                    <span
+                                      className={
+                                        item.complete
+                                          ? "shrink-0 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-500/10 dark:text-green-300"
+                                          : "shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+                                      }
+                                    >
+                                      {item.complete ? "Pass" : item.detail}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                              <span>Role</span>
+                              <select
+                                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+                                value={user.roleName}
+                                onChange={(event) =>
+                                  handleRoleChange(
+                                    user,
+                                    event.target.value as "ADMIN" | "USER"
+                                  )
+                                }
+                              >
+                                <option value="USER">User</option>
+                                <option value="ADMIN">Admin</option>
+                              </select>
+                            </label>
                           {user.roleName === "USER" ? (
                             <>
-                              <label className="flex items-center gap-2 text-xs text-slate-500">
-                                Visible
+                              <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                                <span>Visible profile</span>
                                 <input
                                   type="checkbox"
                                   checked={user.profileVisible}
@@ -755,16 +1081,16 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               </label>
                               <Button
                                 size="sm"
-                                disabled={user.isApproved || needsPrimaryPhotoApproval}
+                                className="w-full justify-center"
+                                disabled={user.isApproved || !profileReadyForApproval}
                                 onClick={() => handleDecision(user, "APPROVED")}
                               >
-                                {needsPrimaryPhotoApproval
-                                  ? "Approve primary photo first"
-                                  : "Approve member"}
+                                {approvalButtonLabel}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="secondary"
+                                className="w-full justify-center"
                                 onClick={() => handleDecision(user, "REJECTED")}
                               >
                                 Reject
@@ -772,6 +1098,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               <Button
                                 size="sm"
                                 variant="ghost"
+                                className="w-full justify-center"
                                 onClick={() => handleDecision(user, "BLOCKED")}
                               >
                                 Block
@@ -779,7 +1106,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               <button
                                 type="button"
                                 onClick={() => softDeleteUser(user)}
-                                className="rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+                                className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
                               >
                                 Delete
                               </button>
@@ -789,67 +1116,9 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                               Admin accounts are not part of the approval queue.
                             </span>
                           )}
+                          </div>
                         </div>
                       </div>
-                          {user.photos.length > 0 ? (
-                        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                          {user.photos.map((photo) => (
-                            <div
-                              key={photo.id}
-                              className="rounded-2xl border border-slate-200 bg-white p-2 text-xs text-slate-500 shadow-sm dark:border-white/10 dark:bg-slate-950"
-                            >
-                              <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-white/10">
-                                <img
-                                  src={photo.url}
-                                  alt="Uploaded"
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                              <div className="mt-2 flex items-center justify-between">
-                                <span>
-                                  {photo.id === primaryPhoto?.id ? "Primary · " : ""}
-                                  {photo.status === "APPROVED"
-                                    ? "Approved"
-                                    : photo.status === "REJECTED"
-                                    ? "Rejected"
-                                    : "Pending"}
-                                </span>
-                                <div className="flex gap-1">
-                                  <button
-                                    className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
-                                    type="button"
-                                    onClick={() => updatePhoto(photo.id, "APPROVED")}
-                                  >
-                                    Approve
-                                  </button>
-                                  <button
-                                    className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
-                                    type="button"
-                                    onClick={() => {
-                                      const remarks = window.prompt(
-                                        "Reason for rejection?"
-                                      );
-                                      if (remarks === null) return;
-                                      updatePhoto(photo.id, "REJECTED", remarks.trim());
-                                    }}
-                                  >
-                                    Reject
-                                  </button>
-                                </div>
-                              </div>
-                              {photo.rejectionRemarks ? (
-                                <p className="mt-2 text-xs text-slate-400">
-                                  {photo.rejectionRemarks}
-                                </p>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="mt-4 text-xs text-slate-400">
-                          No photos uploaded yet.
-                        </p>
-                      )}
                         </div>
                       );
                     })()

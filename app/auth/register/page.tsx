@@ -372,12 +372,12 @@ export default function RegisterPage() {
           </div>
 
           {/* Form card */}
-          <div className="glass-card rounded-3xl p-8">
+          <div className="glass-card rounded-3xl p-4 sm:p-8">
             <div className="mb-6 border-b border-slate-100 pb-5 dark:border-white/10">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500">
                 Step {activeStep + 1} of {steps.length}
               </p>
-              <h2 className="mt-1 font-serif text-2xl text-slate-900 dark:text-white">
+              <h2 className="mt-1 font-serif text-xl text-slate-900 dark:text-white sm:text-2xl">
                 {steps[activeStep].label}
               </h2>
             </div>
@@ -548,7 +548,7 @@ export default function RegisterPage() {
                     ) : null}
                   </div>
                   {photoPreviews.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                       {photoPreviews.map((preview, index) => (
                         <div
                           key={preview}
@@ -570,9 +570,9 @@ export default function RegisterPage() {
                               </span>
                             ) : null}
                           </div>
-                          <div className="flex items-center justify-between px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
+                          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
                             <span className="truncate">{photos[index]?.name}</span>
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                               {index !== primaryPhotoIndex ? (
                                 <button
                                   type="button"

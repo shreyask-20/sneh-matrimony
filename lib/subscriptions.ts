@@ -1,0 +1,69 @@
+import type { SubscriptionPlan } from "@prisma/client";
+
+export const INTRO_DISCOUNT_PERCENT = 25;
+export const SUBSCRIPTION_DURATION_MS = 365 * 24 * 60 * 60 * 1000;
+
+export type PlanKey = keyof typeof PLANS;
+
+export const PLANS = {
+  SILVER: {
+    key: "SILVER" as const,
+    name: "Silver",
+    listPricePaise: 200_000,
+    perks: ["Verified matches", "Direct chat access", "Basic support"],
+    highlight: false,
+  },
+  GOLD: {
+    key: "GOLD" as const,
+    name: "Gold",
+    listPricePaise: 300_000,
+    perks: ["Personal matchmaker", "Priority support", "Unlimited interests"],
+    highlight: false,
+  },
+  PLATINUM: {
+    key: "PLATINUM" as const,
+    name: "Platinum",
+    listPricePaise: 400_000,
+    perks: ["Dedicated advisor", "Video verification", "Family concierge"],
+    highlight: true,
+  },
+} as const;
+
+export const PLAN_KEYS = Object.keys(PLANS) as PlanKey[];
+
+export function isValidPlan(plan: string): plan is PlanKey {
+  return PLAN_KEYS.includes(plan as PlanKey);
+}
+
+export function getPayableAmountPaise(plan: PlanKey): number {
+  const list = PLANS[plan].listPricePaise;
+  return Math.round(list * (1 - INTRO_DISCOUNT_PERCENT / 100));
+}
+
+export function formatInrFromPaise(paise: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(paise / 100);
+}
+
+export function getPlanPricing(plan: PlanKey) {
+  const config = PLANS[plan];
+  const payablePaise = getPayableAmountPaise(plan);
+  return {
+    ...config,
+    listPrice: formatInrFromPaise(config.listPricePaise),
+    payablePrice: formatInrFromPaise(payablePaise),
+    payablePaise,
+    discountPercent: INTRO_DISCOUNT_PERCENT,
+  };
+}
+
+export function planKeyToEnum(plan: PlanKey): SubscriptionPlan {
+  return plan as SubscriptionPlan;
+}
+
+export function getSubscriptionExpiry(startsAt: Date): Date {
+  return new Date(startsAt.getTime() + SUBSCRIPTION_DURATION_MS);
+}

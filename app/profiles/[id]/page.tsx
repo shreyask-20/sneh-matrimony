@@ -8,7 +8,6 @@ import BackButton from "../../../components/shared/BackButton";
 import ProfileTabs from "../../../components/profile/ProfileTabs";
 import ProfileGallery from "../../../components/profile/ProfileGallery";
 import InterestActionButton from "../../../components/shared/InterestActionButton";
-import ShortlistButton from "../../../components/shared/ShortlistButton";
 import BlockButton from "../../../components/shared/BlockButton";
 import AgeDisplay from "../../../components/shared/AgeDisplay";
 import { authOptions } from "@/auth";
@@ -137,16 +136,10 @@ export default async function PublicProfilePage({
         })
       : null;
 
-  const [conversation, shortlistEntry, blockEntry] = await Promise.all([
+  const [conversation, blockEntry] = await Promise.all([
     currentUserId
       ? prisma.conversation.findUnique({
           where: { userOneId_userTwoId: normalizeConversationPair(currentUserId, user.id) },
-          select: { id: true },
-        })
-      : Promise.resolve(null),
-    currentUserId
-      ? prisma.shortlist.findUnique({
-          where: { userId_profileUserId: { userId: currentUserId, profileUserId: user.id } },
           select: { id: true },
         })
       : Promise.resolve(null),
@@ -158,7 +151,6 @@ export default async function PublicProfilePage({
       : Promise.resolve(null),
   ]);
 
-  const isShortlisted = !!shortlistEntry;
   const isBlocked = !!blockEntry;
 
   const derivedInterestState:
@@ -208,12 +200,12 @@ export default async function PublicProfilePage({
   return (
     <PageBackdrop>
       <Navbar />
-      <main className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-12 lg:px-8">
         <div className="mb-4">
           <BackButton fallbackHref="/browse" />
         </div>
-        <div className="glass-card rounded-3xl p-8">
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="glass-card rounded-3xl p-4 sm:p-8">
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-8">
             <div className="space-y-4">
               <ProfileGallery photos={photos} alt={fullName} />
               <div className="flex flex-wrap gap-2">
@@ -237,11 +229,10 @@ export default async function PublicProfilePage({
 
               {/* Action buttons row */}
               {currentUserId && (
-                <div className="flex flex-wrap gap-2">
-                  <ShortlistButton profileUserId={user.id} initialSaved={isShortlisted} />
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <BlockButton blockedUserId={user.id} initialBlocked={isBlocked} />
                   {derivedInterestState === "accepted" && (
-                    <Button asChild variant="primary" className="flex-1 sm:flex-none">
+                    <Button asChild variant="primary" className="w-full sm:w-auto">
                       <Link href={conversation ? `/chat?conversation=${conversation.id}` : "/chat"}>
                         Open Chat
                       </Link>
@@ -250,10 +241,10 @@ export default async function PublicProfilePage({
                 </div>
               )}
 
-              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-5 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
+              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/75 p-4 text-sm text-slate-600 shadow-[0_18px_40px_rgba(127,16,62,0.05)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2 sm:p-5">
                 <div>
                   <p className="text-xs uppercase text-slate-400">Email</p>
-                  <p className="mt-2 font-semibold text-slate-800 dark:text-slate-100">
+                  <p className="mt-2 break-words font-semibold text-slate-800 dark:text-slate-100">
                     {contactEmail}
                   </p>
                 </div>
@@ -278,8 +269,8 @@ export default async function PublicProfilePage({
               </div>
             </div>
             <div className="space-y-5">
-              <div>
-                <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+              <div className="min-w-0">
+                <h1 className="break-words font-serif text-2xl text-slate-900 dark:text-white sm:text-3xl">
                   {fullName}
                   {user.birthDate && (
                     <>, <AgeDisplay birthDate={user.birthDate} /></>
@@ -334,7 +325,7 @@ export default async function PublicProfilePage({
                   )}
                 </div>
               )}
-              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/70 p-5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2">
+              <div className="grid gap-4 rounded-3xl border border-white/40 bg-white/70 p-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:grid-cols-2 sm:p-5">
                 <div>
                   <p className="text-xs uppercase text-slate-400">Education</p>
                   <p className="font-semibold text-slate-800 dark:text-slate-100">

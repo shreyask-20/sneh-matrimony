@@ -13,21 +13,23 @@ import UnreadMessageToast from "../../components/shared/UnreadMessageToast";
 import ActionCenter from "../../components/dashboard/ActionCenter";
 import VerifyEmailBanner from "@/components/dashboard/VerifyEmailBanner";
 import PageBackdrop from "../../components/shared/PageBackdrop";
+import { getActiveSubscription } from "@/lib/subscription-status";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ login?: string }>;
+  searchParams?: Promise<{ login?: string; subscribed?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const shouldShowLoginNotice = resolvedSearchParams?.login === "1";
+  const shouldShowSubscribedNotice = resolvedSearchParams?.subscribed === "1";
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return (
       <PageBackdrop>
         <Navbar />
-        <main className="w-full px-4 py-10 sm:px-6 lg:px-8">
-          <div className="glass-card rounded-3xl p-8 text-center">
+        <main className="w-full px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
+          <div className="glass-card rounded-3xl p-4 text-center sm:p-8">
             <h1 className="font-serif text-2xl text-slate-900 dark:text-white">
               Please sign in to view your dashboard
             </h1>
@@ -48,6 +50,8 @@ export default async function DashboardPage({
   if (session.user.roleName === "ADMIN") {
     redirect("/admin");
   }
+
+  const activeSubscriptionPromise = getActiveSubscription(session.user.id);
 
   const currentUserPromise = prisma.user.findUnique({
     where: { id: session.user.id },
@@ -199,10 +203,12 @@ export default async function DashboardPage({
     currentUser,
     [receivedInterests, sentInterests, acceptedInterests],
     unreadMessageRows,
+    activeSubscription,
   ] = await Promise.all([
     currentUserPromise,
     interestsPromise,
     unreadMessagePromise,
+    activeSubscriptionPromise,
   ]);
 
   const requiredFields = [
@@ -431,8 +437,8 @@ export default async function DashboardPage({
         unreadMessageCount={unreadMessageCount}
         unreadConversationCount={unreadConversationCount}
       />
-      <main className="grid w-full gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
-        <aside className="glass-card h-fit rounded-3xl p-5">
+      <main className="grid w-full gap-4 px-3 py-6 sm:gap-6 sm:px-6 sm:py-10 lg:grid-cols-[240px_1fr] lg:px-8">
+        <aside className="glass-card h-fit rounded-3xl p-4 sm:p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
             Dashboard
           </p>
@@ -452,16 +458,59 @@ export default async function DashboardPage({
               </Link>
             ))}
           </nav>
-          <div className="mt-6 rounded-2xl border border-brand-100/60 bg-brand-50/50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+          <div className="mt-6 rounded-2xl border border-brand-100/60 bg-brand-50/50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+            <p className="text-xs uppercase tracking-[0.18em] text-brand-500">
+              Membership
+            </p>
+            {activeSubscription ? (
+              <>
+                <p className="mt-2 font-semibold text-slate-900 dark:text-white">
+                  {activeSubscription.planName}
+                </p>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  Until{" "}
+                  {new Date(activeSubscription.expiresAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
+                <Link
+                  href="/subscribe"
+                  className="mt-3 inline-block text-xs font-semibold text-brand-600 hover:underline"
+                >
+                  Upgrade plan
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                  No active plan. Unlock premium features with yearly membership.
+                </p>
+                <Link
+                  href="/subscribe"
+                  className="mt-3 inline-flex rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white"
+                >
+                  View plans
+                </Link>
+              </>
+            )}
+          </div>
+          <div className="mt-4 rounded-2xl border border-brand-100/60 bg-brand-50/50 p-4 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
             {moderationGuidance}
           </div>
         </aside>
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-6">
+          {shouldShowSubscribedNotice && (
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+              Payment successful. Your membership is now active.
+            </div>
+          )}
           {!currentUser?.emailVerified && <VerifyEmailBanner />}
           {!isComplete ? (
-            <div className="rounded-3xl border border-brand-100/60 bg-brand-50/60 p-6 text-sm text-slate-700">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
+            <div className="rounded-3xl border border-brand-100/60 bg-brand-50/60 p-4 text-sm text-slate-700 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.2em] text-brand-400">
                     Profile Completion
                   </p>
@@ -475,24 +524,24 @@ export default async function DashboardPage({
                 </div>
                 <Link
                   href="/profile/edit"
-                  className="rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white"
+                  className="rounded-2xl bg-brand-600 px-5 py-3 text-center text-sm font-semibold text-white"
                 >
                   Complete Profile
                 </Link>
               </div>
             </div>
           ) : null}
-          <div className="glass-card rounded-3xl p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h1 className="font-serif text-3xl text-slate-900 dark:text-white">
+          <div className="glass-card rounded-3xl p-4 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="font-serif text-2xl text-slate-900 dark:text-white sm:text-3xl">
                   Welcome back, {displayName}
                 </h1>
                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                   {nextStepMessage}
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-1.5 pl-8">
+              <div className="flex flex-col items-start gap-1.5 sm:items-end sm:pl-8">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge
                     label={approvalLabel}
@@ -513,9 +562,9 @@ export default async function DashboardPage({
                 ) : null}
               </div>
             </div>
-            <div className="mt-6 rounded-3xl border border-brand-100/60 bg-brand-50/40 p-5 dark:border-white/10 dark:bg-white/[0.04]">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+            <div className="mt-6 rounded-3xl border border-brand-100/60 bg-brand-50/40 p-4 dark:border-white/10 dark:bg-white/[0.04] sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.18em] text-brand-400">
                     Accepted Matches
                   </p>
@@ -530,7 +579,7 @@ export default async function DashboardPage({
               </div>
               <div className="mt-5">
                 {topAcceptedMatches.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {topAcceptedMatches.map((item) => (
                       <div
                         key={item.id}

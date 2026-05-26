@@ -19,9 +19,9 @@ export default function Footer() {
         <div className="space-y-3">
           <p className="font-semibold text-slate-700 dark:text-slate-200">Explore</p>
           <ul className="space-y-2">
-            <li><a href="/#about" className="transition-colors hover:text-brand-600">About us</a></li>
-            <li><a href="/#testimonials" className="transition-colors hover:text-brand-600">Success stories</a></li>
-            <li><a href="/auth/register" className="transition-colors hover:text-brand-600">Safety &amp; privacy</a></li>
+            <li><a href="/about" className="transition-colors hover:text-brand-600">About us</a></li>
+            <li><a href="/success-stories" className="transition-colors hover:text-brand-600">Success stories</a></li>
+            <li><a href="/safety-privacy" className="transition-colors hover:text-brand-600">Safety &amp; privacy</a></li>
           </ul>
         </div>
 

@@ -4,9 +4,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Success Stories | Sneh Matrimony",
+  title: "Success Stories",
   description:
-    "Real couples and families who found meaningful matches through Sneh Matrimony.",
+    "Real couples and families who found meaningful matches through Sneh Matrimony. Read their inspiring journeys and start your own.",
+  openGraph: {
+    url: "/success-stories",
+  },
+  alternates: {
+    canonical: "/success-stories",
+  },
 };
 
 const stories = [

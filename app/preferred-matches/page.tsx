@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Navbar from "../../components/shared/Navbar";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,13 @@ import { authOptions } from "@/auth";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 import { getCandidateProfiles } from "@/lib/candidateProfiles";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Preferred Matches",
+  description:
+    "View curated matches based on your saved preferences on Sneh Matrimony. Find compatible profiles that match your criteria.",
+  robots: { index: false, follow: false },
+};
 
 export default async function PreferredMatchesPage() {
   const session = await getServerSession(authOptions);

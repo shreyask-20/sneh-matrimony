@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
@@ -11,6 +12,12 @@ import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 import { buildVerificationSummary } from "@/lib/verification";
+
+export const metadata: Metadata = {
+  title: "My Profile",
+  description: "View your Sneh Matrimony profile, verification status, and personal details.",
+  robots: { index: false, follow: false },
+};
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);

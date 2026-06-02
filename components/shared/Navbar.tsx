@@ -13,6 +13,7 @@ import {
   UserCircle2,
   ShieldCheck,
   Heart,
+  Crown,
   Menu,
   X,
 } from "lucide-react";
@@ -43,6 +44,7 @@ export default function Navbar({
         { href: "/browse", icon: Home, label: "Browse", badge: null },
         { href: "/preferred-matches", icon: Heart, label: "Preferred Matches", badge: null },
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", badge: null },
+        { href: "/subscribe", icon: Crown, label: "Membership", badge: null },
         {
           href: "/chat",
           icon: MessageCircleMore,
@@ -105,6 +107,7 @@ export default function Navbar({
     { href: "/browse", icon: <Home className="h-5 w-5" />, label: "Browse" },
     { href: "/preferred-matches", icon: <Heart className="h-5 w-5" />, label: "Preferred Matches" },
     { href: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Dashboard" },
+    { href: "/subscribe", icon: <Crown className="h-5 w-5" />, label: "Membership" },
     {
       href: "/chat",
       icon: <MessageCircleMore className="h-5 w-5" />,
@@ -137,7 +140,7 @@ export default function Navbar({
 
             {/* Desktop nav links */}
             <div
-              className={`hidden items-center rounded-2xl border p-1 text-sm backdrop-blur md:flex ${
+              className={`hidden items-center gap-x-1 rounded-2xl border p-1 text-sm backdrop-blur md:flex ${
                 isBlend
                   ? "border-white/15 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
                   : "border-brand-100/70 bg-brand-50/45 shadow-sm"

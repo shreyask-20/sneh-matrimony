@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import Navbar from "@/components/shared/Navbar";
 import PageBackdrop from "@/components/shared/PageBackdrop";
-import Footer from "@/components/landing/Footer";
 
 type InfoPageLayoutProps = {
   eyebrow?: string;
@@ -31,7 +30,6 @@ export default function InfoPageLayout({
           {children}
         </div>
       </main>
-      <Footer />
     </PageBackdrop>
   );
 }

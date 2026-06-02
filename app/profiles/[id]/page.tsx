@@ -16,6 +16,62 @@ import { normalizeConversationPair } from "@/lib/matchmaking";
 import PageBackdrop from "../../../components/shared/PageBackdrop";
 import { getOppositeGender } from "@/lib/gender";
 import { buildVerificationSummary } from "@/lib/verification";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const user = await prisma.user.findFirst({
+    where: {
+      id,
+      roleName: "USER",
+      isApproved: true,
+      profileVisible: true,
+      deletedAt: null,
+    },
+    select: {
+      name: true,
+      firstName: true,
+      lastName: true,
+      city: true,
+      profession: true,
+      photos: {
+        where: { status: "APPROVED" },
+        select: { url: true },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        take: 1,
+      },
+    },
+  });
+
+  if (!user) {
+    return { title: "Profile Not Found | Sneh Matrimony" };
+  }
+
+  const fullName =
+    user.name ??
+    (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Member");
+  const photoUrl = user.photos[0]?.url;
+
+  return {
+    title: fullName,
+    description: `View ${fullName}'s profile on Sneh Matrimony${user.city ? ` from ${user.city}` : ""}${user.profession ? ` — ${user.profession}` : ""}. Connect through a trusted matrimony platform.`,
+    openGraph: {
+      title: `${fullName} | Sneh Matrimony`,
+      description: `View ${fullName}'s matrimony profile${user.city ? ` from ${user.city}` : ""}.`,
+      images: photoUrl ? [{ url: photoUrl, width: 800, height: 800, alt: fullName }] : undefined,
+    },
+    twitter: {
+      title: `${fullName} | Sneh Matrimony`,
+      description: `View ${fullName}'s matrimony profile${user.city ? ` from ${user.city}` : ""}.`,
+      images: photoUrl ? [photoUrl] : undefined,
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 export default async function PublicProfilePage({
   params,

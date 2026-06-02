@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
@@ -8,6 +9,12 @@ import { prisma } from "@/lib/prisma";
 import { getOtherUserId } from "@/lib/chat";
 import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
 import { MessageCircle } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Messages",
+  description: "Chat with your matched connections on Sneh Matrimony.",
+  robots: { index: false, follow: false },
+};
 
 export default async function ChatPage({
   searchParams,

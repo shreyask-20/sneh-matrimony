@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         <div style="margin-top:24px;padding:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;">
           <p style="margin:0;font-size:14px;color:#92400e;">
             ⚠️ <strong>${pendingApprovals} member${pendingApprovals === 1 ? "" : "s"}</strong> waiting for approval.
-            <a href="https://snehmatrimony.com/admin" style="color:#9b1c4a;font-weight:600;">Review now →</a>
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL ?? "https://sneh-matrimony.vercel.app"}/admin" style="color:#9b1c4a;font-weight:600;">Review now →</a>
           </p>
         </div>
         ` : ""}

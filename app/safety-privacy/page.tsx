@@ -4,9 +4,15 @@ import Link from "next/link";
 import { ShieldCheck, Lock, Eye, MessageCircle, UserCheck } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Safety & Privacy | Sneh Matrimony",
+  title: "Safety & Privacy",
   description:
-    "How Sneh Matrimony protects your data, verifies profiles, and keeps matchmaking safe and respectful.",
+    "How Sneh Matrimony protects your data, verifies profiles, and keeps matchmaking safe and respectful for families.",
+  openGraph: {
+    url: "/safety-privacy",
+  },
+  alternates: {
+    canonical: "/safety-privacy",
+  },
 };
 
 const sections = [

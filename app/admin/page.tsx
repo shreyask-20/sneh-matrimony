@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import AdminClient from "./AdminClient";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Admin",
+  description: "Admin panel for Sneh Matrimony profile moderation and user management.",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminPage({
   searchParams,

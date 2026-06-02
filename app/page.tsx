@@ -1,10 +1,10 @@
+import type { Metadata } from "next";
 import Hero from "../components/landing/Hero";
 import FeaturedProfiles from "../components/landing/FeaturedProfiles";
 import HowItWorks from "../components/landing/HowItWorks";
 import About from "../components/landing/About";
 import Testimonials from "../components/landing/Testimonials";
 import Subscriptions from "../components/landing/Subscriptions";
-import Footer from "../components/landing/Footer";
 import Navbar from "../components/shared/Navbar";
 import Toast from "../components/shared/Toast";
 import { getServerSession } from "next-auth/next";
@@ -12,6 +12,18 @@ import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getCandidateProfiles } from "@/lib/candidateProfiles";
 import { unstable_cache } from "next/cache";
+
+export const metadata: Metadata = {
+  title: "Home",
+  description:
+    "Sneh Matrimony helps families find meaningful, marriage-minded partnerships. Browse verified profiles and discover curated matches today.",
+  openGraph: {
+    url: "/",
+  },
+  alternates: {
+    canonical: "/",
+  },
+};
 
 const getFeaturedProfiles = unstable_cache(
   async (currentUserId: string | null, currentUserGender: string | null) =>
@@ -48,7 +60,6 @@ export default async function HomePage() {
         <Testimonials />
         <Subscriptions />
       </main>
-      <Footer />
       <Toast message="You have 4 new curated matches today." />
     </div>
   );

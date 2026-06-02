@@ -3,9 +3,15 @@ import InfoPageLayout from "@/components/info/InfoPageLayout";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About Us | Sneh Matrimony",
+  title: "About Us",
   description:
-    "Learn about Sneh Matrimony — a trusted platform helping families find meaningful, marriage-minded partnerships.",
+    "Learn about Sneh Matrimony — a trusted platform helping families find meaningful, marriage-minded partnerships with verified profiles and curated matches.",
+  openGraph: {
+    url: "/about",
+  },
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 const paragraphs = [

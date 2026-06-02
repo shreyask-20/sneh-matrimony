@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "postinstall": "prisma generate",
-    "predev": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && prisma generate",
     "dev": "next dev",
     "prebuild": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && prisma generate",
     "build": "next build",

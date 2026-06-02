@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Navbar from "../../components/shared/Navbar";
 import Progress from "../../components/shared/Progress";
 import Badge from "../../components/shared/Badge";
@@ -14,6 +15,12 @@ import ActionCenter from "../../components/dashboard/ActionCenter";
 import VerifyEmailBanner from "@/components/dashboard/VerifyEmailBanner";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 import { getActiveSubscription } from "@/lib/subscription-status";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Manage your Sneh Matrimony profile, respond to interests, and stay updated on your matches.",
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardPage({
   searchParams,

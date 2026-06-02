@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Navbar from "../../components/shared/Navbar";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -26,6 +27,12 @@ const firstQueryValue = (value: string | string[] | undefined) =>
 
 const normalizeQueryValue = (value: string | string[] | undefined) =>
   firstQueryValue(value)?.trim() || null;
+
+export const metadata: Metadata = {
+  title: "Browse Matches",
+  description:
+    "Browse verified matrimony profiles and find your perfect life partner. Filter by age, city, religion, education, and more on Sneh Matrimony.",
+};
 
 export default async function BrowsePage({
   searchParams,

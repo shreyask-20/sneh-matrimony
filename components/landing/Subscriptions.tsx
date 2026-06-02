@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, MessageCircle, ShieldCheck, Crown, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const planHighlights = [
   { name: "Silver", price: "₹1,500", perks: "Verified matches, chat access, basic support" },
@@ -7,17 +7,10 @@ const planHighlights = [
   { name: "Platinum", price: "₹3,000", perks: "Dedicated advisor, video verification, family concierge" },
 ];
 
-const benefits = [
-  { icon: Sparkles, text: "Curated matches based on your preferences" },
-  { icon: MessageCircle, text: "Direct chat with verified members" },
-  { icon: ShieldCheck, text: "Privacy-first & family-friendly platform" },
-  { icon: Crown, text: "Dedicated support across all plans" },
-];
-
 export default function Subscriptions() {
   return (
     <section className="w-full px-4 pb-20 sm:px-6 lg:px-8 xl:px-12">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-10 text-center">
           <h2 className="section-heading">Premium memberships</h2>
           <p className="section-subtitle mx-auto mt-2 max-w-2xl">
@@ -28,31 +21,25 @@ export default function Subscriptions() {
         </div>
 
         {/* Plan glimpse cards */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <div className="mb-10 grid gap-5 sm:grid-cols-3">
           {planHighlights.map((plan, i) => (
             <div
               key={plan.name}
-              className={`rounded-2xl border p-5 text-center transition hover:shadow-md ${
+              className={`rounded-3xl border-2 px-6 py-8 text-center shadow-lg shadow-brand-950/5 transition duration-300 hover:-translate-y-1 hover:shadow-xl dark:shadow-black/20 sm:px-8 sm:py-10 ${
                 i === 2
-                  ? "border-brand-200 bg-brand-50/70 dark:border-brand-500/30 dark:bg-white/5"
-                  : "border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950"
+                  ? "border-brand-300 bg-brand-50/80 dark:border-brand-500/40 dark:bg-brand-500/10"
+                  : "border-brand-100 bg-white dark:border-white/10 dark:bg-slate-950"
               }`}
             >
-              <p className="text-xs uppercase tracking-wider text-slate-400">{plan.name}</p>
-              <p className="mt-1 font-serif text-2xl text-brand-600">
-                {plan.price}<span className="text-sm text-slate-400">/yr</span>
+              <p className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+                {plan.name}
               </p>
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{plan.perks}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Benefits strip */}
-        <div className="mb-8 grid gap-3 sm:grid-cols-4">
-          {benefits.map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-start gap-3 rounded-xl bg-brand-50/50 p-4 dark:bg-white/[0.04]">
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
-              <span className="text-xs text-slate-600 dark:text-slate-300">{text}</span>
+              <p className="mt-3 font-serif text-4xl font-semibold text-brand-600">
+                {plan.price}<span className="text-base text-slate-400">/yr</span>
+              </p>
+              <p className="mx-auto mt-4 max-w-xs text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {plan.perks}
+              </p>
             </div>
           ))}
         </div>

@@ -36,6 +36,7 @@ pnpm-debug.log*
 .cache
 .parcel-cache
 .tsbuildinfo
+tsconfig.tsbuildinfo
 package-lock.json
 yarn.lock
 pnpm-lock.yaml

@@ -71,7 +71,7 @@ export default function ProfileCard({
           {verificationLabel && (
             <Badge label={verificationLabel} tone="verified" />
           )}
-          {profile.premium && <Badge label="Premium" tone="premium" />}
+          {profile.premium && <Badge label={profile.premium} tone="premium" />}
         </div>
       </div>
       <div className="flex h-8 items-center gap-2 overflow-hidden text-xs text-slate-500 dark:text-slate-300">

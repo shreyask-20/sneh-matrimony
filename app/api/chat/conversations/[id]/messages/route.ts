@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getConversationForUser } from "@/lib/chat";
 import {
-  getConversationForUser,
-} from "@/lib/chat";
-import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
+  MAX_MESSAGES_PER_USER_PER_CONVERSATION,
+  MAX_MESSAGES_PREMIUM_PER_USER_PER_CONVERSATION,
+} from "@/lib/chatConfig";
 
 type SendMessagePayload = {
   body?: string;
@@ -32,14 +33,25 @@ export async function POST(
     return NextResponse.json({ error: "Message body is required." }, { status: 400 });
   }
 
-  const conversation = await getConversationForUser(
-    conversationId,
-    session.user.id
-  );
-
+  const conversation = await getConversationForUser(conversationId, session.user.id);
   if (!conversation) {
     return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
   }
+
+  // Check if user has active premium
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isPremium: true, premiumExpiresAt: true },
+  });
+
+  const isPremiumActive =
+    currentUser?.isPremium &&
+    (currentUser.premiumExpiresAt === null ||
+      currentUser.premiumExpiresAt > new Date());
+
+  const messageLimit = isPremiumActive
+    ? MAX_MESSAGES_PREMIUM_PER_USER_PER_CONVERSATION
+    : MAX_MESSAGES_PER_USER_PER_CONVERSATION;
 
   const message = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 FROM "Conversation" WHERE id = ${conversationId} FOR UPDATE`;
@@ -51,7 +63,7 @@ export async function POST(
       },
     });
 
-    if (sentMessageCount >= MAX_MESSAGES_PER_USER_PER_CONVERSATION) {
+    if (sentMessageCount >= messageLimit) {
       return null;
     }
 
@@ -71,9 +83,7 @@ export async function POST(
 
     await tx.conversation.update({
       where: { id: conversationId },
-      data: {
-        lastMessageAt: created.createdAt,
-      },
+      data: { lastMessageAt: created.createdAt },
     });
 
     return created;
@@ -82,7 +92,11 @@ export async function POST(
   if (!message) {
     return NextResponse.json(
       {
-        error: `You can send at most ${MAX_MESSAGES_PER_USER_PER_CONVERSATION} messages in this match.`,
+        error: isPremiumActive
+          ? `Premium members can send up to ${MAX_MESSAGES_PREMIUM_PER_USER_PER_CONVERSATION} messages per match.`
+          : `Free members can send up to ${MAX_MESSAGES_PER_USER_PER_CONVERSATION} messages per match. Upgrade to Premium for more.`,
+        limitReached: true,
+        isPremium: isPremiumActive,
       },
       { status: 403 }
     );

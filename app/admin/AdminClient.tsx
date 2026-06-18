@@ -26,6 +26,8 @@ type AdminUser = {
   createdAt: string;
   deletedAt: string | null;
   isApproved: boolean;
+  isPremium: boolean;
+  premiumExpiresAt: string | null;
   profileVisible: boolean;
   roleName: "ADMIN" | "USER";
   photos: Array<{
@@ -36,13 +38,23 @@ type AdminUser = {
   }>;
 };
 
-type ApprovalLog = {
-  id: number;
-  decision: "APPROVED" | "REJECTED" | "BLOCKED";
-  remarks: string | null;
-  actionDate: string;
-  admin: { id: string; name: string | null; email: string | null };
-  user: { id: string; name: string | null; email: string | null };
+type PaymentEntry = {
+  id: string;
+  plan: string;
+  amountPaise: number;
+  listAmountPaise: number;
+  discountPercent: number;
+  status: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string | null;
+  createdAt: string;
+};
+
+type PaymentUser = {
+  user: { id: string; name: string | null; email: string | null; phone: string | null };
+  currentPlan: string | null;
+  currentSubscriptionExpiresAt: string | null;
+  payments: PaymentEntry[];
 };
 
 const requiredProfileFields: Array<{
@@ -87,8 +99,7 @@ function getMissingRequiredFields(user: AdminUser) {
 const tabs = [
   { id: "queue", label: "Approval Queue" },
   { id: "users", label: "All Users" },
-  { id: "deleted", label: "Deleted" },
-  { id: "logs", label: "Approval Logs" },
+  { id: "payments", label: "Payments" },
 ];
 
 export default function AdminClient({ initialTab }: { initialTab?: string }) {
@@ -102,7 +113,11 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
-  const [logs, setLogs] = useState<ApprovalLog[]>([]);
+  const [paymentUsers, setPaymentUsers] = useState<PaymentUser[]>([]);
+  const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
+  const [totalRevenuePaise, setTotalRevenuePaise] = useState(0);
+  const [paymentPlanFilter, setPaymentPlanFilter] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -116,7 +131,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     "needs-action" | "newest" | "name" | "pending-photos"
   >("needs-action");
 
-  const buildQueryString = (status: "pending" | "all" | "deleted") => {
+  const buildQueryString = (status: "pending" | "all") => {
     const params = new URLSearchParams({ status });
     if (searchQuery.trim()) params.set("search", searchQuery.trim());
     if (genderFilter) params.set("gender", genderFilter);
@@ -125,7 +140,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     return params.toString();
   };
 
-  const fetchUsers = async (status: "pending" | "all" | "deleted") => {
+  const fetchUsers = async (status: "pending" | "all") => {
     setLoading(true);
     setError(null);
     try {
@@ -144,46 +159,51 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     }
   };
 
-  const fetchLogs = async () => {
+  const fetchPayments = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/admin/logs");
-      if (!response.ok) throw new Error("Failed to load logs");
-      const data = (await response.json()) as { logs: ApprovalLog[] };
-      setLogs(data.logs);
+      const params = new URLSearchParams();
+      if (paymentPlanFilter) params.set("plan", paymentPlanFilter);
+      if (paymentStatusFilter) params.set("status", paymentStatusFilter);
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      const response = await fetch(`/api/admin/payments?${params.toString()}`);
+      if (!response.ok) throw new Error("Failed to load payments");
+      const data = await response.json() as { users: PaymentUser[]; totalRevenuePaise: number };
+      setPaymentUsers(data.users);
+      setTotalRevenuePaise(data.totalRevenuePaise);
+      setExpandedUserIds(new Set());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load logs");
+      setError(err instanceof Error ? err.message : "Failed to load payments");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (activeTab === "deleted") {
-      fetchUsers("deleted");
+    if (activeTab === "payments") {
+      fetchPayments();
     } else {
       fetchUsers("all");
-    }
-    if (activeTab === "logs") {
-      fetchLogs();
     }
   }, [activeTab]);
 
   // Refetch when server-side filters change (debounced)
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (activeTab === "deleted") {
-        fetchUsers("deleted");
+      if (activeTab === "payments") {
+        fetchPayments();
       } else {
         fetchUsers("all");
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery, genderFilter, cityFilter, religionFilter]);
+  }, [searchQuery, genderFilter, cityFilter, religionFilter, paymentPlanFilter, paymentStatusFilter, activeTab]);
 
   useEffect(() => {
-    setUserFilter(activeTab === "queue" ? "pending" : "all");
+    if (activeTab !== "payments") {
+      setUserFilter(activeTab === "queue" ? "pending" : "all");
+    }
   }, [activeTab]);
 
   const setTab = (next: string) => {
@@ -320,28 +340,12 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     }
   };
 
-  const restoreUser = async (user: AdminUser) => {
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/users/${user.id}/delete`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? "Failed to restore user");
-      }
-      // Refetch deleted list
-      fetchUsers("deleted");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to restore user");
-    }
-  };
-
   const memberUsers = allUsers.filter((user) => user.roleName === "USER");
   const adminUsers = allUsers.filter((user) => user.roleName === "ADMIN");
   const pendingUsers = memberUsers.filter((user) => !user.isApproved);
   const approvedUsers = memberUsers.filter((user) => user.isApproved);
   const visibleUsers = memberUsers.filter((user) => user.profileVisible);
   const baseUsers = activeTab === "queue" ? memberUsers : allUsers;
-  const isLogsTab = activeTab === "logs";
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
   const filteredUsers = useMemo(() => {
@@ -412,34 +416,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     });
   }, [filteredUsers, userSort]);
 
-  const filteredLogs = useMemo(() => {
-    if (!normalizedSearch) return logs;
-
-    return logs.filter((log) =>
-      [
-        log.decision,
-        log.remarks,
-        log.user.name,
-        log.user.email,
-        log.admin.name,
-        log.admin.email,
-      ]
-        .filter(Boolean)
-        .some((value) => value?.toLowerCase().includes(normalizedSearch))
-    );
-  }, [logs, normalizedSearch]);
-
   const pendingPhotoUsers = memberUsers.filter((user) =>
     user.photos.some((photo) => photo.status === "PENDING")
-  ).length;
-  const rejectedPhotoUsers = memberUsers.filter((user) =>
-    user.photos.some((photo) => photo.status === "REJECTED")
   ).length;
 
   const isEmptyState =
     !loading &&
-    ((!isLogsTab && filteredUsers.length === 0) ||
-      (isLogsTab && filteredLogs.length === 0));
+    filteredUsers.length === 0;
 
   return (
     <div className="min-h-screen bg-[#fbf6f8] pb-6 dark:bg-slate-950">
@@ -481,8 +464,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
         <section className="flex min-h-0 flex-col gap-4 lg:min-h-[calc(100vh-3rem)]">
           <div className="rounded-2xl border border-brand-100/60 bg-white px-4 py-4 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 sm:rounded-3xl sm:px-5">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="min-w-0">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 shrink-0">
                 <p className="text-xs uppercase tracking-[0.2em] text-brand-400">
                   {tabs.find((tab) => tab.id === activeTab)?.label}
                 </p>
@@ -490,17 +473,16 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   Welcome back, Admin
                 </h1>
               </div>
-              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center xl:w-auto">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="w-full justify-center sm:w-auto"
                   onClick={() => router.push("/")}
                 >
                   Open Site
                 </Button>
-                <div className="col-span-2 flex min-w-0 items-center gap-2 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:col-span-1 sm:w-56">
-                  <span>Search</span>
+                <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 w-44">
+                  <span className="shrink-0 text-xs">Search</span>
                   <input
                     className="min-w-0 flex-1 bg-transparent text-sm outline-none"
                     placeholder="Name, email"
@@ -509,25 +491,59 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   />
                 </div>
                 {/* Server-side filter dropdowns */}
-                {activeTab !== "logs" && (
+                {activeTab === "payments" ? (
                   <>
                     <select
-                      className="w-full rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:w-auto"
-                      value={genderFilter}
-                      onChange={(e) => setGenderFilter(e.target.value)}
+                      className="rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      value={paymentPlanFilter}
+                      onChange={(e) => setPaymentPlanFilter(e.target.value)}
                     >
-                      <option value="">All genders</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
+                      <option value="">All plans</option>
+                      <option value="SILVER">Silver</option>
+                      <option value="GOLD">Gold</option>
+                      <option value="PLATINUM">Platinum</option>
                     </select>
+                    <select
+                      className="rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300"
+                      value={paymentStatusFilter}
+                      onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                    >
+                      <option value="">All statuses</option>
+                      <option value="PAID">Paid</option>
+                      <option value="CREATED">Cancelled / Abandoned</option>
+                      <option value="FAILED">Failed</option>
+                    </select>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1 rounded-2xl border border-brand-100/60 bg-white p-0.5 dark:border-white/10 dark:bg-slate-950">
+                      {[
+                        { id: "", label: "All" },
+                        { id: "male", label: "Male" },
+                        { id: "female", label: "Female" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setGenderFilter(opt.id)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${
+                            genderFilter === opt.id
+                              ? "bg-brand-600 text-white shadow-sm"
+                              : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                     <input
-                      className="w-full rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:w-28"
+                      className="rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 w-24"
                       placeholder="City"
                       value={cityFilter}
                       onChange={(e) => setCityFilter(e.target.value)}
                     />
                     <input
-                      className="w-full rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 sm:w-28"
+                      className="rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-xs text-slate-600 outline-none dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 w-24"
                       placeholder="Religion"
                       value={religionFilter}
                       onChange={(e) => setReligionFilter(e.target.value)}
@@ -537,17 +553,15 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="w-full justify-center sm:w-auto"
                   onClick={() => {
-                    fetchUsers("all");
-                    if (activeTab === "logs") fetchLogs();
+                    if (activeTab === "payments") { fetchPayments(); }
+                    else { fetchUsers("all"); }
                   }}
                 >
                   Refresh
                 </Button>
                 <Button
                   size="sm"
-                  className="w-full justify-center sm:w-auto"
                   onClick={() => signOut({ callbackUrl: "/auth/login" })}
                 >
                   Sign out
@@ -555,91 +569,109 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </div>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            {
-              label: "Total users",
-              value: allUsers.length,
-              icon: "👥",
-              iconBg: "bg-violet-50 dark:bg-violet-500/10",
-              iconColor: "text-violet-600 dark:text-violet-400",
-              barColor: "bg-violet-500",
-            },
-            {
-              label: "Awaiting approval",
-              value: pendingUsers.length,
-              icon: "🕐",
-              iconBg: "bg-amber-50 dark:bg-amber-500/10",
-              iconColor: "text-amber-600 dark:text-amber-400",
-              barColor: "bg-amber-400",
-              badge: pendingUsers.length > 0 ? "Needs review" : null,
-              badgeStyle: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-            },
-            {
-              label: "Approved members",
-              value: approvedUsers.length,
-              icon: "✓",
-              iconBg: "bg-green-50 dark:bg-green-500/10",
-              iconColor: "text-green-600 dark:text-green-400",
-              barColor: "bg-green-500",
-            },
-            {
-              label: "Visible profiles",
-              value: visibleUsers.length,
-              icon: "👁",
-              iconBg: "bg-teal-50 dark:bg-teal-500/10",
-              iconColor: "text-teal-600 dark:text-teal-400",
-              barColor: "bg-teal-500",
-            },
-          ].map((card) => {
-            const pct = allUsers.length > 0
-              ? Math.min(10, Math.round((card.value / allUsers.length) * 100))
-              : 0;
-            return (
-              <div
-                key={card.label}
-                className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70"
-              >
-                <div className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm ${card.iconBg} ${card.iconColor} mb-3`}>
-                  {card.icon}
-                </div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400 dark:text-slate-500">
-                  {card.label}
-                </p>
+          {activeTab === "payments" ? (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70">
+                <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400 dark:text-slate-500">Total Revenue</p>
                 <p className="mt-1 text-[26px] font-semibold leading-none text-slate-900 dark:text-white">
-                  {card.value}
+                  {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totalRevenuePaise / 100)}
                 </p>
-                <div className="my-3 h-[3px] w-full rounded-full bg-slate-100 dark:bg-white/10">
-                  <div
-                    className={`h-[3px] rounded-full transition-all duration-500 ${card.barColor}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">{pct}% of total</span>
+                <p className="mt-2 text-xs text-slate-400">All time</p>
+              </div>
+              <div className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70">
+                <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400 dark:text-slate-500">Total Transactions</p>
+                <p className="mt-1 text-[26px] font-semibold leading-none text-slate-900 dark:text-white">{paymentUsers.length}</p>
+                <p className="mt-2 text-xs text-slate-400">Showing in current view</p>
+              </div>
+              <div className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70">
+                <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400 dark:text-slate-500">Successful Payments</p>
+                <p className="mt-1 text-[26px] font-semibold leading-none text-green-600">{paymentUsers.filter((u) => u.currentPlan).length}</p>
+                <p className="mt-2 text-xs text-slate-400">Active subscribers in view</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            {[
+              {
+                label: "Total users",
+                value: allUsers.length,
+                icon: "👥",
+                iconBg: "bg-violet-50 dark:bg-violet-500/10",
+                iconColor: "text-violet-600 dark:text-violet-400",
+                barColor: "bg-violet-500",
+              },
+              {
+                label: "Awaiting approval",
+                value: pendingUsers.length,
+                icon: "🕐",
+                iconBg: "bg-amber-50 dark:bg-amber-500/10",
+                iconColor: "text-amber-600 dark:text-amber-400",
+                barColor: "bg-amber-400",
+                badge: pendingUsers.length > 0 ? "Needs review" : null,
+                badgeStyle: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+              },
+              {
+                label: "Approved members",
+                value: approvedUsers.length,
+                icon: "✓",
+                iconBg: "bg-green-50 dark:bg-green-500/10",
+                iconColor: "text-green-600 dark:text-green-400",
+                barColor: "bg-green-500",
+              },
+              {
+                label: "Male profiles",
+                value: memberUsers.filter((u) => u.gender?.toLowerCase() === "male").length,
+                icon: "♂",
+                iconBg: "bg-blue-50 dark:bg-blue-500/10",
+                iconColor: "text-blue-600 dark:text-blue-400",
+                barColor: "bg-blue-500",
+              },
+              {
+                label: "Female profiles",
+                value: memberUsers.filter((u) => u.gender?.toLowerCase() === "female").length,
+                icon: "♀",
+                iconBg: "bg-pink-50 dark:bg-pink-500/10",
+                iconColor: "text-pink-600 dark:text-pink-400",
+                barColor: "bg-pink-500",
+              },
+            ].map((card) => {
+              return (
+                <div
+                  key={card.label}
+                  className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70"
+                >
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm ${card.iconBg} ${card.iconColor} mb-3`}>
+                    {card.icon}
+                  </div>
+                  <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400 dark:text-slate-500">
+                    {card.label}
+                  </p>
+                  <p className="mt-1 text-[26px] font-semibold leading-none text-slate-900 dark:text-white">
+                    {card.value}
+                  </p>
                   {"badge" in card && card.badge ? (
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${card.badgeStyle}`}>
+                    <span className={`mt-3 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${card.badgeStyle}`}>
                       {card.badge}
                     </span>
                   ) : null}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          )}
           <div className="flex min-h-[420px] flex-1 flex-col rounded-2xl border border-brand-100/60 bg-white p-3 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 sm:rounded-3xl sm:p-5">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <h2 className="font-serif text-xl text-slate-900 dark:text-white">
-                {activeTab === "logs" ? "Approval Logs" : "User Approvals"}
+                {activeTab === "payments" ? "Payments" : "User Approvals"}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
-                {isLogsTab
-                  ? `${filteredLogs.length} recent actions`
+                {activeTab === "payments"
+                  ? `${paymentUsers.length} user${paymentUsers.length === 1 ? "" : "s"} with payments`
                   : `${sortedUsers.length} profile${sortedUsers.length === 1 ? "" : "s"} in this view`}
               </p>
             </div>
 
-            {!isLogsTab && activeTab !== "deleted" ? (
+            {activeTab !== "payments" ? (
               <div className="mt-4 grid gap-3 lg:flex lg:flex-wrap lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                 {[
@@ -698,12 +730,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   </select>
                 </label>
               </div>
-            ) : (
-              <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <span>{logs.length} total log entries</span>
-                <span>{rejectedPhotoUsers} users with rejected photos</span>
-              </div>
-            )}
+            ) : null}
 
             {error ? (
               <p className="mt-4 text-sm text-red-500">{error}</p>
@@ -715,7 +742,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </div>
             ) : null}
 
-            {!loading && activeTab !== "logs" && activeTab !== "deleted" ? (
+            {!loading && activeTab !== "payments" ? (
               <div className={`mt-6 ${isEmptyState ? "flex flex-1" : "space-y-4"}`}>
                 {filteredUsers.length === 0 ? (
                   <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
@@ -828,6 +855,9 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                                 ) : null}
                                 {user.profileVisible ? (
                                   <Badge label="Visible" tone="premium" />
+                                ) : null}
+                                {user.isPremium ? (
+                                  <Badge label={`Premium${user.premiumExpiresAt ? ` until ${new Date(user.premiumExpiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : ""}`} tone="premium" />
                                 ) : null}
                               </div>
                           <p className="mt-1 break-words text-xs text-slate-500">
@@ -1127,92 +1157,102 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </div>
             ) : null}
 
-            {!loading && activeTab === "deleted" ? (
-              <div className="mt-6 space-y-4">
-                {users.length === 0 ? (
+            {!loading && activeTab === "payments" ? (
+              <div className="mt-6 space-y-3">
+                {paymentUsers.length === 0 ? (
                   <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
                     <div className="max-w-md">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-400">Deleted Accounts</p>
-                      <h3 className="mt-3 font-serif text-2xl text-slate-900 dark:text-white">No deleted accounts</h3>
+                      <p className="text-xs uppercase tracking-[0.2em] text-brand-400">Payments</p>
+                      <h3 className="mt-3 font-serif text-2xl text-slate-900 dark:text-white">No payments found</h3>
                       <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                        Soft-deleted accounts will appear here. Data is preserved and accounts can be restored.
+                        {paymentPlanFilter || paymentStatusFilter || searchQuery ? "Try adjusting your filters." : "No payments have been made yet."}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  users.map((user) => (
-                    <div key={user.id} className="rounded-2xl border border-red-100 bg-red-50/40 px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-red-500/20 dark:bg-red-500/5 dark:text-slate-200">
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-slate-900 dark:text-white">
-                              {user.name ?? (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Unnamed")}
-                            </p>
-                            <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
-                              Deleted
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500">{user.email ?? "No email"} • {user.phone ?? "No phone"}</p>
-                          <p className="text-xs text-slate-400">
-                            Deleted: {user.deletedAt ? new Date(user.deletedAt).toLocaleString() : "Unknown"}
-                          </p>
-                        </div>
+                  paymentUsers.map((pu) => {
+                    const isExpanded = expandedUserIds.has(pu.user.id);
+                    const totalPaid = pu.payments.reduce((sum, p) => sum + (p.status === "PAID" ? p.amountPaise : 0), 0);
+                    return (
+                      <div
+                        key={pu.user.id}
+                        className="rounded-2xl border border-slate-200 bg-white text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+                      >
                         <button
                           type="button"
-                          onClick={() => restoreUser(user)}
-                          className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+                          onClick={() => {
+                            const next = new Set(expandedUserIds);
+                            if (isExpanded) next.delete(pu.user.id);
+                            else next.add(pu.user.id);
+                            setExpandedUserIds(next);
+                          }}
+                          className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left transition hover:bg-slate-50 dark:hover:bg-white/5"
                         >
-                          Restore account
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-slate-900 dark:text-white">
+                                {pu.user.name ?? pu.user.email ?? "Unknown"}
+                              </p>
+                              {pu.currentPlan && (
+                                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+                                  {pu.currentPlan}
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {pu.user.email ?? "No email"} • {pu.user.phone ?? "No phone"}
+                            </p>
+                            {pu.currentSubscriptionExpiresAt && (
+                              <p className="mt-0.5 text-xs text-slate-400">
+                                Active until {new Date(pu.currentSubscriptionExpiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-4">
+                            <div className="text-right">
+                              <p className="font-semibold text-slate-900 dark:text-white">
+                                {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totalPaid / 100)}
+                              </p>
+                              <p className="text-xs text-slate-400">{pu.payments.length} payment{pu.payments.length === 1 ? "" : "s"}</p>
+                            </div>
+                            <span className={`text-slate-400 transition ${isExpanded ? "rotate-180" : ""}`}>▼</span>
+                          </div>
                         </button>
+                        {isExpanded && (
+                          <div className="border-t border-slate-100 dark:border-white/10">
+                            {pu.payments.map((payment) => (
+                              <div key={payment.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-50 px-4 py-3 last:border-b-0 dark:border-white/5">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                      payment.status === "PAID"
+                                        ? "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400"
+                                        : payment.status === "FAILED"
+                                          ? "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                    }`}>
+                                      {payment.status === "CREATED" ? "Cancelled" : payment.status}
+                                    </span>
+                                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                      {payment.plan}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                                    <span>Order: {payment.razorpayOrderId}</span>
+                                    {payment.razorpayPaymentId && <span>Payment: {payment.razorpayPaymentId}</span>}
+                                    <span>{new Date(payment.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                                  </div>
+                                </div>
+                                <p className="shrink-0 font-medium text-slate-900 dark:text-white">
+                                  {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(payment.amountPaise / 100)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : null}
-
-            {!loading && activeTab === "logs" ? (
-              <div className={`mt-6 ${isEmptyState ? "flex flex-1" : "space-y-4"}`}>
-                {filteredLogs.length === 0 ? (
-                  <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
-                    <div className="max-w-md">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-400">
-                        Approval Logs
-                      </p>
-                      <h3 className="mt-3 font-serif text-2xl text-slate-900 dark:text-white">
-                        No approval activity yet
-                      </h3>
-                      <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                        Admin decisions will show up here once profiles are approved,
-                        rejected, blocked, or reviewed.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  filteredLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
-                    >
-                      <p className="font-semibold text-slate-900 dark:text-white">
-                        {log.decision}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        User: {log.user.name ?? log.user.email ?? log.user.id}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Admin: {log.admin.name ?? log.admin.email ?? log.admin.id}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {new Date(log.actionDate).toLocaleString()}
-                      </p>
-                      {log.remarks ? (
-                        <p className="mt-2 text-xs text-slate-500">
-                          {log.remarks}
-                        </p>
-                      ) : null}
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             ) : null}

@@ -72,6 +72,8 @@ model User {
   height         String?
   isApproved     Boolean   @default(false)
   profileVisible Boolean   @default(false)
+  isPremium      Boolean   @default(false)
+  premiumExpiresAt DateTime?
   createdAt      DateTime  @default(now())
   deletedAt      DateTime? // soft delete — null means active
 
@@ -325,3 +327,4 @@ model Subscription {
 
   @@index([userId, status])
 }
+

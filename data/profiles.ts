@@ -10,7 +10,7 @@ export type Profile = {
   height: string;
   image: string;
   verified?: boolean;
-  premium?: boolean;
+  premium?: string;
   about: string;
   verification?: VerificationSummary;
 };
@@ -26,7 +26,7 @@ export const profiles: Profile[] = [
     height: "5'4\"",
     image: "/profiles/p1.jpg",
     verified: true,
-    premium: true,
+    premium: "Platinum",
     verification: {
       tierLabel: "ID verified",
       badges: ["Profile", "Photo", "Email", "ID"],
@@ -62,7 +62,7 @@ export const profiles: Profile[] = [
     education: "MBBS",
     height: "5'5\"",
     image: "/profiles/p3.png",
-    premium: true,
+    premium: "Gold",
     verification: {
       tierLabel: "Profile verified",
       badges: ["Profile"],

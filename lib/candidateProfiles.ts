@@ -261,11 +261,17 @@ export async function getCandidateProfiles({
         bio: true,
         emailVerified: true,
         isApproved: true,
+        isPremium: true,
         profileVisible: true,
         photos: {
           where: { status: "APPROVED" },
           select: { url: true },
           orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        },
+        subscriptions: {
+          where: { status: "ACTIVE", expiresAt: { gt: new Date() } },
+          select: { plan: true },
+          take: 1,
         },
       },
       orderBy: { createdAt: "desc" },

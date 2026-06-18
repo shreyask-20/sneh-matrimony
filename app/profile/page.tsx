@@ -48,6 +48,7 @@ export default async function ProfilePage() {
       motherTongue: true,
       bio: true,
       height: true,
+      isPremium: true,
       isApproved: true,
       profileVisible: true,
       photos: {
@@ -95,6 +96,14 @@ export default async function ProfilePage() {
     redirect("/profile/edit");
   }
 
+  const subscription = user.isPremium
+    ? await prisma.subscription.findFirst({
+        where: { userId: user.id, status: "ACTIVE", expiresAt: { gt: new Date() } },
+        select: { plan: true },
+        orderBy: { expiresAt: "desc" },
+      })
+    : null;
+
   const fullName =
     user.name ??
     (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Your profile");
@@ -134,6 +143,7 @@ export default async function ProfilePage() {
             <div className="space-y-4">
               <ProfileGallery photos={photos} alt={fullName} />
               <div className="flex flex-wrap gap-2">
+                {subscription && <Badge label={subscription.plan.charAt(0) + subscription.plan.slice(1).toLowerCase()} tone="premium" />}
                 <Badge label={approvalLabel} tone={user.isApproved ? "verified" : "neutral"} />
                 <Badge label={visibilityLabel} tone={user.profileVisible ? "premium" : "neutral"} />
                 <Badge

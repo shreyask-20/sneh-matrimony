@@ -34,6 +34,8 @@ const USER_SELECT = {
   createdAt: true,
   deletedAt: true,
   isApproved: true,
+  isPremium: true,
+  premiumExpiresAt: true,
   profileVisible: true,
   roleName: true,
   photos: {

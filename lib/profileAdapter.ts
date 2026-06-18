@@ -15,8 +15,10 @@ export type UserForCard = {
   bio: string | null;
   emailVerified: Date | null;
   isApproved: boolean;
+  isPremium: boolean;
   profileVisible: boolean;
   photos: Array<{ url: string }>;
+  subscriptions: Array<{ plan: string }>;
 };
 
 const hashId = (value: string) => {
@@ -51,7 +53,9 @@ export function userToProfile(user: UserForCard): Profile {
       emailVerified: user.emailVerified,
       approvedPhotoCount: user.photos.length,
     }),
-    premium: false,
+    premium: user.isPremium && user.subscriptions[0]?.plan
+      ? user.subscriptions[0].plan.charAt(0) + user.subscriptions[0].plan.slice(1).toLowerCase()
+      : undefined,
     about: user.bio ?? "Profile details are being updated.",
   };
 }

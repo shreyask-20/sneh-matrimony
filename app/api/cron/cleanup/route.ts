@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
     pendingPhotos,
     totalInterests,
     acceptedInterests,
+    premiumMembers,
+    paymentsToday,
+    revenueTodayPaise,
   ] = await Promise.all([
     prisma.user.count({ where: { deletedAt: null, roleName: "USER" } }),
     prisma.user.count({ where: { createdAt: { gte: today }, roleName: "USER" } }),
@@ -37,6 +40,9 @@ export async function GET(request: NextRequest) {
     prisma.photo.count({ where: { status: "PENDING" } }),
     prisma.interest.count(),
     prisma.interest.count({ where: { status: "ACCEPTED" } }),
+    prisma.user.count({ where: { isPremium: true, deletedAt: null } }),
+    prisma.payment.count({ where: { status: "PAID", createdAt: { gte: today } } }),
+    prisma.payment.aggregate({ where: { status: "PAID", createdAt: { gte: today } }, _sum: { amountPaise: true } }),
   ]);
 
   // 3. Send summary email to admin
@@ -77,8 +83,20 @@ export async function GET(request: NextRequest) {
             <td style="padding:12px 16px;font-size:18px;font-weight:700;color:#059669;text-align:right;">${acceptedInterests}</td>
           </tr>
           <tr style="background:#fdf2f6;">
-            <td style="padding:12px 16px;font-size:14px;color:#475569;border-radius:8px 0 0 8px;">Expired OTPs Cleaned</td>
-            <td style="padding:12px 16px;font-size:18px;font-weight:700;color:#1e0a14;text-align:right;border-radius:0 8px 8px 0;">${deletedTokens.count}</td>
+            <td style="padding:12px 16px;font-size:14px;color:#475569;border-radius:8px 0 0 8px;">Premium Members</td>
+            <td style="padding:12px 16px;font-size:18px;font-weight:700;color:#9b1c4a;text-align:right;border-radius:0 8px 8px 0;">${premiumMembers}</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 16px;font-size:14px;color:#475569;">Payments Today</td>
+            <td style="padding:12px 16px;font-size:18px;font-weight:700;color:#1e0a14;text-align:right;">${paymentsToday}</td>
+          </tr>
+          <tr style="background:#fdf2f6;">
+            <td style="padding:12px 16px;font-size:14px;color:#475569;border-radius:8px 0 0 8px;">Revenue Today</td>
+            <td style="padding:12px 16px;font-size:18px;font-weight:700;color:#059669;text-align:right;border-radius:0 8px 8px 0;">₹${((revenueTodayPaise?._sum?.amountPaise ?? 0) / 100).toLocaleString("en-IN")}</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 16px;font-size:14px;color:#475569;">Expired OTPs Cleaned</td>
+            <td style="padding:12px 16px;font-size:18px;font-weight:700;color:#1e0a14;text-align:right;">${deletedTokens.count}</td>
           </tr>
         </table>
 
@@ -101,6 +119,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     deletedExpiredTokens: deletedTokens.count,
-    stats: { totalUsers, newUsersToday, pendingApprovals, pendingPhotos, totalInterests, acceptedInterests },
+    stats: { totalUsers, newUsersToday, pendingApprovals, pendingPhotos, totalInterests, acceptedInterests, premiumMembers, paymentsToday, revenueTodayPaise: revenueTodayPaise?._sum?.amountPaise ?? 0 },
   });
 }

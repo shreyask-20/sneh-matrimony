@@ -126,6 +126,7 @@ export default async function PublicProfilePage({
       bio: true,
       height: true,
       isApproved: true,
+      isPremium: true,
       photos: {
         where: { status: "APPROVED" },
         select: { url: true },
@@ -170,6 +171,14 @@ export default async function PublicProfilePage({
   if (!user) {
     notFound();
   }
+
+  const subscription = user.isPremium
+    ? await prisma.subscription.findFirst({
+        where: { userId: user.id, status: "ACTIVE", expiresAt: { gt: new Date() } },
+        select: { plan: true },
+        orderBy: { expiresAt: "desc" },
+      })
+    : null;
 
   if (currentUserId) {
     const targetGender = getOppositeGender(currentUserGender);
@@ -265,6 +274,7 @@ export default async function PublicProfilePage({
             <div className="space-y-4">
               <ProfileGallery photos={photos} alt={fullName} />
               <div className="flex flex-wrap gap-2">
+                {subscription && <Badge label={subscription.plan.charAt(0) + subscription.plan.slice(1).toLowerCase()} tone="premium" />}
                 <Badge
                   label={verification.tierLabel}
                   tone={verification.badges.length > 0 ? "verified" : "neutral"}

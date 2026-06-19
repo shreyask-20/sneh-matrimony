@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`${name} is not set`);
+    throw new Error(`${name} is not set. Please check your environment variables.`);
   }
   return value;
 }
@@ -13,9 +13,16 @@ let razorpayClient: Razorpay | null = null;
 
 export function getRazorpayClient(): Razorpay {
   if (!razorpayClient) {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      throw new Error(
+        "Razorpay credentials not found. Ensure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are set in your environment variables."
+      );
+    }
     razorpayClient = new Razorpay({
-      key_id: requireEnv("RAZORPAY_KEY_ID"),
-      key_secret: requireEnv("RAZORPAY_KEY_SECRET"),
+      key_id: keyId,
+      key_secret: keySecret,
     });
   }
   return razorpayClient;
@@ -32,7 +39,10 @@ export function verifyPaymentSignature(
   paymentId: string,
   signature: string
 ): boolean {
-  const secret = requireEnv("RAZORPAY_KEY_SECRET");
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret) {
+    throw new Error("RAZORPAY_KEY_SECRET is not set");
+  }
   const payload = `${orderId}|${paymentId}`;
   const expected = crypto
     .createHmac("sha256", secret)

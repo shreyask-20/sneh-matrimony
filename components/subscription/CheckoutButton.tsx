@@ -3,7 +3,6 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import Script from "next/script";
 import { Loader2 } from "lucide-react";
 import Button from "../shared/Button";
 import type { PlanKey } from "@/lib/subscriptions";
@@ -44,6 +43,7 @@ type CheckoutButtonProps = {
   plan: PlanKey;
   planName: string;
   className?: string;
+  scriptReady: boolean;
   children?: React.ReactNode;
 };
 
@@ -51,13 +51,13 @@ export default function CheckoutButton({
   plan,
   planName,
   className = "",
+  scriptReady,
   children,
 }: CheckoutButtonProps) {
   const { status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scriptReady, setScriptReady] = useState(false);
 
   const startCheckout = useCallback(async () => {
     setError(null);
@@ -156,35 +156,27 @@ export default function CheckoutButton({
   }, [plan, planName, router, scriptReady, status]);
 
   return (
-    <>
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="lazyOnload"
-        onReady={() => setScriptReady(true)}
-        onLoad={() => setScriptReady(true)}
-      />
-      <div className={className}>
-        <Button
-          type="button"
-          className="w-full"
-          disabled={loading}
-          onClick={() => void startCheckout()}
-        >
-          {loading ? (
-            <span className="inline-flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Processing…
-            </span>
-          ) : (
-            children ?? `Choose ${planName}`
-          )}
-        </Button>
-        {error && (
-          <p className="mt-2 text-center text-xs text-red-600 dark:text-red-400">
-            {error}
-          </p>
+    <div className={className}>
+      <Button
+        type="button"
+        className="w-full"
+        disabled={loading}
+        onClick={() => void startCheckout()}
+      >
+        {loading ? (
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Processing…
+          </span>
+        ) : (
+          children ?? `Choose ${planName}`
         )}
-      </div>
-    </>
+      </Button>
+      {error && (
+        <p className="mt-2 text-center text-xs text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

@@ -49,6 +49,7 @@ enum SubscriptionStatus {
 
 model User {
   id            String    @id @default(cuid())
+  displayId     String?   @unique
   name          String?
   email         String?   @unique
   emailVerified DateTime?

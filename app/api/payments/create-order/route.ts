@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const plan = planParam as PlanKey;
   const planConfig = PLANS[plan];
   const amountPaise = getPayableAmountPaise(plan);
-  const receipt = `sneh_${userId}_${plan}_${Date.now()}`;
+  const receipt = `s_${userId.slice(-8)}_${plan}_${Date.now().toString().slice(-8)}`;
 
   try {
     const razorpay = getRazorpayClient();
@@ -82,8 +82,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("create-order error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Unable to create payment order" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

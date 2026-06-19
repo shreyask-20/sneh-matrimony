@@ -9,6 +9,7 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    seed: "node prisma/seed.cjs",
   },
   datasource: {
     // App runtime uses DATABASE_URL (Neon pooled). CLI migrations use DIRECT_URL when set.

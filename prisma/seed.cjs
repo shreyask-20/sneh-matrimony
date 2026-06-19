@@ -1,6 +1,5 @@
 require("dotenv/config");
 const { PrismaClient } = require("@prisma/client");
-const { PrismaPg } = require("@prisma/adapter-pg");
 const { hash } = require("bcryptjs");
 
 const connectionString = process.env.DATABASE_URL;
@@ -8,9 +7,16 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
 }
 
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString }),
-});
+let adapter;
+if (connectionString.includes("neon.tech")) {
+  const { PrismaNeon } = require("@prisma/adapter-neon");
+  adapter = new PrismaNeon({ connectionString });
+} else {
+  const { PrismaPg } = require("@prisma/adapter-pg");
+  adapter = new PrismaPg({ connectionString });
+}
+
+const prisma = new PrismaClient({ adapter });
 
 const EMAIL_SUFFIX = "@sneh.test";
 const DEFAULT_PASSWORD = "Password123!";
@@ -477,6 +483,15 @@ async function main() {
 
   const createdUsers = new Map();
 
+  const lastUser = await prisma.user.findFirst({
+    where: { displayId: { not: null } },
+    orderBy: { displayId: "desc" },
+    select: { displayId: true },
+  });
+  let nextNum = lastUser?.displayId
+    ? parseInt(lastUser.displayId.replace(/^C/, ""), 10) + 1
+    : 1;
+
   for (let index = 0; index < profiles.length; index += 1) {
     const profile = profiles[index];
     const [firstName, ...rest] = profile.fullName.split(/\s+/);
@@ -490,6 +505,7 @@ async function main() {
         email: profile.email,
         phone: profile.phone,
         password,
+        displayId: `C${String(nextNum++).padStart(3, "0")}`,
         roleName: "USER",
         gender: profile.gender,
         birthDate: makeDate(profile.birthDate),

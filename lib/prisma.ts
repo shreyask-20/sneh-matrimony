@@ -1,13 +1,11 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { neonConfig } from "@neondatabase/serverless";
-import { Pool } from "pg";
-import ws from "ws";
+import { Pool as PgPool } from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  pool: Pool | undefined;
+  pgPool: PgPool | undefined;
 };
 
 function createPrismaClient(): PrismaClient {
@@ -19,10 +17,7 @@ function createPrismaClient(): PrismaClient {
   const log: Prisma.LogLevel[] =
     process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"];
 
-  // Neon on Vercel: use the serverless driver (WebSocket) instead of pg Pool.
-  // pg Pool + session-mode pooler causes EMAXCONNSESSION / connect timeouts.
   if (connectionString.includes("neon.tech")) {
-    neonConfig.webSocketConstructor = ws;
     const adapter = new PrismaNeon({ connectionString });
     return new PrismaClient({ adapter, log });
   }
@@ -32,8 +27,8 @@ function createPrismaClient(): PrismaClient {
     (process.env.NODE_ENV === "production" ? 1 : 5);
 
   const pool =
-    globalForPrisma.pool ??
-    new Pool({
+    globalForPrisma.pgPool ??
+    new PgPool({
       connectionString,
       max: poolSize,
       ssl: { rejectUnauthorized: false },
@@ -42,7 +37,7 @@ function createPrismaClient(): PrismaClient {
       allowExitOnIdle: true,
     });
 
-  globalForPrisma.pool = pool;
+  globalForPrisma.pgPool = pool;
   return new PrismaClient({ adapter: new PrismaPg(pool), log });
 }
 

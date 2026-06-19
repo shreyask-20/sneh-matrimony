@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { generateDisplayId } from "@/lib/displayId";
 
 type RegisterPayload = {
   fullName?: string;
@@ -111,6 +112,7 @@ export async function POST(request: Request) {
   const lastName = rest.join(" ");
 
   const hashedPassword = await hash(password, 12);
+  const displayId = await generateDisplayId();
 
   const user = await prisma.user.create({
     data: {
@@ -120,6 +122,7 @@ export async function POST(request: Request) {
       name: fullName,
       firstName,
       lastName: lastName || null,
+      displayId,
       roleName: "USER",
       gender: body.gender?.trim() || null,
       profession: body.profession?.trim() || null,

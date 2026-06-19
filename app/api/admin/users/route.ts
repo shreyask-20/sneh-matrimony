@@ -16,6 +16,7 @@ async function requireAdmin() {
 
 const USER_SELECT = {
   id: true,
+  displayId: true,
   name: true,
   firstName: true,
   lastName: true,
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
           { email:     { contains: search, mode: "insensitive" as const } },
           { phone:     { contains: search, mode: "insensitive" as const } },
           { city:      { contains: search, mode: "insensitive" as const } },
+          { displayId: { contains: search, mode: "insensitive" as const } },
         ],
       }
     : {};

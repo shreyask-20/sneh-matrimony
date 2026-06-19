@@ -1,4 +1,8 @@
-import { Check, Sparkles } from "lucide-react";
+"use client";
+
+import { Check, Crown, Sparkles } from "lucide-react";
+import { useState } from "react";
+import Script from "next/script";
 import Badge from "../shared/Badge";
 import CheckoutButton from "./CheckoutButton";
 import { getPlanPricing, PLAN_KEYS } from "@/lib/subscriptions";
@@ -33,24 +37,42 @@ function featureGrid(key: string) {
 }
 
 export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
+  const [scriptReady, setScriptReady] = useState(false);
   const plans = PLAN_KEYS.map((key) => getPlanPricing(key));
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <>
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="lazyOnload"
+        onReady={() => setScriptReady(true)}
+        onLoad={() => setScriptReady(true)}
+      />
+      <div className="grid gap-6 lg:grid-cols-3">
       {plans.map((plan, i) => {
         const isFeatured = i === 1;
-        const isPremium = i === 2;
+        const isPremiumPlan = i === 2;
         return (
           <div
             key={plan.key}
             className={`relative flex flex-col rounded-3xl border-2 transition-all duration-300 ${
               isFeatured
                 ? "z-10 scale-[1.03] border-brand-400 bg-white shadow-[0_20px_60px_-12px_rgba(160,20,77,0.25)] dark:bg-slate-900 dark:shadow-[0_20px_60px_-12px_rgba(160,20,77,0.4)]"
-                : "border-slate-200 bg-white shadow-sm hover:shadow-md dark:border-white/10 dark:bg-slate-950"
+                : isPremiumPlan
+                  ? "border-amber-300 bg-gradient-to-b from-amber-50/80 to-white shadow-lg shadow-amber-200/30 hover:shadow-xl hover:shadow-amber-200/40 dark:from-amber-950/20 dark:to-slate-950 dark:border-amber-600/40 dark:shadow-amber-900/20"
+                  : "border-slate-200 bg-white shadow-sm hover:shadow-md dark:border-white/10 dark:bg-slate-950"
             }`}
           >
+            {isPremiumPlan && (
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-1.5 text-xs font-semibold text-white shadow-lg">
+                  <Crown className="h-3.5 w-3.5" />
+                  Premium choice
+                </span>
+              </div>
+            )}
             {isFeatured && (
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-600 to-fuchsia-600 px-4 py-1.5 text-xs font-semibold text-white shadow-lg">
                   <Sparkles className="h-3.5 w-3.5" />
                   Most popular
@@ -58,11 +80,13 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
               </div>
             )}
 
-            <div className={`flex flex-col p-6 sm:p-8 ${isFeatured ? "pt-8" : ""}`}>
+            <div className={`flex flex-col p-6 sm:p-8 ${isFeatured || isPremiumPlan ? "pt-8" : ""}`}>
               {/* Plan name + badges */}
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-serif text-xl text-slate-900 dark:text-white sm:text-2xl">
+                  <h3 className={`font-serif text-xl sm:text-2xl ${
+                    isPremiumPlan ? "text-amber-900 dark:text-amber-300" : "text-slate-900 dark:text-white"
+                  }`}>
                     {plan.name}
                   </h3>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -70,7 +94,7 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  {isPremium && <Badge label="Best value" tone="premium" />}
+                  {isPremiumPlan && <Badge label="Best value" tone="premium" />}
                   {showIntroBadge && (
                     <Badge label={`${plan.discountPercent}% off`} tone="verified" />
                   )}
@@ -80,7 +104,9 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
               {/* Pricing */}
               <div className="mt-5">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-serif text-4xl font-bold text-slate-900 dark:text-white sm:text-5xl">
+                  <span className={`font-serif text-4xl font-bold sm:text-5xl ${
+                    isPremiumPlan ? "text-amber-900 dark:text-amber-300" : "text-slate-900 dark:text-white"
+                  }`}>
                     {plan.payablePrice}
                   </span>
                   <span className="text-sm text-slate-500 dark:text-slate-400">/year</span>
@@ -98,9 +124,9 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
                 </p>
               </div>
 
-              {/* Savings highlight for non-featured */}
-              {isPremium && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+              {/* Savings highlight for premium plan */}
+              {isPremiumPlan && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
                   <span className="font-semibold">Best savings</span> — most features at the lowest
                   per‑day cost.
                 </div>
@@ -110,7 +136,9 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
               <ul className="mt-6 space-y-3">
                 {plan.perks.map((perk) => (
                   <li key={perk} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                    <Check className={`mt-0.5 h-4 w-4 shrink-0 ${
+                      isPremiumPlan ? "text-amber-500" : "text-brand-500"
+                    }`} />
                     <span>{perk}</span>
                   </li>
                 ))}
@@ -136,7 +164,9 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
                             }`}
                           >
                             {included ? (
-                              <Check className="h-3 w-3 shrink-0 text-brand-500" />
+                              <Check className={`h-3 w-3 shrink-0 ${
+                                isPremiumPlan ? "text-amber-500" : "text-brand-500"
+                              }`} />
                             ) : (
                               <span className="h-3 w-3 shrink-0 rounded-full border border-slate-300 dark:border-slate-600" />
                             )}
@@ -154,10 +184,13 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
                 <CheckoutButton
                   plan={plan.key}
                   planName={plan.name}
+                  scriptReady={scriptReady}
                   className={`w-full ${
-                    isFeatured
-                      ? "bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white shadow-md hover:from-brand-700 hover:to-fuchsia-700"
-                      : ""
+                    isPremiumPlan
+                      ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md hover:from-amber-600 hover:to-yellow-600"
+                      : isFeatured
+                        ? "bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white shadow-md hover:from-brand-700 hover:to-fuchsia-700"
+                        : ""
                   }`}
                 />
               </div>
@@ -166,5 +199,6 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
         );
       })}
     </div>
+    </>
   );
 }

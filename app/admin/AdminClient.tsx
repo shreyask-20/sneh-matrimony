@@ -8,6 +8,7 @@ import Badge from "@/components/shared/Badge";
 
 type AdminUser = {
   id: string;
+  displayId: string | null;
   name: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -115,6 +116,9 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
   const [paymentUsers, setPaymentUsers] = useState<PaymentUser[]>([]);
   const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
+  const [expandedCardIds, setExpandedCardIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const   PAGE_SIZE = 5;
   const [totalRevenuePaise, setTotalRevenuePaise] = useState(0);
   const [paymentPlanFilter, setPaymentPlanFilter] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
@@ -190,6 +194,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
 
   // Refetch when server-side filters change (debounced)
   useEffect(() => {
+    setPage(1);
+    setExpandedCardIds(new Set());
     const timer = setTimeout(() => {
       if (activeTab === "payments") {
         fetchPayments();
@@ -201,6 +207,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   }, [searchQuery, genderFilter, cityFilter, religionFilter, paymentPlanFilter, paymentStatusFilter, activeTab]);
 
   useEffect(() => {
+    setPage(1);
+    setExpandedCardIds(new Set());
     if (activeTab !== "payments") {
       setUserFilter(activeTab === "queue" ? "pending" : "all");
     }
@@ -424,6 +432,26 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     !loading &&
     filteredUsers.length === 0;
 
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / PAGE_SIZE));
+  const paginatedUsers = sortedUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const toggleCard = (id: string) => {
+    setExpandedCardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    setExpandedCardIds(new Set(sortedUsers.map((u) => u.id)));
+  };
+
+  const collapseAll = () => {
+    setExpandedCardIds(new Set());
+  };
+
   return (
     <div className="min-h-screen bg-[#fbf6f8] pb-6 dark:bg-slate-950">
       <div className="grid w-full gap-4 px-2 py-3 sm:px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6 lg:px-6 xl:px-8">
@@ -474,13 +502,6 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 </h1>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => router.push("/")}
-                >
-                  Open Site
-                </Button>
                 <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-brand-100/60 bg-white px-3 py-2 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950 dark:text-slate-300 w-44">
                   <span className="shrink-0 text-xs">Search</span>
                   <input
@@ -743,7 +764,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
             ) : null}
 
             {!loading && activeTab !== "payments" ? (
-              <div className={`mt-6 ${isEmptyState ? "flex flex-1" : "space-y-4"}`}>
+              <div className={`mt-6 ${isEmptyState ? "flex flex-1" : "space-y-3"}`}>
                 {filteredUsers.length === 0 ? (
                   <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-brand-100 bg-brand-50/40 px-6 py-14 text-center dark:border-white/10 dark:bg-white/[0.03]">
                     <div className="max-w-md">
@@ -760,8 +781,31 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                     </div>
                   </div>
                 ) : (
-                  sortedUsers.map((user, index) => (
-                    (() => {
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-400">
+                        Showing {Math.min((page - 1) * PAGE_SIZE + 1, sortedUsers.length)}–{Math.min(page * PAGE_SIZE, sortedUsers.length)} of {sortedUsers.length}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={expandAll}
+                          className="rounded-lg px-2 py-1 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-white/10"
+                        >
+                          Expand all
+                        </button>
+                        <span className="text-slate-300 dark:text-slate-600">·</span>
+                        <button
+                          type="button"
+                          onClick={collapseAll}
+                          className="rounded-lg px-2 py-1 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-white/10"
+                        >
+                          Collapse all
+                        </button>
+                      </div>
+                    </div>
+                    {paginatedUsers.map((user, index) => {
+                      const globalIndex = (page - 1) * PAGE_SIZE + index;
                       const primaryPhoto = user.photos[0] ?? null;
                       const primaryPhotoApproved =
                         primaryPhoto?.status === "APPROVED";
@@ -830,18 +874,24 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                         ? "Resolve rejected photos first"
                         : "Approve member";
 
+                      const isExpanded = expandedCardIds.has(user.id);
+
                       return (
                         <div
                           key={user.id}
                           className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
                         >
-          <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-5">
-                            <div className="min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => toggleCard(user.id)}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-white/5 sm:px-5"
+                          >
+                            <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 px-2 text-[11px] font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-300">
+                              {globalIndex + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-100 px-2 text-[11px] font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-300">
-                                  {index + 1}
-                                </span>
-                                <p className="font-semibold text-slate-900 dark:text-white">
+                                <p className="truncate font-semibold text-slate-900 dark:text-white">
                                   {user.name ??
                                     (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
                                       "Unnamed")}
@@ -857,302 +907,361 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                                   <Badge label="Visible" tone="premium" />
                                 ) : null}
                                 {user.isPremium ? (
-                                  <Badge label={`Premium${user.premiumExpiresAt ? ` until ${new Date(user.premiumExpiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : ""}`} tone="premium" />
+                                  <Badge label="Premium" tone="premium" />
                                 ) : null}
+                                {pendingPhotoCount > 0 && (
+                                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+                                    {pendingPhotoCount} pending photo{pendingPhotoCount === 1 ? "" : "s"}
+                                  </span>
+                                )}
+                                {missingRequiredFields.length > 0 && (
+                                  <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                                    {missingRequiredFields.length} missing
+                                  </span>
+                                )}
                               </div>
-                          <p className="mt-1 break-words text-xs text-slate-500">
-                            {user.email ?? "No email"} • {user.phone ?? "No phone"}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {user.gender ?? "Gender not set"} •{" "}
-                            {user.city ?? "City not set"}
-                          </p>
-                          <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2 2xl:grid-cols-4">
-                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
-                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
-                                Profession
-                              </p>
-                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
-                                {user.profession ?? "Not shared"}
+                              <p className="mt-0.5 truncate text-xs text-slate-500">
+                                {user.email ?? "No email"} • {user.phone ?? "No phone"} • {user.gender ?? "—"} • {user.city ?? "—"}
                               </p>
                             </div>
-                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
-                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
-                                Education
-                              </p>
-                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
-                                {user.education ?? "Not shared"}
-                              </p>
-                            </div>
-                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
-                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
-                                Marital Status
-                              </p>
-                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
-                                {user.maritalStatus ?? "Not shared"}
-                              </p>
-                            </div>
-                            <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
-                              <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
-                                Height
-                              </p>
-                              <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
-                                {user.height ?? "Not shared"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
-                            {user.birthDate ? (
-                              <span>
-                                Born {new Date(user.birthDate).toLocaleDateString()}
-                              </span>
-                            ) : null}
-                            <span>ID: {user.id.slice(0, 8)}</span>
-                          </div>
-                          {!requiredProfileComplete ? (
-                            <p className="mt-2 break-words text-xs text-amber-700 dark:text-amber-200">
-                              Missing: {missingRequiredFields.join(", ")}
-                            </p>
-                          ) : null}
-                          <p className="mt-3 max-w-3xl rounded-2xl border border-brand-100/70 bg-brand-50/40 px-3 py-3 text-xs leading-6 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-                            {user.bio?.trim()
-                              ? user.bio
-                              : "No bio submitted yet. The member should complete this before public visibility for a stronger profile."}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400">
-                            <span>
-                              Photos: {user.photos.length}
+                            <span className={`shrink-0 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}>
+                              ▼
                             </span>
-                            <span>
-                              Primary:{" "}
-                              {primaryPhoto
-                                ? primaryPhoto.status === "APPROVED"
-                                  ? "Approved"
-                                  : primaryPhoto.status === "REJECTED"
-                                  ? "Rejected"
-                                  : "Pending"
-                                : "Missing"}
-                            </span>
-                            <span>
-                              Pending: {
-                                pendingPhotoCount
-                              }
-                            </span>
-                            <span>
-                              Rejected: {
-                                rejectedPhotoCount
-                              }
-                            </span>
-                            <span>
-                              Created {new Date(user.createdAt).toLocaleDateString()}
-                            </span>
-                            <span>
-                              Email: {emailVerified ? "Verified" : "Not verified"}
-                            </span>
-                          </div>
-                          {approvalHelpText ? (
-                            <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-                              {approvalHelpText}
-                            </p>
-                          ) : null}
-                          {user.photos.length > 0 ? (
-                            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03] sm:p-4">
-                              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                <p className="text-[11px] font-semibold uppercase text-slate-400">
-                                  Photo review
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                  {pendingPhotoCount} pending, {rejectedPhotoCount} rejected
-                                </p>
-                              </div>
-                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                                {user.photos.map((photo) => {
-                                  const photoApproved = photo.status === "APPROVED";
+                          </button>
 
-                                  return (
-                                    <div
-                                      key={photo.id}
-                                      className="rounded-2xl border border-slate-200 bg-white p-2 text-xs text-slate-500 shadow-sm dark:border-white/10 dark:bg-slate-950"
-                                    >
-                                      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-white/10">
-                                        <img
-                                          src={photo.url}
-                                          alt="Uploaded"
-                                          className="h-full w-full object-cover"
-                                        />
-                                        {photo.id === primaryPhoto?.id ? (
-                                          <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur dark:bg-slate-950/85 dark:text-slate-100">
-                                            Primary
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                                        <span className="truncate">
-                                          {photoApproved
-                                            ? "Approved"
-                                            : photo.status === "REJECTED"
-                                            ? "Rejected"
-                                            : "Pending"}
-                                        </span>
-                                        <div className="flex gap-1">
-                                          <button
-                                            className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:hover:bg-transparent"
-                                            type="button"
-                                            disabled={photoApproved}
-                                            onClick={() => updatePhoto(photo.id, "APPROVED")}
-                                          >
-                                            Approve
-                                          </button>
-                                          <button
-                                            className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:hover:bg-transparent"
-                                            type="button"
-                                            onClick={() => {
-                                              const remarks = window.prompt(
-                                                "Reason for rejection?"
-                                              );
-                                              if (remarks === null) return;
-                                              updatePhoto(photo.id, "REJECTED", remarks.trim());
-                                            }}
-                                          >
-                                            Reject
-                                          </button>
-                                        </div>
-                                      </div>
-                                      {photo.rejectionRemarks ? (
-                                        <p className="mt-2 text-xs text-slate-400">
-                                          {photo.rejectionRemarks}
-                                        </p>
-                                      ) : null}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-xs text-slate-400 dark:border-white/10 dark:bg-white/[0.03]">
-                              No photos uploaded yet.
-                            </p>
-                          )}
-                        </div>
-                        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03] sm:p-4">
-                          <p className="text-[11px] font-semibold uppercase text-slate-400">
-                            Review actions
-                          </p>
-                          <div className="mt-4 grid gap-3">
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950">
-                              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-                                Approval checklist
-                              </p>
-                              <div className="grid gap-2.5">
-                                {approvalChecklist.map((item) => (
-                                  <div
-                                    key={item.label}
-                                    className="flex flex-col items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs dark:bg-white/[0.04] sm:flex-row sm:items-center sm:gap-3"
-                                  >
-                                    <span
-                                      className={
-                                        item.complete
-                                          ? "min-w-0 font-medium leading-5 text-slate-700 dark:text-slate-200"
-                                          : "min-w-0 font-medium leading-5 text-amber-700 dark:text-amber-200"
-                                      }
-                                    >
-                                      {item.label}
-                                    </span>
-                                    <span
-                                      className={
-                                        item.complete
-                                          ? "shrink-0 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-500/10 dark:text-green-300"
-                                          : "shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
-                                      }
-                                    >
-                                      {item.complete ? "Pass" : item.detail}
-                                    </span>
+                          {isExpanded && (
+                            <div className="grid gap-4 border-t border-slate-100 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-5 dark:border-white/10">
+                              <div className="min-w-0">
+                                <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2 2xl:grid-cols-4">
+                                  <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                                    <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                      Profession
+                                    </p>
+                                    <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                      {user.profession ?? "Not shared"}
+                                    </p>
                                   </div>
-                                ))}
+                                  <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                                    <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                      Education
+                                    </p>
+                                    <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                      {user.education ?? "Not shared"}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                                    <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                      Marital Status
+                                    </p>
+                                    <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                      {user.maritalStatus ?? "Not shared"}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-2xl bg-brand-50/60 px-3 py-2 dark:bg-white/5">
+                                    <p className="text-[10px] uppercase tracking-[0.14em] text-brand-400">
+                                      Height
+                                    </p>
+                                    <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                                      {user.height ?? "Not shared"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+                                  {user.birthDate ? (
+                                    <span>
+                                      Born {new Date(user.birthDate).toLocaleDateString()}
+                                    </span>
+                                  ) : null}
+                                  <span>ID: {user.displayId ?? user.id.slice(0, 8)}</span>
+                                </div>
+                                {!requiredProfileComplete ? (
+                                  <p className="mt-2 break-words text-xs text-amber-700 dark:text-amber-200">
+                                    Missing: {missingRequiredFields.join(", ")}
+                                  </p>
+                                ) : null}
+                                <p className="mt-3 max-w-3xl rounded-2xl border border-brand-100/70 bg-brand-50/40 px-3 py-3 text-xs leading-6 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                                  {user.bio?.trim()
+                                    ? user.bio
+                                    : "No bio submitted yet. The member should complete this before public visibility for a stronger profile."}
+                                </p>
+                                <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400">
+                                  <span>
+                                    Photos: {user.photos.length}
+                                  </span>
+                                  <span>
+                                    Primary:{" "}
+                                    {primaryPhoto
+                                      ? primaryPhoto.status === "APPROVED"
+                                        ? "Approved"
+                                        : primaryPhoto.status === "REJECTED"
+                                        ? "Rejected"
+                                        : "Pending"
+                                      : "Missing"}
+                                  </span>
+                                  <span>
+                                    Pending: {pendingPhotoCount}
+                                  </span>
+                                  <span>
+                                    Rejected: {rejectedPhotoCount}
+                                  </span>
+                                  <span>
+                                    Created {new Date(user.createdAt).toLocaleDateString()}
+                                  </span>
+                                  <span>
+                                    Email: {emailVerified ? "Verified" : "Not verified"}
+                                  </span>
+                                </div>
+                                {approvalHelpText ? (
+                                  <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+                                    {approvalHelpText}
+                                  </p>
+                                ) : null}
+                                {user.photos.length > 0 ? (
+                                  <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03] sm:p-4">
+                                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                      <p className="text-[11px] font-semibold uppercase text-slate-400">
+                                        Photo review
+                                      </p>
+                                      <p className="text-xs text-slate-400">
+                                        {pendingPhotoCount} pending, {rejectedPhotoCount} rejected
+                                      </p>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                                      {user.photos.map((photo) => {
+                                        const photoApproved = photo.status === "APPROVED";
+
+                                        return (
+                                          <div
+                                            key={photo.id}
+                                            className="rounded-2xl border border-slate-200 bg-white p-2 text-xs text-slate-500 shadow-sm dark:border-white/10 dark:bg-slate-950"
+                                          >
+                                            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-white/10">
+                                              <img
+                                                src={photo.url}
+                                                alt="Uploaded"
+                                                className="h-full w-full object-cover"
+                                              />
+                                              {photo.id === primaryPhoto?.id ? (
+                                                <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur dark:bg-slate-950/85 dark:text-slate-100">
+                                                  Primary
+                                                </span>
+                                              ) : null}
+                                            </div>
+                                            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                              <span className="truncate">
+                                                {photoApproved
+                                                  ? "Approved"
+                                                  : photo.status === "REJECTED"
+                                                  ? "Rejected"
+                                                  : "Pending"}
+                                              </span>
+                                              <div className="flex gap-1">
+                                                <button
+                                                  className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:hover:bg-transparent"
+                                                  type="button"
+                                                  disabled={photoApproved}
+                                                  onClick={() => updatePhoto(photo.id, "APPROVED")}
+                                                >
+                                                  Approve
+                                                </button>
+                                                <button
+                                                  className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 dark:disabled:hover:bg-transparent"
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const remarks = window.prompt(
+                                                      "Reason for rejection?"
+                                                    );
+                                                    if (remarks === null) return;
+                                                    updatePhoto(photo.id, "REJECTED", remarks.trim());
+                                                  }}
+                                                >
+                                                  Reject
+                                                </button>
+                                              </div>
+                                            </div>
+                                            {photo.rejectionRemarks ? (
+                                              <p className="mt-2 text-xs text-slate-400">
+                                                {photo.rejectionRemarks}
+                                              </p>
+                                            ) : null}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-xs text-slate-400 dark:border-white/10 dark:bg-white/[0.03]">
+                                    No photos uploaded yet.
+                                  </p>
+                                )}
+                              </div>
+                              <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03] sm:p-4">
+                                <p className="text-[11px] font-semibold uppercase text-slate-400">
+                                  Review actions
+                                </p>
+                                <div className="mt-4 grid gap-3">
+                                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950">
+                                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                                      Approval checklist
+                                    </p>
+                                    <div className="grid gap-2.5">
+                                      {approvalChecklist.map((item) => (
+                                        <div
+                                          key={item.label}
+                                          className="flex flex-col items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs dark:bg-white/[0.04] sm:flex-row sm:items-center sm:gap-3"
+                                        >
+                                          <span
+                                            className={
+                                              item.complete
+                                                ? "min-w-0 font-medium leading-5 text-slate-700 dark:text-slate-200"
+                                                : "min-w-0 font-medium leading-5 text-amber-700 dark:text-amber-200"
+                                            }
+                                          >
+                                            {item.label}
+                                          </span>
+                                          <span
+                                            className={
+                                              item.complete
+                                                ? "shrink-0 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-500/10 dark:text-green-300"
+                                                : "shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+                                            }
+                                          >
+                                            {item.complete ? "Pass" : item.detail}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                                    <span>Role</span>
+                                    <select
+                                      className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+                                      value={user.roleName}
+                                      onChange={(event) =>
+                                        handleRoleChange(
+                                          user,
+                                          event.target.value as "ADMIN" | "USER"
+                                        )
+                                      }
+                                    >
+                                      <option value="USER">User</option>
+                                      <option value="ADMIN">Admin</option>
+                                    </select>
+                                  </label>
+                                {user.roleName === "USER" ? (
+                                  <>
+                                    <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                                      <span>Visible profile</span>
+                                      <input
+                                        type="checkbox"
+                                        checked={user.profileVisible}
+                                        disabled={!user.isApproved || !primaryPhotoApproved}
+                                        title={
+                                          !user.isApproved
+                                            ? "Approve the member first"
+                                            : !primaryPhotoApproved
+                                              ? "Approve the primary photo first"
+                                              : undefined
+                                        }
+                                        onChange={(event) =>
+                                          updateUser(user.id, {
+                                            profileVisible: event.target.checked,
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                    <Button
+                                      size="sm"
+                                      className="w-full justify-center"
+                                      disabled={user.isApproved || !profileReadyForApproval}
+                                      onClick={() => handleDecision(user, "APPROVED")}
+                                    >
+                                      {approvalButtonLabel}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      className="w-full justify-center"
+                                      onClick={() => handleDecision(user, "REJECTED")}
+                                    >
+                                      Reject
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="w-full justify-center"
+                                      onClick={() => handleDecision(user, "BLOCKED")}
+                                    >
+                                      Block
+                                    </Button>
+                                    <button
+                                      type="button"
+                                      onClick={() => softDeleteUser(user)}
+                                      className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
+                                    >
+                                      Delete
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-slate-400">
+                                    Admin accounts are not part of the approval queue.
+                                  </span>
+                                )}
+                                </div>
                               </div>
                             </div>
-                            <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
-                              <span>Role</span>
-                              <select
-                                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
-                                value={user.roleName}
-                                onChange={(event) =>
-                                  handleRoleChange(
-                                    user,
-                                    event.target.value as "ADMIN" | "USER"
-                                  )
-                                }
-                              >
-                                <option value="USER">User</option>
-                                <option value="ADMIN">Admin</option>
-                              </select>
-                            </label>
-                          {user.roleName === "USER" ? (
-                            <>
-                              <label className="flex items-center justify-between gap-2 text-xs text-slate-500">
-                                <span>Visible profile</span>
-                                <input
-                                  type="checkbox"
-                                  checked={user.profileVisible}
-                                  disabled={!user.isApproved || !primaryPhotoApproved}
-                                  title={
-                                    !user.isApproved
-                                      ? "Approve the member first"
-                                      : !primaryPhotoApproved
-                                        ? "Approve the primary photo first"
-                                        : undefined
-                                  }
-                                  onChange={(event) =>
-                                    updateUser(user.id, {
-                                      profileVisible: event.target.checked,
-                                    })
-                                  }
-                                />
-                              </label>
-                              <Button
-                                size="sm"
-                                className="w-full justify-center"
-                                disabled={user.isApproved || !profileReadyForApproval}
-                                onClick={() => handleDecision(user, "APPROVED")}
-                              >
-                                {approvalButtonLabel}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="w-full justify-center"
-                                onClick={() => handleDecision(user, "REJECTED")}
-                              >
-                                Reject
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="w-full justify-center"
-                                onClick={() => handleDecision(user, "BLOCKED")}
-                              >
-                                Block
-                              </Button>
-                              <button
-                                type="button"
-                                onClick={() => softDeleteUser(user)}
-                                className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400"
-                              >
-                                Delete
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-slate-400">
-                              Admin accounts are not part of the approval queue.
-                            </span>
                           )}
-                          </div>
-                        </div>
-                      </div>
                         </div>
                       );
-                    })()
-                  ))
+                    })}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-4">
+                        <button
+                          type="button"
+                          disabled={page <= 1}
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+                        >
+                          ← Prev
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                          .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                            if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((item, i) =>
+                            item === "..." ? (
+                              <span key={`ellipsis-${i}`} className="px-1 text-xs text-slate-400">
+                                …
+                              </span>
+                            ) : (
+                              <button
+                                key={item}
+                                type="button"
+                                onClick={() => setPage(item)}
+                                className={`min-w-[32px] rounded-xl px-2.5 py-1.5 text-xs font-medium transition ${
+                                  page === item
+                                    ? "bg-brand-600 text-white shadow-sm"
+                                    : "border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+                                }`}
+                              >
+                                {item}
+                              </button>
+                            )
+                          )}
+                        <button
+                          type="button"
+                          disabled={page >= totalPages}
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ) : null}

@@ -44,7 +44,10 @@ type CheckoutButtonProps = {
   planName: string;
   className?: string;
   scriptReady: boolean;
-  children?: React.ReactNode;
+  locked?: boolean;
+  label?: string;
+  infoMessage?: { title: string; message: string } | null;
+  onInfoClick?: (() => void) | null;
 };
 
 export default function CheckoutButton({
@@ -52,7 +55,10 @@ export default function CheckoutButton({
   planName,
   className = "",
   scriptReady,
-  children,
+  locked = false,
+  label,
+  infoMessage,
+  onInfoClick,
 }: CheckoutButtonProps) {
   const { status } = useSession();
   const router = useRouter();
@@ -155,13 +161,21 @@ export default function CheckoutButton({
     }
   }, [plan, planName, router, scriptReady, status]);
 
+  const handleClick = useCallback(() => {
+    if (infoMessage && onInfoClick) {
+      onInfoClick();
+      return;
+    }
+    void startCheckout();
+  }, [infoMessage, onInfoClick, startCheckout]);
+
   return (
     <div className={className}>
       <Button
         type="button"
         className="w-full"
-        disabled={loading}
-        onClick={() => void startCheckout()}
+        disabled={locked || loading}
+        onClick={handleClick}
       >
         {loading ? (
           <span className="inline-flex items-center gap-2">
@@ -169,7 +183,7 @@ export default function CheckoutButton({
             Processing…
           </span>
         ) : (
-          children ?? `Choose ${planName}`
+          label ?? `Choose ${planName}`
         )}
       </Button>
       {error && (

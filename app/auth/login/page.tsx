@@ -184,6 +184,14 @@ export default function LoginPage() {
                       </button>
                     )}
                   </div>
+                  <div className="mt-1 text-right">
+                    <a
+                      href="/auth/forgot-password"
+                      className="text-xs text-slate-400 transition hover:text-brand-600"
+                    >
+                      Forgot password?
+                    </a>
+                  </div>
                 </div>
 
                 {error && (

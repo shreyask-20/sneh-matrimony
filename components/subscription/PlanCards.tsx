@@ -4,11 +4,17 @@ import { Check, Crown, Sparkles } from "lucide-react";
 import { useState } from "react";
 import Script from "next/script";
 import Badge from "../shared/Badge";
+import Modal from "../shared/Modal";
 import CheckoutButton from "./CheckoutButton";
-import { getPlanPricing, PLAN_KEYS } from "@/lib/subscriptions";
+import { getPlanPricing, PLAN_KEYS, type PlanKey } from "@/lib/subscriptions";
 
 type PlanCardsProps = {
   showIntroBadge?: boolean;
+  currentPlan?: {
+    plan: string;
+    planName: string;
+    expiresAt: string;
+  } | null;
 };
 
 const allFeatures: Record<string, Array<{ label: string; tiers: string[] }>> = {
@@ -36,8 +42,54 @@ function featureGrid(key: string) {
   return allFeatures[key as keyof typeof allFeatures] ?? [];
 }
 
-export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
+function getPlanState(
+  planKey: string,
+  currentPlan: PlanCardsProps["currentPlan"]
+): {
+  locked: boolean;
+  label: null | string;
+  buttonLabel: string;
+  infoMessage: null | { title: string; message: string };
+} {
+  if (!currentPlan) {
+    return { locked: false, label: null, buttonLabel: "", infoMessage: null };
+  }
+
+  const currentIdx = PLAN_KEYS.indexOf(currentPlan.plan as PlanKey);
+  const planIdx = PLAN_KEYS.indexOf(planKey as PlanKey);
+
+  if (planIdx === currentIdx) {
+    return {
+      locked: true,
+      label: "Your plan",
+      buttonLabel: "Current plan",
+      infoMessage: null,
+    };
+  }
+
+  if (planIdx < currentIdx) {
+    return {
+      locked: false,
+      label: "At renewal",
+      buttonLabel: "Available at renewal",
+      infoMessage: {
+        title: "Downgrade at renewal",
+        message: `Your ${currentPlan.planName} plan will remain active until ${new Date(currentPlan.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Switching to this plan will take effect after that date.`,
+      },
+    };
+  }
+
+  return {
+    locked: false,
+    label: "Upgrade",
+    buttonLabel: "Upgrade now",
+    infoMessage: null,
+  };
+}
+
+export default function PlanCards({ showIntroBadge = true, currentPlan }: PlanCardsProps) {
   const [scriptReady, setScriptReady] = useState(false);
+  const [modalInfo, setModalInfo] = useState<{ title: string; message: string } | null>(null);
   const plans = PLAN_KEYS.map((key) => getPlanPricing(key));
 
   return (
@@ -52,6 +104,7 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
       {plans.map((plan, i) => {
         const isFeatured = i === 1;
         const isPremiumPlan = i === 2;
+        const planState = getPlanState(plan.key, currentPlan);
         return (
           <div
             key={plan.key}
@@ -94,8 +147,14 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  {isPremiumPlan && <Badge label="Best value" tone="premium" />}
-                  {showIntroBadge && (
+                  {planState.label && (
+                    <Badge
+                      label={planState.label}
+                      tone={planState.locked ? "neutral" : "verified"}
+                    />
+                  )}
+                  {!planState.label && isPremiumPlan && <Badge label="Best value" tone="premium" />}
+                  {!planState.label && showIntroBadge && (
                     <Badge label={`${plan.discountPercent}% off`} tone="verified" />
                   )}
                 </div>
@@ -185,12 +244,18 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
                   plan={plan.key}
                   planName={plan.name}
                   scriptReady={scriptReady}
+                  locked={planState.locked}
+                  infoMessage={planState.infoMessage}
+                  onInfoClick={() => setModalInfo(planState.infoMessage)}
+                  label={planState.buttonLabel || `Choose ${plan.name}`}
                   className={`w-full ${
-                    isPremiumPlan
-                      ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md hover:from-amber-600 hover:to-yellow-600"
-                      : isFeatured
-                        ? "bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white shadow-md hover:from-brand-700 hover:to-fuchsia-700"
-                        : ""
+                    planState.locked
+                      ? "cursor-not-allowed opacity-50"
+                      : isPremiumPlan
+                        ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md hover:from-amber-600 hover:to-yellow-600"
+                        : isFeatured
+                          ? "bg-gradient-to-r from-brand-600 to-fuchsia-600 text-white shadow-md hover:from-brand-700 hover:to-fuchsia-700"
+                          : ""
                   }`}
                 />
               </div>
@@ -199,6 +264,20 @@ export default function PlanCards({ showIntroBadge = true }: PlanCardsProps) {
         );
       })}
     </div>
+      {modalInfo && (
+        <Modal title={modalInfo.title} open={!!modalInfo} onClose={() => setModalInfo(null)}>
+          <p>{modalInfo.message}</p>
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              className="rounded-2xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+              onClick={() => setModalInfo(null)}
+            >
+              Got it
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

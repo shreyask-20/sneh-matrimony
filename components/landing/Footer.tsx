@@ -35,13 +35,13 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Contact */}
+        {/* Support */}
         <div className="space-y-3">
-          <p className="font-semibold text-slate-700 dark:text-slate-200">Contact</p>
+          <p className="font-semibold text-slate-700 dark:text-slate-200">Support</p>
           <ul className="space-y-2">
-            <li>Nashik, Maharashtra</li>
-            <li>snehmatrimonyindia@gmail.com</li>
-            <li>9922641116</li>
+            <li><a href="/refund-request" className="transition-colors hover:text-brand-600">Request a refund</a></li>
+            <li><a href="mailto:snehmatrimonyindia@gmail.com" className="transition-colors hover:text-brand-600">snehmatrimonyindia@gmail.com</a></li>
+            <li><a href="tel:9922641116" className="transition-colors hover:text-brand-600">9922641116</a></li>
           </ul>
         </div>
 

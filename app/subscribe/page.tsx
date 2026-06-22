@@ -74,7 +74,7 @@ export default async function SubscribePage({
                 <Badge label="Active" tone="verified" />
               </div>
               <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                You can upgrade anytime — select a higher plan below.
+                You can upgrade to a higher plan anytime. Lower plans are not available for downgrade.
               </p>
             </div>
           )}
@@ -92,7 +92,7 @@ export default async function SubscribePage({
           )}
 
           {/* Plan cards */}
-          <PlanCards />
+          <PlanCards currentPlan={subscription ? { plan: subscription.plan, planName: subscription.planName, expiresAt: subscription.expiresAt } : null} />
         </div>
       </main>
     </PageBackdrop>

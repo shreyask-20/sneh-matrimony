@@ -18,6 +18,7 @@ type RegisterPayload = {
   locationPreference?: string;
   bio?: string;
   photos?: Array<{ url: string; publicId?: string }>;
+  termsAccepted?: boolean;
 };
 
 function isAllowedPhotoUrl(url: string) {
@@ -81,6 +82,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!body.termsAccepted) {
+    return NextResponse.json(
+      { error: "You must agree to the Terms & Conditions to register." },
+      { status: 400 }
+    );
+  }
+
   if (!body.photos || body.photos.length === 0) {
     return NextResponse.json(
       { error: "At least one primary profile photo is required." },
@@ -129,6 +137,8 @@ export async function POST(request: Request) {
       education: body.education?.trim() || null,
       city: body.city?.trim() || null,
       bio: body.bio?.trim() || null,
+      termsAccepted: true,
+      termsAcceptedAt: new Date(),
       photos: {
         create: body.photos.map((photo) => ({
           url: photo.url,

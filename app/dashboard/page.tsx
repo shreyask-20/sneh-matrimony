@@ -13,8 +13,11 @@ import Button from "../../components/shared/Button";
 import UnreadMessageToast from "../../components/shared/UnreadMessageToast";
 import ActionCenter from "../../components/dashboard/ActionCenter";
 import VerifyEmailBanner from "@/components/dashboard/VerifyEmailBanner";
+import WomenFreePeriodBanner from "@/components/dashboard/WomenFreePeriodBanner";
+import WelcomeFreePeriodToast from "@/components/dashboard/WelcomeFreePeriodToast";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 import { getActiveSubscription } from "@/lib/subscription-status";
+import { isFemaleInFreePeriod } from "@/lib/promo";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -67,6 +70,7 @@ export default async function DashboardPage({
       lastName: true,
       name: true,
       gender: true,
+      createdAt: true,
       birthDate: true,
       maritalStatus: true,
       height: true,
@@ -260,6 +264,11 @@ export default async function DashboardPage({
     nextStepMessage = "Your profile is complete. The admin team can review it next.";
   }
 
+  const isFemale = currentUser?.gender?.trim().toLowerCase() === "female";
+  const isFreePeriod = isFemale && currentUser?.createdAt
+    ? isFemaleInFreePeriod(currentUser.createdAt)
+    : false;
+
   const unreadMessageCount = unreadMessageRows.length;
   const unreadConversationCount = new Set(
     unreadMessageRows.map((row) => row.conversationId)
@@ -444,6 +453,9 @@ export default async function DashboardPage({
         unreadMessageCount={unreadMessageCount}
         unreadConversationCount={unreadConversationCount}
       />
+      {isFreePeriod && currentUser?.createdAt && (
+        <WelcomeFreePeriodToast createdAt={currentUser.createdAt.toISOString()} />
+      )}
       <main className="grid w-full gap-4 px-3 py-6 sm:gap-6 sm:px-6 sm:py-10 lg:grid-cols-[240px_1fr] lg:px-8">
         <aside className="glass-card h-fit rounded-3xl p-4 sm:p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-brand-500">
@@ -512,6 +524,9 @@ export default async function DashboardPage({
             <div className="rounded-3xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
               Payment successful. Your membership is now active.
             </div>
+          )}
+          {isFreePeriod && currentUser?.createdAt && (
+            <WomenFreePeriodBanner createdAt={currentUser.createdAt.toISOString()} />
           )}
           {!currentUser?.emailVerified && <VerifyEmailBanner />}
           {!isComplete ? (

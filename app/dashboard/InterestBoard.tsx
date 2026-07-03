@@ -3,6 +3,7 @@
 import type React from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import Button from "@/components/shared/Button";
 
 type InterestItem = {
@@ -78,54 +79,39 @@ function InterestCard({
 
   return (
     <div
-      className={`rounded-2xl border p-4 text-sm text-slate-600 dark:text-slate-300 ${containerClass} ${
+      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm text-slate-600 dark:text-slate-300 ${containerClass} ${
         onOpenProfile
-          ? "cursor-pointer transition hover:shadow-[0_18px_30px_rgba(15,23,42,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950"
+          ? "cursor-pointer transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950"
           : ""
       }`}
       {...interactiveProps}
     >
-      <div className="flex gap-3 sm:items-start sm:gap-4">
-        <img
-          src={item.profile.photoUrl ?? "/profiles/p1.jpg"}
-          alt={item.profile.name}
-          className="face-focus h-16 w-16 shrink-0 rounded-2xl sm:h-20 sm:w-20"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {item.profile.name}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {[item.profile.city, item.profile.profession]
-                  .filter(Boolean)
-                  .join(" • ") || "Profile details available"}
-              </p>
-            </div>
-            {statusLabel ? (
-              <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-600 dark:bg-white/10 dark:text-white">
-                {statusLabel}
-              </span>
-            ) : null}
-          </div>
-          {item.message ? (
-            <p className="mt-3 rounded-2xl bg-white/80 px-3 py-2 text-sm text-slate-700 dark:bg-slate-950/60 dark:text-slate-200">
-              "{item.message}"
-            </p>
-          ) : null}
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-400">
-              {formatInterestDate(item.createdAt)}
-            </p>
-            <div
-              className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center"
-              {...actionWrapperProps}
-            >
-              {actions}
-            </div>
-          </div>
-        </div>
+      <img
+        src={item.profile.photoUrl ?? "/profiles/p1.jpg"}
+        alt={item.profile.name}
+        className="face-focus h-10 w-10 shrink-0 rounded-xl object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold text-slate-900 dark:text-white">
+          {item.profile.name}
+        </p>
+        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+          {[item.profile.city, item.profile.profession]
+            .filter(Boolean)
+            .join(" • ") || "Profile details available"}
+          {item.message ? ` · "${item.message}"` : ""}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2" {...actionWrapperProps}>
+        <span className="text-[11px] text-slate-400">
+          {formatInterestDate(item.createdAt)}
+        </span>
+        {statusLabel ? (
+          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-medium text-brand-600 dark:bg-white/10 dark:text-white">
+            {statusLabel}
+          </span>
+        ) : null}
+        {actions}
       </div>
     </div>
   );
@@ -136,6 +122,8 @@ export default function InterestBoard({ received, sent }: Props) {
   const [receivedItems, setReceivedItems] = useState(received);
   const [sentItems, setSentItems] = useState(sent);
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [showAllSent, setShowAllSent] = useState(false);
+  const [showAllReceived, setShowAllReceived] = useState(false);
   const featuredReceived = receivedItems[0] ?? null;
   const remainingReceived = featuredReceived
     ? receivedItems.slice(1)
@@ -254,7 +242,7 @@ export default function InterestBoard({ received, sent }: Props) {
               ? "Other people waiting for your response."
               : "People waiting for your response."}
           </p>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-2">
             {remainingReceived.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {featuredReceived
@@ -262,34 +250,52 @@ export default function InterestBoard({ received, sent }: Props) {
                   : "No pending interests yet."}
               </p>
             ) : (
-              remainingReceived.map((item) => (
-                <InterestCard
-                  key={item.id}
-                  item={item}
-                  onOpenProfile={() => router.push(`/profiles/${item.profile.id}`)}
-                  actions={
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => updateInterest(item.id, "accept")}
-                        className="w-full justify-center sm:w-auto"
-                        disabled={loadingId === item.id}
-                      >
-                        {loadingId === item.id ? "Saving..." : "Accept"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => updateInterest(item.id, "decline")}
-                        className="w-full justify-center sm:w-auto"
-                        disabled={loadingId === item.id}
-                      >
-                        Decline
-                      </Button>
-                    </>
-                  }
-                />
-              ))
+              <>
+                {(showAllReceived ? remainingReceived : remainingReceived.slice(0, 1)).map((item) => (
+                  <InterestCard
+                    key={item.id}
+                    item={item}
+                    onOpenProfile={() => router.push(`/profiles/${item.profile.id}`)}
+                    actions={
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => updateInterest(item.id, "accept")}
+                          className="w-full justify-center sm:w-auto"
+                          disabled={loadingId === item.id}
+                        >
+                          {loadingId === item.id ? "Saving..." : "Accept"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => updateInterest(item.id, "decline")}
+                          className="w-full justify-center sm:w-auto"
+                          disabled={loadingId === item.id}
+                        >
+                          Decline
+                        </Button>
+                      </>
+                    }
+                  />
+                ))}
+                {remainingReceived.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllReceived((prev) => !prev)}
+                    className="flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-white/5"
+                  >
+                    {showAllReceived
+                      ? "Show less"
+                      : `Show ${remainingReceived.length - 1} more`}
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${
+                        showAllReceived ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -301,31 +307,49 @@ export default function InterestBoard({ received, sent }: Props) {
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Interests you have already sent.
           </p>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-2">
             {pendingSent.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 No outgoing interests yet.
               </p>
             ) : (
-              pendingSent.map((item) => (
-                <InterestCard
-                  key={item.id}
-                  item={item}
-                  statusLabel="Pending"
-                  onOpenProfile={() => router.push(`/profiles/${item.profile.id}`)}
-                  actions={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => updateInterest(item.id, "withdraw")}
-                      className="w-full justify-center sm:w-auto"
-                      disabled={loadingId === item.id}
-                    >
-                      {loadingId === item.id ? "Saving..." : "Withdraw"}
-                    </Button>
-                  }
-                />
-              ))
+              <>
+                {(showAllSent ? pendingSent : pendingSent.slice(0, 1)).map((item) => (
+                  <InterestCard
+                    key={item.id}
+                    item={item}
+                    statusLabel="Pending"
+                    onOpenProfile={() => router.push(`/profiles/${item.profile.id}`)}
+                    actions={
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => updateInterest(item.id, "withdraw")}
+                        className="w-full justify-center sm:w-auto"
+                        disabled={loadingId === item.id}
+                      >
+                        {loadingId === item.id ? "Saving..." : "Withdraw"}
+                      </Button>
+                    }
+                  />
+                ))}
+                {pendingSent.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllSent((prev) => !prev)}
+                    className="flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-white/5"
+                  >
+                    {showAllSent
+                      ? "Show less"
+                      : `Show ${pendingSent.length - 1} more`}
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${
+                        showAllSent ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

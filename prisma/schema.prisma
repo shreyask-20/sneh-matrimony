@@ -75,6 +75,8 @@ model User {
   profileVisible Boolean   @default(false)
   isPremium      Boolean   @default(false)
   premiumExpiresAt DateTime?
+  termsAccepted  Boolean   @default(false)
+  termsAcceptedAt DateTime?
   createdAt      DateTime  @default(now())
   deletedAt      DateTime? // soft delete — null means active
 

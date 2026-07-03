@@ -8,6 +8,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 import { getCandidateProfiles } from "@/lib/candidateProfiles";
+import { getActiveSubscription } from "@/lib/subscription-status";
+import { isFemaleInFreePeriod } from "@/lib/promo";
+import SubscriptionOverlay from "../../components/subscription/SubscriptionOverlay";
 import { Suspense } from "react";
 
 const PAGE_SIZE = 4;
@@ -64,9 +67,20 @@ export default async function BrowsePage({
   const currentUser = currentUserId
     ? await prisma.user.findUnique({
         where: { id: currentUserId },
-        select: { gender: true, isApproved: true, profileVisible: true },
+        select: { firstName: true, gender: true, isApproved: true, profileVisible: true, createdAt: true },
       })
     : null;
+
+  let needsSubscription = false;
+  if (currentUserId) {
+    const subscription = await getActiveSubscription(currentUserId);
+    const hasSubscription = subscription !== null;
+    const isFemale = currentUser?.gender?.trim().toLowerCase() === "female";
+    const isFreePeriod = isFemale && currentUser?.createdAt
+      ? isFemaleInFreePeriod(currentUser.createdAt)
+      : false;
+    needsSubscription = !hasSubscription && !isFreePeriod;
+  }
 
   const { profiles, total } = await getCandidateProfiles({
     prisma,
@@ -135,9 +149,13 @@ export default async function BrowsePage({
             emptyMessage={emptyMessage}
             currentPage={safePage}
             totalPages={totalPages}
+            isApproved={currentUser?.isApproved ?? false}
           />
         </section>
       </main>
+      {needsSubscription && (
+        <SubscriptionOverlay userName={currentUser?.firstName ?? undefined} />
+      )}
     </PageBackdrop>
   );
 }

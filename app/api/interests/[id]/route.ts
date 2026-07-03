@@ -32,6 +32,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const actor = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+
+  if (!actor?.isApproved) {
+    return NextResponse.json(
+      { error: "Your account is pending admin approval." },
+      { status: 403 }
+    );
+  }
+
   const { id } = await params;
   const body = (await request.json()) as UpdateInterestPayload;
   const action = body.action;

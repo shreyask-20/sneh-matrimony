@@ -110,6 +110,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const sender = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+
+  if (!sender?.isApproved) {
+    return NextResponse.json(
+      { error: "Your account is pending admin approval." },
+      { status: 403 }
+    );
+  }
+
   const body = (await request.json()) as CreateInterestPayload;
   const toUserId = body.toUserId?.trim();
   const message = body.message?.trim() || null;

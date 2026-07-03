@@ -7,6 +7,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import PageBackdrop from "../../components/shared/PageBackdrop";
 import { getCandidateProfiles } from "@/lib/candidateProfiles";
+import { getActiveSubscription } from "@/lib/subscription-status";
+import { isFemaleInFreePeriod } from "@/lib/promo";
+import SubscriptionOverlay from "../../components/subscription/SubscriptionOverlay";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -31,9 +34,11 @@ export default async function PreferredMatchesPage() {
   const currentUser = await prisma.user.findUnique({
     where: { id: currentUserId },
     select: {
+      firstName: true,
       gender: true,
       isApproved: true,
       profileVisible: true,
+      createdAt: true,
       preferences: {
         select: {
           preferredAgeRange: true,
@@ -44,6 +49,14 @@ export default async function PreferredMatchesPage() {
       },
     },
   });
+
+  const subscription = await getActiveSubscription(currentUserId);
+  const hasSubscription = subscription !== null;
+  const isFemale = currentUser?.gender?.trim().toLowerCase() === "female";
+  const isFreePeriod = isFemale && currentUser?.createdAt
+    ? isFemaleInFreePeriod(currentUser.createdAt)
+    : false;
+  const needsSubscription = !hasSubscription && !isFreePeriod;
 
   const prefs = currentUser?.preferences;
   const hasPreferences = Boolean(
@@ -134,10 +147,14 @@ export default async function PreferredMatchesPage() {
               profiles={profiles}
               signedIn={true}
               emptyMessage={emptyMessage}
+              isApproved={true}
             />
           </>
         )}
       </main>
+      {needsSubscription && (
+        <SubscriptionOverlay userName={currentUser?.firstName ?? undefined} />
+      )}
     </PageBackdrop>
   );
 }

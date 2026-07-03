@@ -8,6 +8,9 @@ import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getOtherUserId } from "@/lib/chat";
 import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
+import { getActiveSubscription } from "@/lib/subscription-status";
+import { isFemaleInFreePeriod } from "@/lib/promo";
+import SubscriptionOverlay from "../../components/subscription/SubscriptionOverlay";
 import { MessageCircle } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -30,6 +33,19 @@ export default async function ChatPage({
   if (session.user.roleName === "ADMIN") {
     redirect("/admin");
   }
+
+  const chatUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isApproved: true, firstName: true, gender: true, createdAt: true },
+  });
+
+  const subscription = await getActiveSubscription(session.user.id);
+  const hasSubscription = subscription !== null;
+  const isFemale = chatUser?.gender?.trim().toLowerCase() === "female";
+  const isFreePeriod = isFemale && chatUser?.createdAt
+    ? isFemaleInFreePeriod(chatUser.createdAt)
+    : false;
+  const needsSubscription = !hasSubscription && !isFreePeriod;
 
   const conversations = await prisma.conversation.findMany({
     where: {
@@ -263,6 +279,9 @@ export default async function ChatPage({
           />
         </div>
       </main>
+      {needsSubscription && (
+        <SubscriptionOverlay userName={chatUser?.firstName ?? undefined} />
+      )}
     </div>
   );
 }

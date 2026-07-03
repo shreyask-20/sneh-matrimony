@@ -7,6 +7,7 @@ import { Eye, EyeOff, User, Briefcase, Heart, Camera, CheckCircle2 } from "lucid
 import Button from "../../../components/shared/Button";
 import Navbar from "../../../components/shared/Navbar";
 import PageBackdrop from "../../../components/shared/PageBackdrop";
+import TermsModal from "../../../components/terms/TermsModal";
 
 const steps = [
   { label: "Basic info", icon: User },
@@ -41,6 +42,8 @@ export default function RegisterPage() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
 
   useEffect(() => {
     const previews = photos.map((file) => URL.createObjectURL(file));
@@ -232,6 +235,11 @@ export default function RegisterPage() {
       setActiveStep(1);
       return;
     }
+    if (!termsAgreed) {
+      setError("You must agree to the Terms & Conditions to register.");
+      setActiveStep(3);
+      return;
+    }
     setError(null);
     setLoading(true);
 
@@ -279,6 +287,7 @@ export default function RegisterPage() {
         locationPreference,
         bio,
         photos: uploadedPhotos,
+        termsAccepted: true,
       }),
     });
 
@@ -605,6 +614,27 @@ export default function RegisterPage() {
                     value={bio}
                     onChange={(event) => setBio(event.target.value)}
                   />
+                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                    <input
+                      type="checkbox"
+                      checked={termsAgreed}
+                      onChange={(event) => {
+                        setTermsAgreed(event.target.checked);
+                        setError(null);
+                      }}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span className="text-sm text-slate-600 dark:text-slate-300">
+                      I have read and agree to the{" "}
+                      <button
+                        type="button"
+                        onClick={() => setTermsModalOpen(true)}
+                        className="font-semibold text-brand-600 hover:underline dark:text-brand-300"
+                      >
+                        Terms &amp; Conditions
+                      </button>
+                    </span>
+                  </label>
                 </>
               )}
             </div>
@@ -638,6 +668,15 @@ export default function RegisterPage() {
             </div>
           </div>
         </div>
-      </main>    </PageBackdrop>
+      </main>
+      <TermsModal
+        open={termsModalOpen}
+        onClose={() => {
+          setTermsModalOpen(false);
+          setTermsAgreed(true);
+          setError(null);
+        }}
+      />
+    </PageBackdrop>
   );
 }

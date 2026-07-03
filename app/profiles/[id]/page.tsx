@@ -16,6 +16,9 @@ import { normalizeConversationPair } from "@/lib/matchmaking";
 import PageBackdrop from "../../../components/shared/PageBackdrop";
 import { getOppositeGender } from "@/lib/gender";
 import { buildVerificationSummary } from "@/lib/verification";
+import { getActiveSubscription } from "@/lib/subscription-status";
+import { isFemaleInFreePeriod } from "@/lib/promo";
+import SubscriptionOverlay from "../../../components/subscription/SubscriptionOverlay";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -90,12 +93,29 @@ export default async function PublicProfilePage({
   }
 
   let currentUserGender = session?.user?.gender ?? null;
-  if (currentUserId && !currentUserGender) {
-    const currentUser = await prisma.user.findUnique({
+  let viewerApproved = false;
+  let viewerFirstName: string | null = null;
+  let viewerCreatedAt: Date | null = null;
+  if (currentUserId) {
+    const viewer = await prisma.user.findUnique({
       where: { id: currentUserId },
-      select: { gender: true },
+      select: { gender: true, firstName: true, isApproved: true, createdAt: true },
     });
-    currentUserGender = currentUser?.gender ?? null;
+    currentUserGender ??= viewer?.gender ?? null;
+    viewerApproved = viewer?.isApproved ?? false;
+    viewerFirstName = viewer?.firstName ?? null;
+    viewerCreatedAt = viewer?.createdAt ?? null;
+  }
+
+  let needsSubscription = false;
+  if (currentUserId) {
+    const subscription = await getActiveSubscription(currentUserId);
+    const hasSubscription = subscription !== null;
+    const isFemale = currentUserGender?.trim().toLowerCase() === "female";
+    const isFreePeriod = isFemale && viewerCreatedAt
+      ? isFemaleInFreePeriod(viewerCreatedAt)
+      : false;
+    needsSubscription = !hasSubscription && !isFreePeriod;
   }
 
   const user = await prisma.user.findFirst({
@@ -296,7 +316,7 @@ export default async function PublicProfilePage({
               {/* Action buttons row */}
               {currentUserId && (
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <BlockButton blockedUserId={user.id} initialBlocked={isBlocked} />
+                  <BlockButton blockedUserId={user.id} initialBlocked={isBlocked} isApproved={viewerApproved} />
                   {derivedInterestState === "accepted" && (
                     <Button asChild variant="primary" className="w-full sm:w-auto">
                       <Link href={conversation ? `/chat?conversation=${conversation.id}` : "/chat"}>
@@ -387,6 +407,7 @@ export default async function PublicProfilePage({
                       signedIn={Boolean(currentUserId)}
                       initialState={derivedInterestState}
                       fullWidth
+                      isApproved={viewerApproved}
                     />
                   )}
                 </div>
@@ -472,6 +493,9 @@ export default async function PublicProfilePage({
           </div>
         </div>
       </main>
+      {needsSubscription && (
+        <SubscriptionOverlay userName={viewerFirstName ?? undefined} />
+      )}
     </PageBackdrop>
   );
 }

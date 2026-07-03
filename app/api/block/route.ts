@@ -27,6 +27,18 @@ export async function POST(request: NextRequest) {
   const userId = await requireUser(request);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const blocker = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isApproved: true },
+  });
+
+  if (!blocker?.isApproved) {
+    return NextResponse.json(
+      { error: "Your account is pending admin approval." },
+      { status: 403 }
+    );
+  }
+
   const body = (await request.json()) as { blockedUserId?: string; reason?: string };
   const blockedUserId = body.blockedUserId?.trim();
 

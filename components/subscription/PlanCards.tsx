@@ -18,23 +18,16 @@ type PlanCardsProps = {
 };
 
 const allFeatures: Record<string, Array<{ label: string; tiers: string[] }>> = {
-  matching: [
-    { label: "Verified matches", tiers: ["SILVER", "GOLD", "PLATINUM"] },
-    { label: "Curated recommendations", tiers: ["GOLD", "PLATINUM"] },
-    { label: "Personal matchmaker", tiers: ["GOLD", "PLATINUM"] },
-    { label: "Dedicated relationship advisor", tiers: ["PLATINUM"] },
+  "profile access": [
+    { label: "Profiles allowed to view", tiers: ["SILVER", "GOLD", "PLATINUM"] },
+    { label: "Who viewed your profile", tiers: ["SILVER", "PLATINUM"] },
   ],
   communication: [
-    { label: "Direct chat access", tiers: ["SILVER", "GOLD", "PLATINUM"] },
-    { label: "Unlimited interests", tiers: ["GOLD", "PLATINUM"] },
-    { label: "Video verification", tiers: ["PLATINUM"] },
-    { label: "Priority messaging", tiers: ["PLATINUM"] },
+    { label: "Express Interest", tiers: ["SILVER", "GOLD", "PLATINUM"] },
+    { label: "Messages allowed per profile", tiers: ["SILVER", "GOLD", "PLATINUM"] },
   ],
-  support: [
-    { label: "Basic support", tiers: ["SILVER"] },
-    { label: "Priority support", tiers: ["GOLD", "PLATINUM"] },
-    { label: "Family concierge", tiers: ["PLATINUM"] },
-    { label: "Dedicated phone line", tiers: ["PLATINUM"] },
+  visibility: [
+    { label: "Featured profile", tiers: ["PLATINUM"] },
   ],
 };
 

@@ -7,9 +7,11 @@ type Props = {
   blockedUserId: string;
   initialBlocked: boolean;
   className?: string;
+  isApproved?: boolean;
 };
 
-export default function BlockButton({ blockedUserId, initialBlocked, className = "" }: Props) {
+export default function BlockButton({ blockedUserId, initialBlocked, className = "", isApproved = true }: Props) {
+  if (!isApproved) return null;
   const [blocked, setBlocked] = useState(initialBlocked);
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);

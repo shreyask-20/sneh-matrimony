@@ -11,6 +11,9 @@ const PROTECTED_PATHS = [
   "/preferred-matches",
 ];
 
+// Routes that should be accessible even without terms acceptance
+const TERMS_EXEMPT_PATHS = ["/terms", "/auth/login", "/auth/register", "/auth/forgot-password", "/auth/reset-password"];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -41,6 +44,16 @@ export async function middleware(request: NextRequest) {
     // Preserve the intended destination so we can redirect back after login
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // ── Terms acceptance check ──────────────────────────────────────────────────
+  // If logged in but hasn't accepted terms, redirect to /terms
+  const isTermsExempt = TERMS_EXEMPT_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(path + "/")
+  );
+
+  if (token && !isTermsExempt && token.termsAccepted === false) {
+    return NextResponse.redirect(new URL("/terms", request.url));
   }
 
   return NextResponse.next();

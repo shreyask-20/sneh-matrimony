@@ -28,12 +28,14 @@ export default function BrowseResults({
   emptyMessage,
   currentPage,
   totalPages,
+  isApproved = true,
 }: {
   profiles: BrowseProfile[];
   signedIn: boolean;
   emptyMessage?: string;
   currentPage?: number;
   totalPages?: number;
+  isApproved?: boolean;
 }) {
   if (profiles.length === 0) {
     return (
@@ -59,6 +61,7 @@ export default function BrowseResults({
                   targetUserId={userId}
                   signedIn={signedIn}
                   initialState={interestState}
+                  isApproved={isApproved}
                 />
               </div>
             }

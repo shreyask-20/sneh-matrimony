@@ -56,6 +56,7 @@ export const authOptions: NextAuthOptions = {
             image: user.image ?? undefined,
             roleName: user.roleName,
             gender: user.gender ?? undefined,
+            termsAccepted: user.termsAccepted,
           };
         } catch {
           return null;
@@ -69,6 +70,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.roleName = (user as { roleName?: RoleName }).roleName;
         token.gender = (user as { gender?: string | null }).gender ?? undefined;
+        token.termsAccepted = (user as { termsAccepted?: boolean }).termsAccepted ?? false;
       }
       return token;
     },
@@ -81,6 +83,9 @@ export const authOptions: NextAuthOptions = {
       }
       if (session.user && token?.gender) {
         session.user.gender = token.gender as string;
+      }
+      if (session.user && token?.termsAccepted !== undefined) {
+        session.user.termsAccepted = token.termsAccepted as boolean;
       }
       return session;
     },

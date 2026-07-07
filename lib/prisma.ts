@@ -24,7 +24,7 @@ function createPrismaClient(): PrismaClient {
 
   const poolSize =
     Number(process.env.DATABASE_POOL_MAX) ||
-    (process.env.NODE_ENV === "production" ? 1 : 5);
+    (process.env.NODE_ENV === "production" ? 5 : 5);
 
   const pool =
     globalForPrisma.pgPool ??

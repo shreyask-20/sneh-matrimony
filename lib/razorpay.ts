@@ -1,14 +1,6 @@
 import Razorpay from "razorpay";
 import crypto from "node:crypto";
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is not set. Please check your environment variables.`);
-  }
-  return value;
-}
-
 let razorpayClient: Razorpay | null = null;
 
 export function getRazorpayClient(): Razorpay {
@@ -48,7 +40,10 @@ export function verifyPaymentSignature(
     .createHmac("sha256", secret)
     .update(payload)
     .digest("hex");
-  return expected === signature;
+  return crypto.timingSafeEqual(
+    Buffer.from(expected, "hex"),
+    Buffer.from(signature, "hex")
+  );
 }
 
 export function verifyWebhookSignature(
@@ -57,10 +52,16 @@ export function verifyWebhookSignature(
 ): boolean {
   if (!signature) return false;
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-  if (!secret) return false;
+  if (!secret) {
+    console.error("RAZORPAY_WEBHOOK_SECRET is not configured");
+    return false;
+  }
   const expected = crypto
     .createHmac("sha256", secret)
     .update(body)
     .digest("hex");
-  return expected === signature;
+  return crypto.timingSafeEqual(
+    Buffer.from(expected, "hex"),
+    Buffer.from(signature, "hex")
+  );
 }

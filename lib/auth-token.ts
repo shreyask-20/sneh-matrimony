@@ -12,7 +12,12 @@ const sessionCookieName = useSecureSessionCookie
 
 export async function getAuthToken(req: NextRequest) {
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) return null;
+  if (!secret) {
+    throw new Error(
+      "NEXTAUTH_SECRET is not set. Authentication is disabled. " +
+        "Please set the NEXTAUTH_SECRET environment variable."
+    );
+  }
 
   return getToken({
     req,

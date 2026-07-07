@@ -78,7 +78,9 @@ model User {
   termsAccepted  Boolean   @default(false)
   termsAcceptedAt DateTime?
   createdAt      DateTime  @default(now())
-  deletedAt      DateTime? // soft delete — null means active
+  deletedAt             DateTime? // soft delete — null means active
+  deletionRequestedAt    DateTime? // user-initiated deletion with 5-day grace, null = no pending request
+  lastCanceledDeletionAt DateTime? // when user last revived their account, for 7-day cooldown
 
   familyDetails FamilyDetails?
   horoscope     Horoscope?

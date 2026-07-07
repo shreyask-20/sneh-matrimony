@@ -397,6 +397,7 @@ export default function RegisterPage() {
                     <input
                       className={`w-full rounded-2xl border bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.fullName ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
                       placeholder="Full name"
+                      aria-label="Full name"
                       value={fullName}
                       onChange={(event) => { setFullName(event.target.value); setFieldErrors((e) => ({ ...e, fullName: "" })); }}
                     />
@@ -407,6 +408,7 @@ export default function RegisterPage() {
                       className={`w-full rounded-2xl border bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.email ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
                       placeholder="Email address"
                       type="email"
+                      aria-label="Email address"
                       value={email}
                       onChange={(event) => { setEmail(event.target.value); setFieldErrors((e) => ({ ...e, email: "" })); }}
                     />
@@ -417,6 +419,7 @@ export default function RegisterPage() {
                       className={`w-full rounded-2xl border bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.phone ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
                       placeholder="Phone number (e.g. 9876543210)"
                       type="tel"
+                      aria-label="Phone number"
                       inputMode="numeric"
                       maxLength={10}
                       value={phone}
@@ -444,6 +447,7 @@ export default function RegisterPage() {
                         className={`w-full rounded-2xl border bg-white/80 px-4 py-3 pr-12 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:bg-white/5 dark:text-white ${fieldErrors.password ? "border-red-300 dark:border-red-500/60" : "border-slate-200 dark:border-white/10"}`}
                         placeholder="Create a password"
                         type={showPassword ? "text" : "password"}
+                        aria-label="Password"
                         value={password}
                         onChange={(event) => { setPassword(event.target.value); setFieldErrors((e) => ({ ...e, password: "" })); }}
                       />
@@ -467,23 +471,27 @@ export default function RegisterPage() {
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Profession"
+                    aria-label="Profession"
                     value={profession}
                     onChange={(event) => setProfession(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Education"
+                    aria-label="Education"
                     value={education}
                     onChange={(event) => setEducation(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="City"
+                    aria-label="City"
                     value={city}
                     onChange={(event) => setCity(event.target.value)}
                   />
                   <select
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                    aria-label="Gender"
                     value={gender}
                     onChange={(event) => setGender(event.target.value)}
                   >
@@ -498,18 +506,21 @@ export default function RegisterPage() {
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Preferred age range"
+                    aria-label="Preferred age range"
                     value={preferredAgeRange}
                     onChange={(event) => setPreferredAgeRange(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Religion / Community"
+                    aria-label="Religion and community"
                     value={religionCommunity}
                     onChange={(event) => setReligionCommunity(event.target.value)}
                   />
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Location preference"
+                    aria-label="Location preference"
                     value={locationPreference}
                     onChange={(event) => setLocationPreference(event.target.value)}
                   />
@@ -525,6 +536,9 @@ export default function RegisterPage() {
                     {` `}under {(RECOMMENDED_PHOTO_BYTES / 1024).toFixed(0)}KB.
                   </p>
                   <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Upload photo"
                     className={`relative rounded-2xl border border-dashed px-4 py-8 text-center text-sm transition ${
                       isDragging
                         ? "border-brand-300 bg-brand-100/70 text-brand-700 dark:border-brand-400 dark:bg-white/10 dark:text-white"
@@ -611,6 +625,7 @@ export default function RegisterPage() {
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-brand-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                     placeholder="Short bio"
+                    aria-label="Bio"
                     value={bio}
                     onChange={(event) => setBio(event.target.value)}
                   />

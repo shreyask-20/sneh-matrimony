@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 /**
  * Calculates and displays age from a birthDate string.
- * Runs on the client so the age is always accurate to the user's local clock,
- * avoiding the server-side Date.now() drift issue.
+ * Uses useState + useEffect to compute age only on the client,
+ * avoiding hydration mismatches between server and client renders.
  */
 export default function AgeDisplay({
   birthDate,
@@ -12,14 +14,21 @@ export default function AgeDisplay({
   birthDate: string | Date | null | undefined;
   className?: string;
 }) {
-  if (!birthDate) return null;
+  const [age, setAge] = useState<number | null>(null);
 
-  const birth = new Date(birthDate);
-  const now = new Date();
-  const age = Math.max(
-    0,
-    Math.floor((now.getTime() - birth.getTime()) / 31_557_600_000) // ms per Julian year
-  );
+  useEffect(() => {
+    if (!birthDate) return;
+    const birth = new Date(birthDate);
+    const now = new Date();
+    setAge(
+      Math.max(
+        0,
+        Math.floor((now.getTime() - birth.getTime()) / 31_557_600_000)
+      )
+    );
+  }, [birthDate]);
+
+  if (age === null) return null;
 
   return <span className={className}>{age}</span>;
 }

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, Heart, ArrowLeft } from "lucide-react";
 import { MAX_MESSAGES_PER_USER_PER_CONVERSATION } from "@/lib/chatConfig";
 import { formatTimestamp } from "@/lib/formatTimestamp";
+import Toast from "@/components/shared/Toast";
 import Link from "next/link";
 
 type ChatMessage = {
@@ -39,6 +40,7 @@ export default function ChatWindow({
   const router = useRouter();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [messages, setMessages] = useState(selectedConversation?.messages ?? []);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -60,6 +62,7 @@ export default function ChatWindow({
   if (!selectedConversation) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-5 bg-gradient-to-br from-brand-50/40 via-white/60 to-fuchsia-50/30 p-8 text-center backdrop-blur-xl dark:from-white/[0.02] dark:via-slate-950/60 dark:to-white/[0.02]">
+        {toastMessage && <Toast message={toastMessage} />}
         <div className="relative">
           <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-100 to-fuchsia-100 shadow-[0_8px_24px_rgba(155,28,74,0.15)] dark:from-white/10 dark:to-white/5">
             <Heart className="h-9 w-9 text-brand-500" />
@@ -112,7 +115,7 @@ export default function ChatWindow({
       router.refresh();
       setTimeout(() => inputRef.current?.focus(), 50);
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Failed to send message.");
+      setToastMessage(error instanceof Error ? error.message : "Failed to send message.");
     } finally {
       setSending(false);
     }
@@ -120,6 +123,7 @@ export default function ChatWindow({
 
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-white/70 to-white/50 backdrop-blur-xl dark:from-slate-950/70 dark:to-slate-950/50">
+      {toastMessage && <Toast message={toastMessage} />}
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between border-b border-white/30 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/80">

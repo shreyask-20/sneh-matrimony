@@ -18,95 +18,103 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireAdmin();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await requireAdmin();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const { id } = await params;
-  const body = (await request.json()) as {
-    status?: "APPROVED" | "REJECTED";
-    remarks?: string;
-  };
-  if (!body.status) {
-    return NextResponse.json(
-      { error: "status is required" },
-      { status: 400 }
-    );
-  }
+    const { id } = await params;
+    const body = (await request.json()) as {
+      status?: "APPROVED" | "REJECTED";
+      remarks?: string;
+    };
+    if (!body.status) {
+      return NextResponse.json(
+        { error: "status is required" },
+        { status: 400 }
+      );
+    }
 
-  const photoId = Number(id);
-  const existingPhoto = await prisma.photo.findUnique({
-    where: { id: photoId },
-    select: {
-      id: true,
-      userId: true,
-    },
-  });
-
-  if (!existingPhoto) {
-    return NextResponse.json({ error: "Photo not found" }, { status: 404 });
-  }
-
-  if (body.status === "REJECTED") {
-    await prisma.$transaction(async (tx) => {
-      await tx.photo.delete({
-        where: { id: photoId },
-      });
-
-      const [updatedUser, primaryPhoto] = await Promise.all([
-        tx.user.findUnique({
-          where: { id: existingPhoto.userId },
-          select: { isApproved: true },
-        }),
-        tx.photo.findFirst({
-          where: { userId: existingPhoto.userId },
-          orderBy: { createdAt: "asc" },
-          select: { status: true },
-        }),
-      ]);
-
-      await tx.user.update({
-        where: { id: existingPhoto.userId },
-        data: {
-          profileVisible:
-            Boolean(updatedUser?.isApproved) &&
-            primaryPhoto?.status === "APPROVED",
-        },
-      });
+    const photoId = Number(id);
+    const existingPhoto = await prisma.photo.findUnique({
+      where: { id: photoId },
+      select: {
+        id: true,
+        userId: true,
+      },
     });
 
-    return NextResponse.json({ ok: true, removed: true });
-  }
+    if (!existingPhoto) {
+      return NextResponse.json({ error: "Photo not found" }, { status: 404 });
+    }
 
-  const photo = await prisma.photo.update({
-    where: { id: photoId },
-    data: {
-      status: "APPROVED",
-      rejectionRemarks: null,
-    },
-  });
+    if (body.status === "REJECTED") {
+      await prisma.$transaction(async (tx) => {
+        await tx.photo.delete({
+          where: { id: photoId },
+        });
 
-  const [updatedUser, primaryPhoto] = await prisma.$transaction([
-    prisma.user.findUnique({
+        const [updatedUser, primaryPhoto] = await Promise.all([
+          tx.user.findUnique({
+            where: { id: existingPhoto.userId },
+            select: { isApproved: true },
+          }),
+          tx.photo.findFirst({
+            where: { userId: existingPhoto.userId },
+            orderBy: { createdAt: "asc" },
+            select: { status: true },
+          }),
+        ]);
+
+        await tx.user.update({
+          where: { id: existingPhoto.userId },
+          data: {
+            profileVisible:
+              Boolean(updatedUser?.isApproved) &&
+              primaryPhoto?.status === "APPROVED",
+          },
+        });
+      });
+
+      return NextResponse.json({ ok: true, removed: true });
+    }
+
+    const photo = await prisma.photo.update({
+      where: { id: photoId },
+      data: {
+        status: "APPROVED",
+        rejectionRemarks: null,
+      },
+    });
+
+    const [updatedUser, primaryPhoto] = await prisma.$transaction([
+      prisma.user.findUnique({
+        where: { id: existingPhoto.userId },
+        select: { isApproved: true },
+      }),
+      prisma.photo.findFirst({
+        where: { userId: existingPhoto.userId },
+        orderBy: { createdAt: "asc" },
+        select: { status: true },
+      }),
+    ]);
+
+    await prisma.user.update({
       where: { id: existingPhoto.userId },
-      select: { isApproved: true },
-    }),
-    prisma.photo.findFirst({
-      where: { userId: existingPhoto.userId },
-      orderBy: { createdAt: "asc" },
-      select: { status: true },
-    }),
-  ]);
+      data: {
+        profileVisible:
+          Boolean(updatedUser?.isApproved) &&
+          primaryPhoto?.status === "APPROVED",
+      },
+    });
 
-  await prisma.user.update({
-    where: { id: existingPhoto.userId },
-    data: {
-      profileVisible:
-        Boolean(updatedUser?.isApproved) &&
-        primaryPhoto?.status === "APPROVED",
-    },
-  });
-
-  return NextResponse.json({ photo });
+    return NextResponse.json({ photo });
+  } catch (error) {
+    console.error("Route error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
+    );
+  }
 }

@@ -13,29 +13,29 @@ import {
 } from "@/lib/subscriptions";
 
 export async function POST(request: NextRequest) {
-  const userId = await requireUserId(request);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  let body: { plan?: string };
   try {
-    body = (await request.json()) as { plan?: string };
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
+    const userId = await requireUserId(request);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const planParam = body.plan?.toUpperCase();
-  if (!planParam || !isValidPlan(planParam)) {
-    return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-  }
+    let body: { plan?: string };
+    try {
+      body = (await request.json()) as { plan?: string };
+    } catch {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
 
-  const plan = planParam as PlanKey;
-  const planConfig = PLANS[plan];
-  const amountPaise = getPayableAmountPaise(plan);
-  const receipt = `s_${userId.slice(-8)}_${plan}_${Date.now().toString().slice(-8)}`;
+    const planParam = body.plan?.toUpperCase();
+    if (!planParam || !isValidPlan(planParam)) {
+      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+    }
 
-  try {
+    const plan = planParam as PlanKey;
+    const planConfig = PLANS[plan];
+    const amountPaise = getPayableAmountPaise(plan);
+    const receipt = `s_${userId.slice(-8)}_${plan}_${Date.now().toString().slice(-8)}`;
+
     const razorpay = getRazorpayClient();
     const order = await razorpay.orders.create({
       amount: amountPaise,
@@ -81,10 +81,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("create-order error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Route error:", error);
     return NextResponse.json(
-      { error: errorMessage },
+      { error: "An unexpected error occurred. Please try again." },
       { status: 500 }
     );
   }

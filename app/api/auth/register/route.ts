@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 import { generateDisplayId } from "@/lib/displayId";
+import { sanitizeString, isValidEmail, isValidPhone, isValidPassword, VALIDATION, badRequest } from "@/lib/validation";
 
 type RegisterPayload = {
   fullName?: string;
@@ -36,9 +37,10 @@ function isAllowedPhotoUrl(url: string) {
 }
 
 export async function POST(request: Request) {
+  try {
   // Rate limit: 5 registrations per hour per IP
   const ip = getClientIp(request);
-  if (isRateLimited(`register:${ip}`, 5, 60 * 60 * 1000)) {
+  if (await isRateLimited(`register:${ip}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many registration attempts. Please try again later." },
       { status: 429 }
@@ -47,39 +49,25 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as RegisterPayload;
 
-  const fullName = body.fullName?.trim() ?? "";
-  const email = body.email?.trim().toLowerCase() ?? "";
-  const phone = body.phone?.trim() ?? "";
-  const password = body.password ?? "";
+  const fullName = sanitizeString(body.fullName, VALIDATION.MAX_NAME_LENGTH) ?? "";
+  const email = sanitizeString(body.email, VALIDATION.MAX_EMAIL_LENGTH)?.toLowerCase() ?? "";
+  const phone = sanitizeString(body.phone, VALIDATION.MAX_PHONE_LENGTH) ?? "";
+  const password = typeof body.password === "string" ? body.password : "";
 
   if (!fullName || !email || !phone || !password || !body.gender?.trim()) {
-    return NextResponse.json(
-      { error: "Full name, email, phone, password, and gender are required." },
-      { status: 400 }
-    );
+    return badRequest("Full name, email, phone, password, and gender are required.");
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return NextResponse.json(
-      { error: "Please enter a valid email address." },
-      { status: 400 }
-    );
+  if (!isValidEmail(email)) {
+    return badRequest("Please provide a valid email address.");
   }
 
-  const phoneRegex = /^(?:\+91|0)?[6-9]\d{9}$/;
-  if (!phoneRegex.test(phone.replace(/\s+/g, ""))) {
-    return NextResponse.json(
-      { error: "Enter a valid 10-digit Indian mobile number (e.g. 9876543210)." },
-      { status: 400 }
-    );
+  if (!isValidPhone(phone)) {
+    return badRequest("Enter a valid 10-digit Indian mobile number (e.g. 9876543210).");
   }
 
-  if (password.length < 8) {
-    return NextResponse.json(
-      { error: "Password must be at least 8 characters." },
-      { status: 400 }
-    );
+  if (!isValidPassword(password)) {
+    return badRequest("Password must be at least 8 characters.");
   }
 
   if (!body.termsAccepted) {
@@ -163,4 +151,11 @@ export async function POST(request: Request) {
   // not at registration time — avoids duplicate emails on first login.
 
   return NextResponse.json({ user }, { status: 201 });
+  } catch (error) {
+    console.error("Route error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
+    );
+  }
 }

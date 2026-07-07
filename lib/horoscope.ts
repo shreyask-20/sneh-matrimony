@@ -50,7 +50,3 @@ export function normalizeHoroscopeChartInput(value: unknown): HoroscopeChart | n
   return hasAnyValue ? chart : null;
 }
 
-export function formatHoroscopeChartJson(value: unknown) {
-  const normalized = normalizeHoroscopeChartInput(value) ?? emptyHoroscopeChart;
-  return JSON.stringify(normalized, null, 2);
-}

@@ -6,6 +6,7 @@ import Navbar from "../../components/shared/Navbar";
 import Badge from "../../components/shared/Badge";
 import Button from "../../components/shared/Button";
 import BackButton from "../../components/shared/BackButton";
+import AgeDisplay from "../../components/shared/AgeDisplay";
 import ProfileTabs from "../../components/profile/ProfileTabs";
 import ProfileGallery from "../../components/profile/ProfileGallery";
 import { authOptions } from "@/auth";
@@ -107,9 +108,6 @@ export default async function ProfilePage() {
   const fullName =
     user.name ??
     (`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Your profile");
-  const age = user.birthDate
-    ? Math.max(0, Math.floor((Date.now() - user.birthDate.getTime()) / 31557600000))
-    : null;
   const photos = user.photos.length > 0 ? user.photos : [{ url: "/profiles/p1.jpg", status: "APPROVED" as const }];
   const familySummary = user.familyDetails
     ? `Father: ${user.familyDetails.fatherName}, Mother: ${user.familyDetails.motherName}. Siblings: ${user.familyDetails.totalBrothers} brother(s), ${user.familyDetails.totalSisters} sister(s).`
@@ -201,7 +199,7 @@ export default async function ProfilePage() {
               <div className="min-w-0">
                 <h1 className="break-words font-serif text-2xl text-slate-900 dark:text-white sm:text-3xl">
                   {fullName}
-                  {age ? `, ${age}` : ""}
+                  {user.birthDate ? <>, <AgeDisplay birthDate={user.birthDate} /></> : ""}
                 </h1>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                   {[user.profession, user.city, user.height, user.religion]

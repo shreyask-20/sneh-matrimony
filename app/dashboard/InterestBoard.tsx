@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import Button from "@/components/shared/Button";
+import Toast from "@/components/shared/Toast";
 
 type InterestItem = {
   id: number;
@@ -124,6 +125,7 @@ export default function InterestBoard({ received, sent }: Props) {
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [showAllSent, setShowAllSent] = useState(false);
   const [showAllReceived, setShowAllReceived] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const featuredReceived = receivedItems[0] ?? null;
   const remainingReceived = featuredReceived
     ? receivedItems.slice(1)
@@ -169,7 +171,7 @@ export default function InterestBoard({ received, sent }: Props) {
 
       router.refresh();
     } catch (error) {
-      window.alert(
+      setToastMessage(
         error instanceof Error ? error.message : "Failed to update interest."
       );
     } finally {
@@ -181,6 +183,7 @@ export default function InterestBoard({ received, sent }: Props) {
 
   return (
     <div className="space-y-6">
+      {toastMessage && <Toast message={toastMessage} />}
       {featuredReceived ? (
         <div className="self-start rounded-3xl border border-brand-200/80 bg-brand-50/80 p-4 shadow-[0_18px_36px_rgba(127,16,62,0.10)] dark:border-white/15 dark:bg-white/[0.08] sm:p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-500">

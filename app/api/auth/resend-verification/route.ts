@@ -7,9 +7,10 @@ import crypto from "node:crypto";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  try {
   // Rate limit: 3 resend attempts per 15 minutes per IP
   const ip = getClientIp(request);
-  if (isRateLimited(`resend-otp:${ip}`, 3, 15 * 60 * 1000)) {
+  if (await isRateLimited(`resend-otp:${ip}`, 3, 15 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many requests. Please wait before requesting another code." },
       { status: 429 }
@@ -57,4 +58,11 @@ export async function POST(request: NextRequest) {
   await sendVerificationEmail(user.email, otp);
 
   return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Route error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
+    );
+  }
 }

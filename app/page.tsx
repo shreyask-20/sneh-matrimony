@@ -6,7 +6,6 @@ import About from "../components/landing/About";
 import Testimonials from "../components/landing/Testimonials";
 import Subscriptions from "../components/landing/Subscriptions";
 import Navbar from "../components/shared/Navbar";
-import Toast from "../components/shared/Toast";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -60,7 +59,7 @@ export default async function HomePage() {
         <Testimonials />
         <Subscriptions />
       </main>
-      <Toast message="You have 4 new curated matches today." />
+
     </div>
   );
 }

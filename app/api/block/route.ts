@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString, badRequest } from "@/lib/validation";
+import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 async function requireUser(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -24,63 +26,87 @@ export async function GET(request: NextRequest) {
 
 // POST /api/block — block a user
 export async function POST(request: NextRequest) {
-  const userId = await requireUser(request);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const ip = getClientIp(request);
+    if (await isRateLimited(`block:${ip}`, 20, 15 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait before trying again." },
+        { status: 429 }
+      );
+    }
 
-  const blocker = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { isApproved: true },
-  });
+    const userId = await requireUser(request);
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!blocker?.isApproved) {
+    const blocker = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isApproved: true },
+    });
+
+    if (!blocker?.isApproved) {
+      return NextResponse.json(
+        { error: "Your account is pending admin approval." },
+        { status: 403 }
+      );
+    }
+
+    const body = (await request.json()) as { blockedUserId?: string; reason?: string };
+    const blockedUserId = sanitizeString(body.blockedUserId);
+
+    if (!blockedUserId) {
+      return badRequest("blockedUserId is required");
+    }
+
+    if (blockedUserId === userId) {
+      return NextResponse.json({ error: "Cannot block yourself" }, { status: 400 });
+    }
+
+    const target = await prisma.user.findUnique({
+      where: { id: blockedUserId },
+      select: { id: true },
+    });
+
+    if (!target) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const block = await prisma.block.upsert({
+      where: { blockerId_blockedUserId: { blockerId: userId, blockedUserId } },
+      create: { blockerId: userId, blockedUserId, reason: body.reason ?? null },
+      update: {},
+    });
+
+    return NextResponse.json({ block }, { status: 201 });
+  } catch (error) {
+    console.error("Route error:", error);
     return NextResponse.json(
-      { error: "Your account is pending admin approval." },
-      { status: 403 }
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
     );
   }
-
-  const body = (await request.json()) as { blockedUserId?: string; reason?: string };
-  const blockedUserId = body.blockedUserId?.trim();
-
-  if (!blockedUserId) {
-    return NextResponse.json({ error: "blockedUserId is required" }, { status: 400 });
-  }
-
-  if (blockedUserId === userId) {
-    return NextResponse.json({ error: "Cannot block yourself" }, { status: 400 });
-  }
-
-  const target = await prisma.user.findUnique({
-    where: { id: blockedUserId },
-    select: { id: true },
-  });
-
-  if (!target) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
-  const block = await prisma.block.upsert({
-    where: { blockerId_blockedUserId: { blockerId: userId, blockedUserId } },
-    create: { blockerId: userId, blockedUserId, reason: body.reason ?? null },
-    update: {},
-  });
-
-  return NextResponse.json({ block }, { status: 201 });
 }
 
 // DELETE /api/block?blockedUserId=xxx — unblock a user
 export async function DELETE(request: NextRequest) {
-  const userId = await requireUser(request);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const userId = await requireUser(request);
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { searchParams } = new URL(request.url);
-  const blockedUserId = searchParams.get("blockedUserId");
+    const { searchParams } = new URL(request.url);
+    const blockedUserId = searchParams.get("blockedUserId");
 
-  if (!blockedUserId) {
-    return NextResponse.json({ error: "blockedUserId is required" }, { status: 400 });
+    if (!blockedUserId) {
+      return NextResponse.json({ error: "blockedUserId is required" }, { status: 400 });
+    }
+
+    await prisma.block.deleteMany({ where: { blockerId: userId, blockedUserId } });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Route error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
+    );
   }
-
-  await prisma.block.deleteMany({ where: { blockerId: userId, blockedUserId } });
-
-  return NextResponse.json({ ok: true });
 }

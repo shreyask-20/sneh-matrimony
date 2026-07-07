@@ -5,8 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  try {
   const ip = getClientIp(request);
-  if (isRateLimited(`reset-password:${ip}`, 5, 15 * 60 * 1000)) {
+  if (await isRateLimited(`reset-password:${ip}`, 5, 15 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many attempts. Please wait before trying again." },
       { status: 429 }
@@ -61,4 +62,11 @@ export async function POST(request: NextRequest) {
   ]);
 
   return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Route error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
+    );
+  }
 }

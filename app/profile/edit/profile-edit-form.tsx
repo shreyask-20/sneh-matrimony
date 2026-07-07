@@ -168,6 +168,8 @@ export default function ProfileEditForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const previewChart = includeHoroscope
     ? normalizeHoroscopeChartInput(chartValues)
     : null;
@@ -220,23 +222,11 @@ export default function ProfileEditForm({
     }
     const currentPhotos = newPhotos;
     const next = [...currentPhotos, ...valid];
-    if (next.length === 0 && next.length > 0) {
-      setPrimaryPhotoIndex(0);
-    }
     if (next.length > 0 && next.length + existingPhotos.length > MAX_PHOTOS) {
       setPhotoError(`You can only have up to ${MAX_PHOTOS} photos total.`);
       return;
     }
     setNewPhotos(next);
-  };
-
-  const setPhotos = (photos: File[]) => {
-    if (photos.length > 0 && photos.length + existingPhotos.length > MAX_PHOTOS) {
-      setPhotoError(`You can only have up to ${MAX_PHOTOS} photos total.`);
-      return;
-    }
-    setNewPhotos(photos);
-    setPhotoError(null);
   };
 
   const removeNewPhoto = (index: number) => {
@@ -386,6 +376,24 @@ export default function ProfileEditForm({
           // Continue even if unset fails
         }
       }
+    }
+  };
+
+  const handleDeleteRequest = async () => {
+    setDeleteLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/profile/delete-request", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to request deletion.");
+        return;
+      }
+      router.push("/revive-account");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -1122,6 +1130,69 @@ export default function ProfileEditForm({
                 ? "Saving..."
                 : "Save changes"}
             </Button>
+
+            {/* ── Delete Account Section ──────────────────────────────────────── */}
+            <div className="mt-10 border-t border-rose-200 pt-6 dark:border-rose-800/30">
+              {showDeleteConfirm ? (
+                <div className="space-y-4 rounded-2xl border border-red-300 bg-red-50/80 p-5 dark:border-red-700/30 dark:bg-red-900/10">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-lg dark:bg-red-900/30">
+                      ⚠
+                    </span>
+                    <div>
+                      <p className="font-semibold text-red-800 dark:text-red-200">
+                        Are you sure you want to delete your account?
+                      </p>
+                      <p className="mt-1 text-sm text-red-700 dark:text-red-300">
+                        Your profile will be hidden immediately and permanently deleted
+                        after 5 days. You can log back in during the grace period to
+                        revive your account.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1"
+                    >
+                      Keep Account
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleDeleteRequest}
+                      disabled={deleteLoading}
+                      className="flex-1 border-red-300 bg-red-600 text-white hover:bg-red-700 dark:border-red-700"
+                    >
+                      {deleteLoading ? "Processing..." : "Delete My Account"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-red-500 transition hover:border-red-200 hover:bg-red-50 dark:text-red-400 dark:hover:border-red-800/30 dark:hover:bg-red-900/10"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                    />
+                  </svg>
+                  Delete Account
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </main>

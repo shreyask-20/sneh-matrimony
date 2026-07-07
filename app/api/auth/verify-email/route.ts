@@ -3,11 +3,12 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import crypto from "node:crypto";
 
 export async function POST(request: NextRequest) {
   // Rate limit: 10 attempts per 15 minutes per IP — prevents OTP brute force
   const ip = getClientIp(request);
-  if (isRateLimited(`verify-otp:${ip}`, 10, 15 * 60 * 1000)) {
+  if (await isRateLimited(`verify-otp:${ip}`, 10, 15 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many attempts. Please wait before trying again." },
       { status: 429 }
@@ -23,11 +24,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json() as { otp?: string };
+  const body = (await request.json()) as { otp?: string };
   const otp = body.otp?.trim();
 
   if (!otp || !/^\d{5}$/.test(otp)) {
-    return NextResponse.json({ error: "Please enter a valid 5-digit code." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Please enter a valid 5-digit code." },
+      { status: 400 }
+    );
   }
 
   const user = await prisma.user.findUnique({
@@ -40,7 +44,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (user.emailVerified) {
-    return NextResponse.json({ error: "Email is already verified." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Email is already verified." },
+      { status: 400 }
+    );
   }
 
   const record = await prisma.verificationToken.findFirst({
@@ -48,16 +55,30 @@ export async function POST(request: NextRequest) {
   });
 
   if (!record) {
-    return NextResponse.json({ error: "No verification code found. Please request a new one." }, { status: 400 });
+    return NextResponse.json(
+      { error: "No verification code found. Please request a new one." },
+      { status: 400 }
+    );
   }
 
   if (record.expires < new Date()) {
-    await prisma.verificationToken.deleteMany({ where: { identifier: user.email } });
-    return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: user.email },
+    });
+    return NextResponse.json(
+      { error: "Code has expired. Please request a new one." },
+      { status: 400 }
+    );
   }
 
-  if (record.token !== otp) {
-    return NextResponse.json({ error: "Incorrect code. Please try again." }, { status: 400 });
+  // Timing-safe comparison to prevent OTP brute-force via timing side-channel
+  const expectedBuf = Buffer.from(record.token, "utf8");
+  const otpBuf = Buffer.from(otp, "utf8");
+  if (expectedBuf.length !== otpBuf.length || !crypto.timingSafeEqual(expectedBuf, otpBuf)) {
+    return NextResponse.json(
+      { error: "Incorrect code. Please try again." },
+      { status: 400 }
+    );
   }
 
   // Mark email as verified
@@ -67,7 +88,9 @@ export async function POST(request: NextRequest) {
   });
 
   // Clean up the OTP
-  await prisma.verificationToken.deleteMany({ where: { identifier: user.email } });
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: user.email },
+  });
 
   return NextResponse.json({ ok: true });
 }

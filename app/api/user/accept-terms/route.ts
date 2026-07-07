@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/auth";
 
 export async function POST() {
+  try {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -19,4 +20,11 @@ export async function POST() {
   });
 
   return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Route error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
+    );
+  }
 }

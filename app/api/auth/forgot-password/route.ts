@@ -6,8 +6,9 @@ import crypto from "node:crypto";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  try {
   const ip = getClientIp(request);
-  if (isRateLimited(`forgot-password:${ip}`, 3, 15 * 60 * 1000)) {
+  if (await isRateLimited(`forgot-password:${ip}`, 3, 15 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many requests. Please wait before trying again." },
       { status: 429 }
@@ -49,4 +50,11 @@ export async function POST(request: NextRequest) {
   await sendPasswordResetEmail(user.email, otp);
 
   return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Route error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred. Please try again." },
+      { status: 500 }
+    );
+  }
 }

@@ -226,10 +226,10 @@ export default function Navbar({
                     className={`h-9 px-4 ${loginButtonClass}`}
                     asChild
                   >
-                    <a href="/auth/login">Log in</a>
+                    <a href="/login">Log in</a>
                   </AnimatedGradientButton>
                   <Button asChild>
-                    <a href="/auth/register">Create Profile</a>
+                    <a href="/register">Create Profile</a>
                   </Button>
                 </>
               ) : null}

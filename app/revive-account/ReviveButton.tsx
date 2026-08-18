@@ -26,7 +26,7 @@ export default function ReviveButton({
         setError(data.error ?? "Failed to revive account.");
         return;
       }
-      signOut({ callbackUrl: "/auth/login" });
+      signOut({ callbackUrl: "/login" });
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -49,7 +49,7 @@ export default function ReviveButton({
         </Button>
         <Button
           variant="ghost"
-          onClick={() => signOut({ callbackUrl: "/auth/login" })}
+          onClick={() => signOut({ callbackUrl: "/login" })}
         >
           Sign Out
         </Button>

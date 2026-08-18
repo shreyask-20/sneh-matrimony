@@ -72,7 +72,7 @@ export default function SubscriptionOverlay({ userName }: SubscriptionOverlayPro
       setLoading(plan);
 
       if (status !== "authenticated") {
-        router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+        router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
         return;
       }
 

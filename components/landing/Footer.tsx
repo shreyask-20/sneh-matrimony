@@ -30,7 +30,7 @@ export default function Footer() {
         <div className="space-y-3">
           <p className="font-semibold text-slate-700 dark:text-slate-200">Trust</p>
           <ul className="space-y-2">
-            <li><a href="/auth/register" className="transition-colors hover:text-brand-600">Privacy-first</a></li>
+            <li><a href="/register" className="transition-colors hover:text-brand-600">Privacy-first</a></li>
             <li><a href="/browse" className="transition-colors hover:text-brand-600">Verified profiles</a></li>
             <li><a href="/chat" className="transition-colors hover:text-brand-600">Secure chat</a></li>
           </ul>

@@ -47,7 +47,7 @@ export default async function DashboardPage({
               Your matches and profile status will appear here after login.
             </p>
             <Link
-              href="/auth/login"
+              href="/login"
               className="mt-6 inline-flex rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white"
             >
               Sign in

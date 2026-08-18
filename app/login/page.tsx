@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { getSession, signIn } from "next-auth/react";
 import { Eye, EyeOff, Loader2, Sparkles, ShieldCheck, Heart, Users } from "lucide-react";
-import Button from "../../../components/shared/Button";
-import Navbar from "../../../components/shared/Navbar";
-import PageBackdrop from "../../../components/shared/PageBackdrop";
+import Button from "../../components/shared/Button";
+import Navbar from "../../components/shared/Navbar";
+import PageBackdrop from "../../components/shared/PageBackdrop";
 
 const trustPoints = [
   { icon: ShieldCheck, text: "Verified profiles only" },
@@ -186,7 +186,7 @@ export default function LoginPage() {
                   </div>
                   <div className="mt-1 text-right">
                     <a
-                      href="/auth/forgot-password"
+                      href="/forgot-password"
                       className="text-xs text-slate-400 transition hover:text-brand-600"
                     >
                       Forgot password?
@@ -217,7 +217,7 @@ export default function LoginPage() {
               </div>
 
               <a
-                href="/auth/register"
+                href="/register"
                 className="mt-4 flex w-full items-center justify-center rounded-2xl border border-brand-200 bg-brand-50/60 px-4 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-100/60 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-300 dark:hover:bg-brand-500/20"
               >
                 Create a profile

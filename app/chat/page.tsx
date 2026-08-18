@@ -28,7 +28,7 @@ export default async function ChatPage({
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    redirect("/auth/login");
+    redirect("/login");
   }
   if (session.user.roleName === "ADMIN") {
     redirect("/admin");

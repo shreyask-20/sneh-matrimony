@@ -51,7 +51,7 @@ export default function Hero({ isAuthenticated = false }: HeroProps) {
           </p>
           <div className="flex flex-wrap gap-3">
             <Button size="lg" asChild>
-              <Link href={isAuthenticated ? "/profile" : "/auth/register"}>
+              <Link href={isAuthenticated ? "/profile" : "/register"}>
                 {isAuthenticated ? "View Profile" : "Create Profile"}
               </Link>
             </Button>

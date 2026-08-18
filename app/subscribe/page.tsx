@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: "Membership Plans",
   description:
     "Choose a Sneh Matrimony membership plan to unlock premium features, unlimited messaging, and curated matchmaking.",
+  robots: { index: false, follow: false },
 };
 
 export default async function SubscribePage({

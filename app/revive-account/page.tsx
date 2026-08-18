@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
@@ -5,6 +6,13 @@ import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/shared/Navbar";
 import PageBackdrop from "@/components/shared/PageBackdrop";
 import ReviveButton from "./ReviveButton";
+
+export const metadata: Metadata = {
+  title: "Revive Account",
+  description:
+    "Cancel your pending account deletion and reactivate your Sneh Matrimony profile.",
+  robots: { index: false, follow: false },
+};
 
 export default async function ReviveAccountPage() {
   const session = await getServerSession(authOptions);

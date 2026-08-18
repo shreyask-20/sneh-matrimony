@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Loader2, ArrowLeft, Mail } from "lucide-react";
-import Button from "../../../components/shared/Button";
-import Navbar from "../../../components/shared/Navbar";
-import PageBackdrop from "../../../components/shared/PageBackdrop";
+import Button from "../../components/shared/Button";
+import Navbar from "../../components/shared/Navbar";
+import PageBackdrop from "../../components/shared/PageBackdrop";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
                 we've sent a 5-digit code to reset your password. It expires in 15 minutes.
               </p>
               <a
-                href={`/auth/reset-password?email=${encodeURIComponent(email)}`}
+                href={`/reset-password?email=${encodeURIComponent(email)}`}
                 className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
               >
                 Enter code
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md">
           <div className="rounded-3xl bg-white p-8 shadow-[0_32px_64px_rgba(127,16,62,0.12)] dark:bg-slate-900">
             <a
-              href="/auth/login"
+              href="/login"
               className="mb-6 inline-flex items-center gap-1.5 text-xs text-slate-400 transition hover:text-brand-600"
             >
               <ArrowLeft className="h-3.5 w-3.5" />

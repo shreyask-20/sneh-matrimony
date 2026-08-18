@@ -44,7 +44,7 @@ export default function InterestActionButton({
 
   const handleClick = async () => {
     if (!signedIn) {
-      router.push("/auth/login");
+      router.push("/login");
       return;
     }
 

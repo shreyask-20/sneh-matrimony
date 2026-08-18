@@ -69,7 +69,7 @@ export default function CheckoutButton({
     setError(null);
 
     if (status !== "authenticated") {
-      router.push(`/auth/login?callbackUrl=${encodeURIComponent(`/subscribe?plan=${plan}`)}`);
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/subscribe?plan=${plan}`)}`);
       return;
     }
 

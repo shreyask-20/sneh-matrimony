@@ -105,7 +105,7 @@ export default function SuccessStoriesPage() {
           partnership.
         </p>
         <Link
-          href="/auth/register"
+          href="/register"
           className="mt-6 inline-flex rounded-2xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
         >
           Get started

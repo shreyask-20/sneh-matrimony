@@ -18,6 +18,15 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24, // 24 hours for profile images
   },
+  async redirects() {
+    return [
+      { source: "/auth/login", destination: "/login", permanent: true },
+      { source: "/auth/register", destination: "/register", permanent: true },
+      { source: "/auth/forgot-password", destination: "/forgot-password", permanent: true },
+      { source: "/auth/reset-password", destination: "/reset-password", permanent: true },
+      { source: "/auth/verify-email", destination: "/verify-email", permanent: true },
+    ];
+  },
   headers: async () => [
     {
       source: "/(.*)",

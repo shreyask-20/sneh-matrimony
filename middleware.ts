@@ -13,17 +13,17 @@ const PROTECTED_PATHS = [
 
 const TERMS_EXEMPT_PATHS = [
   "/terms",
-  "/auth/login",
-  "/auth/register",
-  "/auth/forgot-password",
-  "/auth/reset-password",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
   "/revive-account",
 ];
 
 const DELETION_EXEMPT_PATHS = [
   "/revive-account",
   "/terms",
-  "/auth/login",
+  "/login",
   "/api/profile/cancel-deletion",
 ];
 
@@ -79,7 +79,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isProtected && !token) {
-    const loginUrl = new URL("/auth/login", request.url);
+    const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }

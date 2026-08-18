@@ -583,7 +583,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => signOut({ callbackUrl: "/auth/login" })}
+                  onClick={() => signOut({ callbackUrl: "/login" })}
                 >
                   Sign out
                 </Button>

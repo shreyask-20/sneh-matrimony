@@ -9,7 +9,7 @@ import ReviveButton from "./ReviveButton";
 export default async function ReviveAccountPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect("/auth/login");
+    redirect("/login");
   }
 
   const user = await prisma.user.findUnique({

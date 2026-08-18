@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff, User, Briefcase, Heart, Camera, CheckCircle2 } from "lucide-react";
-import Button from "../../../components/shared/Button";
-import Navbar from "../../../components/shared/Navbar";
-import PageBackdrop from "../../../components/shared/PageBackdrop";
-import TermsModal from "../../../components/terms/TermsModal";
+import Button from "../../components/shared/Button";
+import Navbar from "../../components/shared/Navbar";
+import PageBackdrop from "../../components/shared/PageBackdrop";
+import TermsModal from "../../components/terms/TermsModal";
 
 const steps = [
   { label: "Basic info", icon: User },
@@ -311,7 +311,7 @@ export default function RegisterPage() {
     });
 
     if (signInResult?.error) {
-      router.push("/auth/login");
+      router.push("/login");
       return;
     }
 

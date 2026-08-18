@@ -18,7 +18,7 @@ export default function VerifyEmailBanner() {
       // best-effort — navigate regardless
     } finally {
       setLoading(false);
-      router.push("/auth/verify-email");
+      router.push("/verify-email");
     }
   };
 

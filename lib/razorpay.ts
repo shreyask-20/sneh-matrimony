@@ -34,9 +34,12 @@ export function getRazorpayClient(): Razorpay {
 }
 
 export function getRazorpayKeyId(): string {
-  return (
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? process.env.RAZORPAY_KEY_ID ?? ""
-  );
+  // The checkout key MUST be the same key that was used to create the order
+  // server-side (RAZORPAY_KEY_ID). Razorpay returns a 401 ("The id provided does
+  // not exist") when the order_id and the checkout key come from different keys.
+  // The key is delivered to the browser via the create-order API, so a separate
+  // NEXT_PUBLIC_ key is neither needed nor safe (it can drift out of sync).
+  return process.env.RAZORPAY_KEY_ID ?? "";
 }
 
 export function verifyPaymentSignature(

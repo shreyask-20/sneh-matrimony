@@ -99,6 +99,9 @@ export default function SubscriptionOverlay({ userName }: SubscriptionOverlayPro
         };
 
         if (!orderRes.ok || !orderData.orderId || !orderData.keyId) {
+          if (orderRes.status === 401) {
+            throw new Error("Your session has expired. Please sign in again.");
+          }
           throw new Error(orderData.error ?? "Could not start checkout");
         }
 
@@ -157,7 +160,7 @@ export default function SubscriptionOverlay({ userName }: SubscriptionOverlayPro
         setError(
           checkoutError instanceof Error
             ? checkoutError.message
-            : "Unable to start checkout"
+            : "We couldn't reach the payment service. Please try again."
         );
         setLoading(null);
       }

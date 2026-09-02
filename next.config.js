@@ -63,7 +63,7 @@ const nextConfig = {
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: blob: https://res.cloudinary.com https://lh3.googleusercontent.com",
-            "connect-src 'self' https://api.razorpay.com https://*.upstash.io wss: ws:",
+            "connect-src 'self' https://api.cloudinary.com https://api.razorpay.com https://*.upstash.io wss: ws:",
             "frame-src https://api.razorpay.com https://checkout.razorpay.com",
             "object-src 'none'",
             "base-uri 'self'",

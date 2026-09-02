@@ -1,6 +1,19 @@
 import Razorpay from "razorpay";
 import crypto from "node:crypto";
 
+/**
+ * Constant-time signature comparison that never throws.
+ * `crypto.timingSafeEqual` throws when buffers differ in length, so a
+ * malformed/short signature must be treated as invalid (false) rather than
+ * bubbling up as a 500 error.
+ */
+function safeTimingSafeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "hex");
+  const bufB = Buffer.from(b, "hex");
+  if (bufA.length !== bufB.length || bufA.length === 0) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 let razorpayClient: Razorpay | null = null;
 
 export function getRazorpayClient(): Razorpay {
@@ -40,10 +53,7 @@ export function verifyPaymentSignature(
     .createHmac("sha256", secret)
     .update(payload)
     .digest("hex");
-  return crypto.timingSafeEqual(
-    Buffer.from(expected, "hex"),
-    Buffer.from(signature, "hex")
-  );
+  return safeTimingSafeEqual(expected, signature);
 }
 
 export function verifyWebhookSignature(
@@ -60,8 +70,5 @@ export function verifyWebhookSignature(
     .createHmac("sha256", secret)
     .update(body)
     .digest("hex");
-  return crypto.timingSafeEqual(
-    Buffer.from(expected, "hex"),
-    Buffer.from(signature, "hex")
-  );
+  return safeTimingSafeEqual(expected, signature);
 }

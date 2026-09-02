@@ -36,6 +36,35 @@ export async function POST(request: NextRequest) {
     const amountPaise = getPayableAmountPaise(plan);
     const receipt = `s_${userId.slice(-8)}_${plan}_${Date.now().toString().slice(-8)}`;
 
+    // Idempotency: re-use an unconsumed CREATED order for the same user+plan
+    // rather than creating duplicate/orphaned Razorpay orders on client retries.
+    const existingCreated = await prisma.payment.findFirst({
+      where: { userId, plan: planKeyToEnum(plan), status: "CREATED" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, amountPaise: true, razorpayOrderId: true },
+    });
+    if (existingCreated && existingCreated.amountPaise === amountPaise) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, phone: true, firstName: true, lastName: true, name: true },
+      });
+      const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
+      const displayName = user?.name ?? (fullName || undefined);
+      return NextResponse.json({
+        orderId: existingCreated.razorpayOrderId,
+        amount: amountPaise,
+        currency: "INR",
+        keyId: getRazorpayKeyId(),
+        plan,
+        planName: planConfig.name,
+        prefill: {
+          name: displayName,
+          email: user?.email ?? undefined,
+          contact: user?.phone ?? undefined,
+        },
+      });
+    }
+
     const razorpay = getRazorpayClient();
     const order = await razorpay.orders.create({
       amount: amountPaise,
@@ -81,9 +110,28 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Route error:", error);
+    console.error("create-order error:", error);
+
+    // Missing/invalid Razorpay credentials — a configuration outage, not a user fault.
+    const message = error instanceof Error ? error.message : "";
+    if (/razorpay credentials not found/i.test(message)) {
+      return NextResponse.json(
+        { error: "Online payments are temporarily unavailable. Please try again shortly." },
+        { status: 503 }
+      );
+    }
+
+    // Razorpay API / downstream failure (e.g. order creation rejected or gateway down).
+    if (error && typeof error === "object" && "statusCode" in error) {
+      return NextResponse.json(
+        { error: "We couldn't start your payment. Please try again in a moment." },
+        { status: 503 }
+      );
+    }
+
+    // Generic fallback — specific enough to guide a retry, never leaks internals.
     return NextResponse.json(
-      { error: "An unexpected error occurred. Please try again." },
+      { error: "We couldn't start your checkout. Please try again." },
       { status: 500 }
     );
   }

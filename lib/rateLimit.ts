@@ -32,6 +32,12 @@ export async function isRateLimited(
   limit: number,
   windowMs: number
 ): Promise<boolean> {
+  // Explicit test/development hook — when set, rate limiting is bypassed so
+  // integration suites are not throttled by the distributed limiter. This
+  // never applies unless the operator opts in via the environment.
+  if (process.env.DISABLE_RATE_LIMIT === "1") {
+    return false;
+  }
   try {
     const ratelimit = getRatelimit(limit, windowMs);
     const { success } = await ratelimit.limit(key);

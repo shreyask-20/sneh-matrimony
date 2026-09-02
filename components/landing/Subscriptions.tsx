@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 const planHighlights = [
-  { name: "Silver", price: "₹1,500", perks: "150 profiles, who viewed (5), unlimited interests, 10 msgs/profile" },
-  { name: "Gold", price: "₹2,250", perks: "60 profiles, unlimited interests, 5 msgs/profile" },
+  { name: "Silver", price: "₹1,500", perks: "60 profiles, unlimited interests, 5 msgs/profile" },
+  { name: "Gold", price: "₹2,250", perks: "150 profiles, who viewed (5), unlimited interests, 10 msgs/profile" },
   { name: "Platinum", price: "₹3,000", perks: "Unlimited profiles, who viewed, 20 msgs, featured profile" },
 ];
 

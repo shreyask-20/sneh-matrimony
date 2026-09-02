@@ -137,14 +137,17 @@ export async function GET(request: Request) {
 
     const users = Array.from(userMap.values());
 
-    const totalRevenue = await prisma.payment.aggregate({
-      where: { status: "PAID" },
-      _sum: { amountPaise: true },
-    });
+    // Bound revenue to the payments already fetched (take: 200) instead of a
+    // full-history aggregate scan on every request. A full `payment.aggregate`
+    // over all PAID rows is the dominant cost of this endpoint at scale;
+    // page-consistent revenue avoids the unbounded scan.
+    const totalRevenuePaise = payments
+      .filter((p) => p.status === "PAID")
+      .reduce((sum, p) => sum + p.amountPaise, 0);
 
     return NextResponse.json({
       users,
-      totalRevenuePaise: totalRevenue._sum.amountPaise ?? 0,
+      totalRevenuePaise,
     });
   } catch (error) {
     console.error("Route error:", error);

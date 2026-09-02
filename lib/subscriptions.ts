@@ -12,10 +12,9 @@ export const PLANS = {
     // TEMP: ₹2 payable for live payment testing (266 * 0.75 = 200 paise). Revert to 200_000 after testing.
     listPricePaise: 266,
     perks: [
-      "View 150 profiles",
-      "Who viewed your profile — 5",
+      "View 60 profiles",
       "Express Interest — Unlimited",
-      "10 messages per profile",
+      "5 messages per profile",
     ],
     highlight: false,
   },
@@ -25,9 +24,10 @@ export const PLANS = {
     // TEMP: ₹2 payable for live payment testing (266 * 0.75 = 200 paise). Revert to 300_000 after testing.
     listPricePaise: 266,
     perks: [
-      "View 60 profiles",
+      "View 150 profiles",
+      "Who viewed your profile — 5",
       "Express Interest — Unlimited",
-      "5 messages per profile",
+      "10 messages per profile",
     ],
     highlight: false,
   },

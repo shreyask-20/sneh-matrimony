@@ -64,6 +64,11 @@ export async function GET(request: Request) {
     const city     = searchParams.get("city")?.trim() || null;
     const religion = searchParams.get("religion")?.trim() || null;
 
+    // Pagination — bounds every query so the admin list can't do unbounded reads.
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const perPage = Math.min(100, Math.max(1, Number(searchParams.get("perPage")) || 50));
+    const skip = (page - 1) * perPage;
+
     // Build search conditions
     const searchConditions = search
       ? {
@@ -95,16 +100,20 @@ export async function GET(request: Request) {
         },
         select: USER_SELECT,
         orderBy: { deletedAt: "desc" },
+        skip,
+        take: perPage,
       });
       return NextResponse.json({ users });
     }
 
     // Pending queue — unapproved users with no rejection/block log
     if (status === "pending") {
+      // Bound the rejected/blocked id lookup so it can't scan the entire log.
       const rejectedUsers = await prisma.approvalLog.findMany({
         where: { decision: { in: ["REJECTED", "BLOCKED"] } },
         select: { userId: true },
         distinct: ["userId"],
+        take: 1000,
       });
       const rejectedUserIds = rejectedUsers.map((log) => log.userId);
 
@@ -119,6 +128,8 @@ export async function GET(request: Request) {
         },
         select: USER_SELECT,
         orderBy: { createdAt: "desc" },
+        skip,
+        take: perPage,
       });
       return NextResponse.json({ users });
     }
@@ -132,6 +143,8 @@ export async function GET(request: Request) {
       },
       select: USER_SELECT,
       orderBy: { createdAt: "desc" },
+      skip,
+      take: perPage,
     });
 
     return NextResponse.json({ users });

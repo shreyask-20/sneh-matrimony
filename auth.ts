@@ -7,6 +7,14 @@ const useSecureCookies =
   process.env.NODE_ENV === "production" ||
   process.env.NEXTAUTH_URL?.startsWith("https://") === true;
 
+// How often the JWT callback re-checks deletionRequestedAt from the DB
+// (configurable). A short window is a DB read on every authenticated request,
+// which is the single largest per-request bottleneck under load. 60s keeps the
+// deletion gate fresh enough for redirects while cutting DB hits ~12x.
+const JWT_DELETION_REFRESH_MS = Number(
+  process.env.JWT_DELETION_REFRESH_MS ?? 60_000
+);
+
 // ── In-memory brute-force protection for login attempts ───────────────────────
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_LOGIN_ATTEMPTS = 10;
@@ -131,7 +139,7 @@ export const authOptions: NextAuthOptions = {
         // Refresh deletionRequestedAt from DB every 5 seconds
         const now = Date.now();
         const lastCheck = token._lastDeletionCheck as number | undefined;
-        if (!lastCheck || now - lastCheck > 5_000) {
+        if (!lastCheck || now - lastCheck > JWT_DELETION_REFRESH_MS) {
           try {
             const { prisma } = await import("@/lib/prisma");
             const dbUser = await prisma.user.findUnique({

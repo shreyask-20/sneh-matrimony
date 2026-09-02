@@ -61,8 +61,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Cannot block yourself" }, { status: 400 });
     }
 
-    const target = await prisma.user.findUnique({
-      where: { id: blockedUserId },
+    // Only allow blocking active, non-admin members (cannot block admins).
+    const target = await prisma.user.findFirst({
+      where: { id: blockedUserId, roleName: "USER", deletedAt: null },
       select: { id: true },
     });
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     const block = await prisma.block.upsert({
       where: { blockerId_blockedUserId: { blockerId: userId, blockedUserId } },
-      create: { blockerId: userId, blockedUserId, reason: body.reason ?? null },
+      create: { blockerId: userId, blockedUserId, reason: sanitizeString(body.reason, 500) },
       update: {},
     });
 

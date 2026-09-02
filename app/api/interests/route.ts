@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeConversationPair } from "@/lib/matchmaking";
-import { sanitizeString, badRequest } from "@/lib/validation";
+import { sanitizeString, VALIDATION, badRequest } from "@/lib/validation";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 
 type CreateInterestPayload = {
@@ -17,12 +17,20 @@ async function requireUser() {
   return session.user.id;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const userId = await requireUser();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Bound each list so a large interest history can't be returned in one
+    // response. Default 100, capped at 200 per list.
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(
+      200,
+      Math.max(1, Number(searchParams.get("limit")) || 100)
+    );
 
     const [received, sent, accepted] = await Promise.all([
       prisma.interest.findMany({
@@ -44,6 +52,7 @@ export async function GET() {
           },
         },
         orderBy: { createdAt: "desc" },
+        take: limit,
       }),
       prisma.interest.findMany({
         where: { fromUserId: userId },
@@ -64,6 +73,7 @@ export async function GET() {
           },
         },
         orderBy: { createdAt: "desc" },
+        take: limit,
       }),
       prisma.interest.findMany({
         where: {
@@ -101,6 +111,7 @@ export async function GET() {
           },
         },
         orderBy: { updatedAt: "desc" },
+        take: limit,
       }),
     ]);
 
@@ -143,7 +154,7 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as CreateInterestPayload;
     const toUserId = sanitizeString(body.toUserId);
-    const message = body.message?.trim() || null;
+    const message = sanitizeString(body.message, VALIDATION.MAX_MESSAGE_LENGTH);
 
     if (!toUserId) {
       return badRequest("toUserId is required");

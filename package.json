@@ -20,7 +20,9 @@
     "test:smoke": "node scripts/run-load-tests.mjs smoke",
     "test:load": "node scripts/run-load-tests.mjs load",
     "test:stress": "node scripts/run-load-tests.mjs stress",
-    "test:spike": "node scripts/run-load-tests.mjs spike"
+    "test:spike": "node scripts/run-load-tests.mjs spike",
+    "test:security": "playwright test -c playwright.api.config.cjs tests/api-live/consistency.spec.ts tests/api-live/auth.spec.ts tests/api-live/profile.spec.ts tests/api-live/interactions.spec.ts tests/api-live/chat.spec.ts tests/api-live/photos-upload.spec.ts tests/api-live/payments.spec.ts tests/api-live/admin.spec.ts",
+    "test:load:live": "playwright test -c playwright.load.config.cjs tests/api-live/load.spec.ts"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"

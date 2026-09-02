@@ -19,8 +19,11 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    // Single query — group by conversationId to get both counts at once
-    const unreadMessages = await prisma.message.findMany({
+    // Single bounded aggregation — one row per conversation with an unread
+    // message, instead of pulling every unread message into memory (which grows
+    // unbounded with message volume). Returns both counts from one query.
+    const unreadGroups = await prisma.message.groupBy({
+      by: ["conversationId"],
       where: {
         readAt: null,
         senderId: { not: userId },
@@ -28,13 +31,14 @@ export async function GET() {
           OR: [{ userOneId: userId }, { userTwoId: userId }],
         },
       },
-      select: { conversationId: true },
+      _count: { _all: true },
     });
 
-    const unreadMessageCount = unreadMessages.length;
-    const unreadConversationCount = new Set(
-      unreadMessages.map((m) => m.conversationId)
-    ).size;
+    const unreadConversationCount = unreadGroups.length;
+    const unreadMessageCount = unreadGroups.reduce(
+      (sum, group) => sum + group._count._all,
+      0
+    );
 
     return NextResponse.json({ unreadConversationCount, unreadMessageCount });
   } catch (error) {

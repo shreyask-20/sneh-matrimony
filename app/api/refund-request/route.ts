@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/require-user";
 import { sendRefundRequestEmail } from "@/lib/email";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { sanitizeString } from "@/lib/validation";
 
 const VALID_REASONS = [
   "Changed mind",
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         amountPaise: payment.amountPaise,
         paymentId: payment.razorpayPaymentId || payment.id,
         reason,
-        description: description?.trim() || "",
+        description: sanitizeString(description, 1000) ?? "",
       });
     } catch (err) {
       console.error("Failed to send refund request email:", err);

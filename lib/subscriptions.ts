@@ -9,8 +9,7 @@ export const PLANS = {
   SILVER: {
     key: "SILVER" as const,
     name: "Silver",
-    // TEMP: ₹2 payable for live payment testing (266 * 0.75 = 200 paise). Revert to 200_000 after testing.
-    listPricePaise: 266,
+    listPricePaise: 200_000,
     perks: [
       "View 60 profiles",
       "Express Interest — Unlimited",
@@ -21,8 +20,7 @@ export const PLANS = {
   GOLD: {
     key: "GOLD" as const,
     name: "Gold",
-    // TEMP: ₹2 payable for live payment testing (266 * 0.75 = 200 paise). Revert to 300_000 after testing.
-    listPricePaise: 266,
+    listPricePaise: 300_000,
     perks: [
       "View 150 profiles",
       "Who viewed your profile — 5",

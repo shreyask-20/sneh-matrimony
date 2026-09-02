@@ -110,7 +110,19 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("create-order error:", error);
+    // Razorpay's SDK throws { statusCode, error } for any non-2xx upstream
+    // response. Surface the exact gateway status + reason so the real cause
+    // (bad credentials → 401, inactive/KYC-pending account, amount rules, etc.)
+    // is visible in the production logs instead of being buried in a generic 503.
+    if (error && typeof error === "object" && "statusCode" in error) {
+      const rzp = error as { statusCode?: unknown; error?: unknown };
+      console.error("create-order: Razorpay rejected order creation", {
+        statusCode: rzp.statusCode,
+        error: rzp.error,
+      });
+    } else {
+      console.error("create-order error:", error);
+    }
 
     // Missing/invalid Razorpay credentials — a configuration outage, not a user fault.
     const message = error instanceof Error ? error.message : "";

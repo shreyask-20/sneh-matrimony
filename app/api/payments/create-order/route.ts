@@ -36,36 +36,58 @@ export async function POST(request: NextRequest) {
     const amountPaise = getPayableAmountPaise(plan);
     const receipt = `s_${userId.slice(-8)}_${plan}_${Date.now().toString().slice(-8)}`;
 
+    const razorpay = getRazorpayClient();
+
     // Idempotency: re-use an unconsumed CREATED order for the same user+plan
     // rather than creating duplicate/orphaned Razorpay orders on client retries.
+    // The stored order is validated against Razorpay before reuse: it must still
+    // exist AND belong to the *current* key. When keys rotate (e.g. test -> live),
+    // previously created orders belong to the old key and reusing them makes
+    // Razorpay reject the checkout session ("The id provided does not exist",
+    // HTTP 400/401). Such stale orders are marked FAILED and a fresh one created.
     const existingCreated = await prisma.payment.findFirst({
       where: { userId, plan: planKeyToEnum(plan), status: "CREATED" },
       orderBy: { createdAt: "desc" },
       select: { id: true, amountPaise: true, razorpayOrderId: true },
     });
     if (existingCreated && existingCreated.amountPaise === amountPaise) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true, phone: true, firstName: true, lastName: true, name: true },
-      });
-      const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
-      const displayName = user?.name ?? (fullName || undefined);
-      return NextResponse.json({
-        orderId: existingCreated.razorpayOrderId,
-        amount: amountPaise,
-        currency: "INR",
-        keyId: getRazorpayKeyId(),
-        plan,
-        planName: planConfig.name,
-        prefill: {
-          name: displayName,
-          email: user?.email ?? undefined,
-          contact: user?.phone ?? undefined,
-        },
+      let reusable = false;
+      try {
+        const existing = await razorpay.orders.fetch(existingCreated.razorpayOrderId);
+        reusable = !!existing?.id && Number(existing.amount) === amountPaise;
+      } catch {
+        reusable = false;
+      }
+
+      if (reusable) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, phone: true, firstName: true, lastName: true, name: true },
+        });
+        const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
+        const displayName = user?.name ?? (fullName || undefined);
+        return NextResponse.json({
+          orderId: existingCreated.razorpayOrderId,
+          amount: amountPaise,
+          currency: "INR",
+          keyId: getRazorpayKeyId(),
+          plan,
+          planName: planConfig.name,
+          prefill: {
+            name: displayName,
+            email: user?.email ?? undefined,
+            contact: user?.phone ?? undefined,
+          },
+        });
+      }
+
+      // Not reusable (stale / key-rotated / amount changed) — invalidate and fall through.
+      await prisma.payment.update({
+        where: { id: existingCreated.id },
+        data: { status: "FAILED" },
       });
     }
 
-    const razorpay = getRazorpayClient();
     const order = await razorpay.orders.create({
       amount: amountPaise,
       currency: "INR",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import Button from "@/components/shared/Button";
@@ -101,7 +101,19 @@ const tabs = [
   { id: "queue", label: "Approval Queue" },
   { id: "users", label: "All Users" },
   { id: "payments", label: "Payments" },
+  { id: "backups", label: "Backups" },
 ];
+
+type BackupStatus = {
+  id: number;
+  exportedAt: string;
+  fileName: string;
+  userCount: number;
+  counts: Record<string, number>;
+  fileSizeBytes: number | null;
+  status: string;
+  admin: { id: string; name: string | null; email: string | null };
+} | null;
 
 export default function AdminClient({ initialTab }: { initialTab?: string }) {
   const router = useRouter();
@@ -124,6 +136,10 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastBackup, setLastBackup] = useState<BackupStatus>(null);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupDownloading, setBackupDownloading] = useState(false);
+  const [backupMessage, setBackupMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
@@ -184,9 +200,63 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     }
   };
 
+  const fetchBackupStatus = async () => {
+    setBackupLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/backup/status");
+      if (!response.ok) throw new Error("Failed to load backup status");
+      const data = (await response.json()) as { lastBackup: BackupStatus };
+      setLastBackup(data.lastBackup);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load backup status");
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const handleBackupDownload = async () => {
+    if (
+      !window.confirm(
+        "Download a full database backup? This file contains password hashes and personal data. Store it safely (laptop + Drive) and never share it."
+      )
+    )
+      return;
+    setBackupDownloading(true);
+    setBackupMessage(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/backup/export");
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "Backup download failed");
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const fileName = match?.[1] ?? `sneh-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setBackupMessage(`Downloaded ${fileName} (${(blob.size / 1024 / 1024).toFixed(2)} MB). Save it to laptop + Drive.`);
+      await fetchBackupStatus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Backup download failed");
+    } finally {
+      setBackupDownloading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "payments") {
       fetchPayments();
+    } else if (activeTab === "backups") {
+      fetchBackupStatus();
     } else {
       fetchUsers("all");
     }
@@ -209,8 +279,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
   useEffect(() => {
     setPage(1);
     setExpandedCardIds(new Set());
-    if (activeTab !== "payments") {
-      setUserFilter(activeTab === "queue" ? "pending" : "all");
+    if (activeTab !== "payments" && activeTab !== "backups") {
+      if (pendingKpiNav.current) {
+        setUserFilter(pendingKpiNav.current.userFilter);
+        pendingKpiNav.current = null;
+      } else {
+        setUserFilter(activeTab === "queue" ? "pending" : "all");
+      }
     }
   }, [activeTab]);
 
@@ -218,6 +293,38 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", next);
     router.push(`/admin?${params.toString()}`);
+  };
+
+  type KpiTarget = {
+    tab: string;
+    userFilter: "all" | "pending" | "approved" | "visible" | "with-pending-photos";
+    gender: string;
+  };
+
+  // Holds KPI-requested filters across the tab navigation so the
+  // activeTab effect above applies them instead of resetting to defaults.
+  const pendingKpiNav = useRef<{ userFilter: KpiTarget["userFilter"]; gender: string } | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  const handleKpiClick = (target: KpiTarget) => {
+    setSearchQuery("");
+    setCityFilter("");
+    setReligionFilter("");
+    setGenderFilter(target.gender);
+    if (activeTab === target.tab) {
+      // Already on the target tab — the activeTab effect won't rerun,
+      // so apply the filters directly.
+      pendingKpiNav.current = null;
+      setUserFilter(target.userFilter);
+      setPage(1);
+    } else {
+      pendingKpiNav.current = { userFilter: target.userFilter, gender: target.gender };
+      setTab(target.tab);
+    }
+    // Bring the filtered list into view after navigation.
+    window.setTimeout(() => {
+      listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
   const updateUser = async (
@@ -576,6 +683,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                   variant="secondary"
                   onClick={() => {
                     if (activeTab === "payments") { fetchPayments(); }
+                    else if (activeTab === "backups") { fetchBackupStatus(); }
                     else { fetchUsers("all"); }
                   }}
                 >
@@ -590,6 +698,68 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </div>
             </div>
           </div>
+          {activeTab === "backups" ? (
+            <div className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70 sm:p-5">
+              <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400 dark:text-slate-500">
+                Weekly database backup
+              </p>
+              <h2 className="mt-1 font-serif text-xl text-slate-900 dark:text-white">
+                Download full backup (single JSON)
+              </h2>
+              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Includes all profiles, interests, chats, payments and password hashes
+                (needed for restore). Hashes are only inside the downloaded file —
+                they are never displayed on screen. Store the file on your laptop +
+                Drive, never share it. Use the existing forgot/reset password flow
+                if a user needs a new password.
+              </p>
+              <div className="mt-3 rounded-2xl bg-brand-50/60 px-3 py-2 text-xs text-slate-600 dark:bg-white/5 dark:text-slate-300">
+                {backupLoading ? (
+                  "Checking last backup…"
+                ) : lastBackup ? (
+                  <>
+                    Last backup:{" "}
+                    <span className="font-semibold">
+                      {new Date(lastBackup.exportedAt).toLocaleString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>{" "}
+                    by {lastBackup.admin.name ?? lastBackup.admin.email ?? "admin"} ·{" "}
+                    {lastBackup.userCount} users ·{" "}
+                    {lastBackup.fileSizeBytes
+                      ? `${(lastBackup.fileSizeBytes / 1024 / 1024).toFixed(2)} MB`
+                      : lastBackup.fileName}
+                  </>
+                ) : (
+                  "No backup downloaded yet. Please take one now."
+                )}
+              </div>
+              {backupMessage ? (
+                <p className="mt-2 text-xs text-green-600">{backupMessage}</p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleBackupDownload}
+                  disabled={backupDownloading}
+                >
+                  {backupDownloading ? "Preparing backup…" : "Download backup now"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={fetchBackupStatus}
+                  disabled={backupLoading}
+                >
+                  Refresh status
+                </Button>
+              </div>
+            </div>
+          ) : null}
           {activeTab === "payments" ? (
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70">
@@ -610,7 +780,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 <p className="mt-2 text-xs text-slate-400">Active subscribers in view</p>
               </div>
             </div>
-          ) : (
+          ) : activeTab !== "backups" ? (
             <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
             {[
               {
@@ -620,6 +790,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 iconBg: "bg-violet-50 dark:bg-violet-500/10",
                 iconColor: "text-violet-600 dark:text-violet-400",
                 barColor: "bg-violet-500",
+                target: { tab: "users", userFilter: "all", gender: "" } as KpiTarget,
+                actionLabel: "View all users",
               },
               {
                 label: "Awaiting approval",
@@ -630,6 +802,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 barColor: "bg-amber-400",
                 badge: pendingUsers.length > 0 ? "Needs review" : null,
                 badgeStyle: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+                target: { tab: "queue", userFilter: "pending", gender: "" } as KpiTarget,
+                actionLabel: "View approval queue",
               },
               {
                 label: "Approved members",
@@ -638,6 +812,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 iconBg: "bg-green-50 dark:bg-green-500/10",
                 iconColor: "text-green-600 dark:text-green-400",
                 barColor: "bg-green-500",
+                target: { tab: "users", userFilter: "approved", gender: "" } as KpiTarget,
+                actionLabel: "View approved members",
               },
               {
                 label: "Male profiles",
@@ -646,6 +822,8 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 iconBg: "bg-blue-50 dark:bg-blue-500/10",
                 iconColor: "text-blue-600 dark:text-blue-400",
                 barColor: "bg-blue-500",
+                target: { tab: "users", userFilter: "all", gender: "male" } as KpiTarget,
+                actionLabel: "View male profiles",
               },
               {
                 label: "Female profiles",
@@ -654,12 +832,18 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                 iconBg: "bg-pink-50 dark:bg-pink-500/10",
                 iconColor: "text-pink-600 dark:text-pink-400",
                 barColor: "bg-pink-500",
+                target: { tab: "users", userFilter: "all", gender: "female" } as KpiTarget,
+                actionLabel: "View female profiles",
               },
             ].map((card) => {
               return (
-                <div
+                <button
                   key={card.label}
-                  className="rounded-2xl border border-brand-100/60 bg-white p-4 shadow-[0_10px_24px_rgba(127,16,62,0.06)] dark:border-white/10 dark:bg-slate-900/70"
+                  type="button"
+                  onClick={() => handleKpiClick(card.target)}
+                  aria-label={card.actionLabel}
+                  title={card.actionLabel}
+                  className="w-full rounded-2xl border border-brand-100/60 bg-white p-4 text-left shadow-[0_10px_24px_rgba(127,16,62,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(127,16,62,0.12)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-white/10 dark:bg-slate-900/70 dark:focus-visible:outline-brand-400"
                 >
                   <div className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm ${card.iconBg} ${card.iconColor} mb-3`}>
                     {card.icon}
@@ -675,12 +859,13 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
                       {card.badge}
                     </span>
                   ) : null}
-                </div>
+                </button>
               );
             })}
           </div>
-          )}
-          <div className="flex min-h-[420px] flex-1 flex-col rounded-2xl border border-brand-100/60 bg-white p-3 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 sm:rounded-3xl sm:p-5">
+          ) : null}
+          {activeTab !== "backups" ? (
+          <div ref={listRef} className="flex min-h-[420px] flex-1 scroll-mt-4 flex-col rounded-2xl border border-brand-100/60 bg-white p-3 shadow-[0_12px_30px_rgba(127,16,62,0.08)] dark:border-white/10 dark:bg-slate-900/70 sm:rounded-3xl sm:p-5">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <h2 className="font-serif text-xl text-slate-900 dark:text-white">
                 {activeTab === "payments" ? "Payments" : "User Approvals"}
@@ -1366,6 +1551,7 @@ export default function AdminClient({ initialTab }: { initialTab?: string }) {
               </div>
             ) : null}
           </div>
+          ) : null}
         </section>
       </div>
     </div>

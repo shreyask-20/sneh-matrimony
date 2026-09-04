@@ -103,6 +103,7 @@ model User {
   blocksReceived         Block[]        @relation("BlockRecipient")
   payments               Payment[]
   subscriptions          Subscription[]
+  backupLogs             BackupLog[]
 
   // Indexes for browse/filter queries — eliminates full table scans
   @@index([isApproved, profileVisible, gender])
@@ -331,5 +332,20 @@ model Subscription {
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+}
+
+model BackupLog {
+  id            Int      @id @default(autoincrement())
+  adminId       String
+  exportedAt    DateTime @default(now())
+  fileName      String
+  userCount     Int
+  counts        Json
+  fileSizeBytes Int?
+  status        String   @default("SUCCESS")
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([exportedAt])
 }
 

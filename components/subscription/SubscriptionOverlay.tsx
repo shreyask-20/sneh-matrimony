@@ -14,6 +14,44 @@ type RazorpayHandlerResponse = {
   razorpay_signature: string;
 };
 
+type RazorpayFailureResponse = {
+  error?: {
+    code?: string;
+    description?: string;
+    reason?: string;
+    step?: string;
+    source?: string;
+    field?: string;
+  };
+};
+
+function mapRazorpayFailureToMessage(response?: RazorpayFailureResponse): string {
+  const err = response?.error;
+  const reason = (err?.reason ?? "").toLowerCase();
+  const code = (err?.code ?? "").toUpperCase();
+  const step = (err?.step ?? "").toLowerCase();
+  const description = err?.description?.trim();
+
+  if (reason.includes("timed_out") || reason.includes("timeout")) {
+    return "UPI approval timed out (no approval within ~10 mins). No money was debited. Please retry and approve the Collect request in your UPI app within 5 minutes.";
+  }
+  if (reason.includes("cancelled") || reason.includes("user_cancelled") || reason.includes("modal_closed")) {
+    return "Payment was cancelled before completion. Please retry to start a fresh payment.";
+  }
+  if (code.includes("INSUFFICIENT") || reason.includes("insufficient")) {
+    return "Payment failed: insufficient balance or UPI limit exceeded. Please try a different UPI ID or card.";
+  }
+  if (step.includes("authentication") || step.includes("authorization")) {
+    return description
+      ? `Payment authentication failed: ${description} Please retry and approve promptly in your UPI app.`
+      : "Payment authentication failed before approval. Please retry and approve promptly in your UPI app.";
+  }
+  if (description) {
+    return `Payment failed: ${description} Please retry.`;
+  }
+  return "Payment failed before completion. Please retry with a fresh payment.";
+}
+
 type RazorpayOptions = {
   key: string;
   amount: number;
@@ -21,17 +59,22 @@ type RazorpayOptions = {
   name: string;
   description: string;
   order_id: string;
+  timeout?: number;
+  retry?: { enabled: boolean; max_count: number };
+  remember_customer?: boolean;
+  send_sms_hash?: boolean;
   prefill?: { name?: string; email?: string; contact?: string };
+  notes?: Record<string, string>;
   theme?: { color?: string };
   handler: (response: RazorpayHandlerResponse) => void;
-  modal?: { ondismiss?: () => void };
+  modal?: { ondismiss?: () => void; escape?: boolean; confirm_close?: boolean };
 };
 
 declare global {
   interface Window {
     Razorpay?: new (options: RazorpayOptions) => {
       open: () => void;
-      on: (event: string, cb: () => void) => void;
+      on: (event: string, cb: (response?: RazorpayFailureResponse) => void) => void;
     };
   }
 }
@@ -112,6 +155,11 @@ export default function SubscriptionOverlay({ userName }: SubscriptionOverlayPro
           name: "Sneh Matrimony",
           description: `${planName} — yearly membership`,
           order_id: orderData.orderId,
+          timeout: 900,
+          retry: { enabled: true, max_count: 3 },
+          remember_customer: true,
+          send_sms_hash: true,
+          notes: { plan },
           prefill: orderData.prefill,
           theme: { color: "#7F103E" },
           handler: async (response) => {
@@ -147,11 +195,13 @@ export default function SubscriptionOverlay({ userName }: SubscriptionOverlayPro
           },
           modal: {
             ondismiss: () => setLoading(null),
+            escape: true,
+            confirm_close: true,
           },
         });
 
-        rzp.on("payment.failed", () => {
-          setError("Payment failed. Please try again.");
+        rzp.on("payment.failed", (response) => {
+          setError(mapRazorpayFailureToMessage(response));
           setLoading(null);
         });
 
@@ -177,7 +227,7 @@ export default function SubscriptionOverlay({ userName }: SubscriptionOverlayPro
     <>
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         onReady={() => setScriptReady(true)}
         onLoad={() => setScriptReady(true)}
       />
@@ -200,7 +250,10 @@ export default function SubscriptionOverlay({ userName }: SubscriptionOverlayPro
             {/* Error */}
             {error && (
               <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-center text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
-                {error}
+                <p>{error}</p>
+                <p className="mt-1 text-xs opacity-80">
+                  Click your plan again to retry — a fresh payment order will be created.
+                </p>
               </div>
             )}
 

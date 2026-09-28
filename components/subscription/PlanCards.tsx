@@ -89,7 +89,7 @@ export default function PlanCards({ showIntroBadge = true, currentPlan }: PlanCa
     <>
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         onReady={() => setScriptReady(true)}
         onLoad={() => setScriptReady(true)}
       />

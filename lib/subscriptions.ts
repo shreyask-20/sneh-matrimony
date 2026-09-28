@@ -6,12 +6,10 @@ export const SUBSCRIPTION_DURATION_MS = 365 * 24 * 60 * 60 * 1000;
 export type PlanKey = keyof typeof PLANS;
 
 export const PLANS = {
-  // TODO(TEST): temporary live-test price — Silver payable Rs 200.
-  // Revert listPricePaise to 200_000 (payable Rs 1,500) before prod.
   SILVER: {
     key: "SILVER" as const,
     name: "Silver",
-    listPricePaise: 26_667,
+    listPricePaise: 200_000,
     perks: [
       "View 60 profiles",
       "Express Interest — Unlimited",

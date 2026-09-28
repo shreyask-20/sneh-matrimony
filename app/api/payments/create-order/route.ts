@@ -88,18 +88,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // NOTE: Razorpay Orders API rejects `expire_by` (only Payment Links /
+// Invoices support it). Checkout-side `timeout: 900` is the expiry control.
     const order = await razorpay.orders.create({
       amount: amountPaise,
       currency: "INR",
       receipt,
-      // `expire_by` is supported by the Razorpay Orders REST API but missing
-      // from razorpay@2.9.6 types, so it is appended via a controlled cast.
-      expire_by: Math.floor(Date.now() / 1000) + 20 * 60,
       notes: {
         userId,
         plan,
       },
-    } as unknown as Parameters<typeof razorpay.orders.create>[0]);
+    });
 
     await prisma.payment.create({
       data: {
